@@ -1,0 +1,16 @@
+{
+  "configVersion": 0,
+  "apple": {
+    "info": {
+      "en-US": {
+        "title": "Zell App",
+        "subtitle": "Payments made easy",
+        "description": "Payments made easy with Zell App. Tap, pay, and go!",
+        "keywords": ["Payments", "banking", "NFC", "Zell"],
+        "marketingUrl": "https://example.com/en/promo",
+        "supportUrl": "https://example.com/en/support",
+        "privacyPolicyUrl": "https://example.com/en/privacy"
+      }
+    }
+  }
+}

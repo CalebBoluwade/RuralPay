@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "839118197510",
+    "project_id": "nfc-payments-886a1",
+    "storage_bucket": "nfc-payments-886a1.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:839118197510:android:eec58f045d7b46e5f0c487",
+        "android_client_info": {
+          "package_name": "com.groovetech.nfccardpayments"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBooCkCa-ZN6goWVBNxJuVM0nvV99UdV-g"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
