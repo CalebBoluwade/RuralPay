@@ -4,13 +4,13 @@ import * as Haptics from "expo-haptics";
 import React, { useEffect, useState } from "react";
 import { Alert, Modal, Text, TouchableOpacity, View } from "react-native";
 import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withRepeat,
-  withSequence,
-  withTiming,
+    useAnimatedStyle,
+    useSharedValue,
+    withRepeat,
+    withSequence,
+    withTiming,
 } from "react-native-reanimated";
-import ScreenHeader from "./ui/ScreenHeader";
+import ScreenHeader from "./ScreenHeader";
 
 interface PinSetupModalProps {
   visible: boolean;

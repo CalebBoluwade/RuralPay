@@ -1,10 +1,10 @@
 import { BankTransferService } from "@/components/services/BankTransferService";
 import NFCPaymentService from "@/components/services/NFCPaymentService";
-import TransactionFailure from "@/components/transaction/TransactionFailure";
-import TransactionSuccess from "@/components/transaction/TransactionSuccess";
-import TransactionPin from "@/components/TransactionPin";
 import BalanceCard from "@/components/ui/BalanceCard";
 import ScreenHeader from "@/components/ui/ScreenHeader";
+import TransactionFailure from "@/components/ui/Transaction/TransactionFailure";
+import TransactionPin from "@/components/ui/Transaction/TransactionPin";
+import TransactionSuccess from "@/components/ui/Transaction/TransactionSuccess";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React, { useEffect, useState } from "react";

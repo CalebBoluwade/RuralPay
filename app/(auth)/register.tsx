@@ -13,9 +13,9 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import OptimizedInput from "../../components/Input/OptimizedInput";
-import PinSetupModal from "../../components/PinSetupModal";
 import { useAuth } from "../../components/context/AuthProvider";
+import OptimizedInput from "../../components/Input/OptimizedInput";
+import PinSetupModal from "../../components/ui/PinSetupModal";
 import { RegisterFormData, registerSchema } from "../../lib/validations";
 
 export default function RegisterScreen() {

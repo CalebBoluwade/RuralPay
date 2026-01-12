@@ -11,7 +11,7 @@ import Animated, {
   withSequence,
   withTiming,
 } from "react-native-reanimated";
-import { useAuth } from "./context/AuthProvider";
+import { useAuth } from "../../context/AuthProvider";
 
 interface TransactionPinProps {
   onSuccess?: () => void;
