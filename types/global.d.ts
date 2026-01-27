@@ -44,9 +44,17 @@ global {
   }
 
   interface BalanceEnquiry {
+    id: string;
+    isPrimary: boolean;
     availableBalance: number;
-    identifier: string;
+    bankName: string;
+    bankCode: string;
+    bankLogo: string;
+    cardId: string;
     currency: string;
+    status: string;
+    accountName: string;
+    accountId: string;
   }
 
   interface Transaction {
@@ -64,7 +72,35 @@ global {
     recipientId?: string;
     senderId?: string;
     fees: number;
-    balance?: number;
+    narration?: string;
+  }
+
+  interface TransferPayload {
+    amount: number;
+    currency: string;
+    fromAccount: string;
+    reference: string;
+    toAccount: string;
+    toBankCode: string;
+    location?: LocationData;
+  }
+
+  interface TransferResponse {
+    success: boolean;
+    status: string;
+    transactionId: string;
+  }
+
+  interface USSDCodePayload {
+    type: "Send" | "Receive";
+    amount?: number;
+    currency?: string;
+  }
+
+  interface USSDCodeResponse {
+    success: boolean;
+    ussdCode: string;
+    expiresIn: number;
   }
 
   interface USSDTransaction {
@@ -109,6 +145,11 @@ global {
     senderTx: Transaction;
     recipientTx: Transaction;
     status: TransferStatus;
+  }
+
+  interface Banks {
+    name: string;
+    code: string;
   }
 
   interface CardInfo {

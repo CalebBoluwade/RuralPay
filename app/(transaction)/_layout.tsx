@@ -18,6 +18,15 @@ export default function Layout() {
       />
 
       <Stack.Screen
+        name="QRPayments"
+        options={{
+          presentation: Platform.OS === "ios" ? "modal" : "card",
+          headerShown: false,
+          headerTransparent: Platform.OS === "ios",
+        }}
+      />
+
+      <Stack.Screen
         name="NFCPayments"
         options={{
           presentation: Platform.OS === "ios" ? "modal" : "card",

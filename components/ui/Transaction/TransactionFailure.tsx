@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
-import { Text, TouchableOpacity, View } from "react-native";
+import { Text, TouchableOpacity, View, useColorScheme } from "react-native";
 
 interface TransactionFailureProps {
   error: string;
@@ -13,38 +13,47 @@ const TransactionFailure: React.FC<TransactionFailureProps> = ({
   onRetry,
   onClose,
 }) => {
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === "dark";
+
   return (
-    <View className="flex-1 justify-center items-center px-5 bg-black/40">
-      <View className="bg-white rounded-2xl p-6 w-full max-w-sm">
+    <View className={`flex-1 justify-center items-center px-5 ${isDark ? "bg-black/80" : "bg-black/40"}`}>
+      <View className={`rounded-2xl p-6 w-full max-w-sm backdrop-blur-xl ${
+        isDark ? "bg-white/10 border border-white/20" : "bg-white/80 border border-gray-200/50"
+      }`}>
         <View className="items-center mb-6">
-          <View className="w-16 h-16 bg-red-100 rounded-full items-center justify-center mb-4">
+          <View className="w-16 h-16 bg-red-500/20 rounded-full items-center justify-center mb-4">
             <Ionicons name="close" size={32} color="#ef4444" />
           </View>
-          <Text className="text-2xl font-bold text-gray-800 mb-2">
+          <Text className={`text-2xl font-bold mb-2 ${isDark ? "text-white" : "text-gray-800"}`}>
             Transaction Failed
           </Text>
-          <Text className="text-gray-600 text-center">
+          <Text className={`text-center ${isDark ? "text-gray-400" : "text-gray-600"}`}>
             We Couldn&apos;t Complete Your Transaction
           </Text>
         </View>
 
-        <View className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-          <Text className="text-red-800 text-center">{error}</Text>
+        <View className={`rounded-2xl p-4 mb-6 backdrop-blur-xl ${
+          isDark ? "bg-red-500/10 border border-red-500/30" : "bg-red-50 border border-red-200"
+        }`}>
+          <Text className={`text-center ${isDark ? "text-red-400" : "text-red-800"}`}>{error}</Text>
         </View>
 
         <View className="space-y-3">
           <TouchableOpacity
-            className="bg-red-500 rounded-lg p-3 items-center mb-3"
+            className={`rounded-2xl p-3 items-center mb-3 ${isDark ? "bg-red-600" : "bg-red-500"}`}
             onPress={onRetry}
           >
             <Text className="text-white font-semibold">Try Again</Text>
           </TouchableOpacity>
           
           <TouchableOpacity
-            className="bg-gray-100 rounded-lg p-3 items-center"
+            className={`rounded-2xl p-3 items-center backdrop-blur-xl ${
+              isDark ? "bg-white/5 border border-white/10" : "bg-gray-100 border border-gray-200"
+            }`}
             onPress={onClose}
           >
-            <Text className="text-gray-800 font-semibold">Cancel</Text>
+            <Text className={`font-semibold ${isDark ? "text-white" : "text-gray-800"}`}>Cancel</Text>
           </TouchableOpacity>
         </View>
       </View>

@@ -1,11 +1,14 @@
 import { BankTransferService } from "@/components/services/BankTransferService";
-import NFCPaymentService from "@/components/services/NFCPaymentService";
+import NFCService from "@/components/services/NFCService";
+
 import BalanceCard from "@/components/ui/BalanceCard";
 import ScreenHeader from "@/components/ui/ScreenHeader";
 import TransactionFailure from "@/components/ui/Transaction/TransactionFailure";
 import TransactionPin from "@/components/ui/Transaction/TransactionPin";
 import TransactionSuccess from "@/components/ui/Transaction/TransactionSuccess";
+import { ToastService } from "@/hooks/use-toast";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
@@ -16,10 +19,18 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  useColorScheme,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const NFCPayments = () => {
+  // NFCManager.setEventListener(NfcEvents.DiscoverTag, (tag) => {
+  //   console.log("Discovered tag", tag);
+  //   handleCardTap();
+  // });
+
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === "dark";
   const [step, setStep] = useState("ENTER_DETAILS");
   const [merchantId, setMerchantId] = useState("");
   const [amount, setAmount] = useState("");
@@ -27,10 +38,19 @@ const NFCPayments = () => {
   const [paymentResult, setPaymentResult] = useState<any>(null);
   const [error, setError] = useState<string>("");
   const [showMerchantModal, setShowMerchantModal] = useState(false);
-  const [paymentType, setPaymentType] = useState<"CREDIT" | "DEBIT">("DEBIT");
+  const [paymentType, setPaymentType] = useState<
+    "CREDIT" | "DEBIT" | "PHONE_TAP"
+  >("DEBIT");
+  const [nfcReady, setNfcReady] = useState(false);
 
   useEffect(() => {
-    NFCPaymentService.initialize();
+    const initPaymentMethod = async () => {
+      const nfcInit = await NFCService.initialize();
+      const nfcEnabled = await NFCService.isEnabled();
+      setNfcReady(nfcInit && nfcEnabled);
+    };
+
+    initPaymentMethod();
   }, []);
 
   const handleCreditCard = () => {
@@ -43,23 +63,37 @@ const NFCPayments = () => {
     setShowMerchantModal(true);
   };
 
+  const handlePhoneTap = () => {
+    setPaymentType("PHONE_TAP");
+    setShowMerchantModal(true);
+  };
+
   const handleStartPayment = async () => {
     if (
       paymentType === "DEBIT" &&
       (!merchantId || !amount || Number.parseFloat(amount) <= 0)
     ) {
-      Alert.alert("Error", "Please enter valid merchant ID and amount");
+      ToastService.error("Please Enter Valid merchant ID and amount");
       return;
     }
 
     if (
-      paymentType === "CREDIT" &&
+      (paymentType === "CREDIT" || paymentType === "PHONE_TAP") &&
       (!amount || Number.parseFloat(amount) <= 0)
     ) {
-      Alert.alert("Error", "Please enter valid amount to credit");
+      ToastService.error("Please enter valid amount");
       return;
     }
 
+    if (paymentType !== "PHONE_TAP" && !nfcReady) {
+      Alert.alert(
+        "NFC Not Available",
+        "NFC is not available on this device or is disabled. Please enable NFC in settings.",
+      );
+      return;
+    }
+
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setShowMerchantModal(false);
     setStep("ENTER_PIN");
   };
@@ -68,10 +102,14 @@ const NFCPayments = () => {
     try {
       setLoading(true);
 
+      const cardInfo = await NFCService.readCardInfo();
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+
       if (paymentType === "CREDIT") {
-        const response = await NFCPaymentService.creditCard(
+        const response = await NFCService.creditCard(
           Number.parseFloat(amount),
-          "NGN"
+          "NGN",
         );
 
         if (response.success) {
@@ -90,7 +128,7 @@ const NFCPayments = () => {
           txId: "TXN" + Date.now(),
           status: "PENDING",
           timestamp: Math.floor(Date.now() / 1000),
-          cardId: "card_4829",
+          cardId: cardInfo.cardId,
           merchantId: merchantId,
           amount: Number.parseFloat(amount),
           currency: "NGN",
@@ -113,6 +151,7 @@ const NFCPayments = () => {
         }
       }
     } catch (error) {
+      ToastService.error("Payment processing failed");
       setError((error as Error).message);
       setStep("FAILURE");
     } finally {
@@ -120,17 +159,12 @@ const NFCPayments = () => {
     }
   };
 
-  const handleNewPayment = () => {
-    setStep("ENTER_DETAILS");
-    setMerchantId("");
-    setAmount("");
-    setPaymentResult(null);
-    setError("");
-    setPaymentType("DEBIT");
-  };
-
   const handlePinSuccess = () => {
-    setStep("TAP_CARD");
+    if (paymentType === "PHONE_TAP") {
+      setStep("BLE_PAYMENT");
+    } else {
+      setStep("TAP_CARD");
+    }
   };
 
   const handlePinCancel = () => {
@@ -138,7 +172,11 @@ const NFCPayments = () => {
   };
 
   const handleRetry = () => {
-    setStep("TAP_CARD");
+    if (paymentType === "PHONE_TAP") {
+      setStep("ENTER_PIN");
+    } else {
+      setStep("TAP_CARD");
+    }
     setError("");
   };
 
@@ -147,7 +185,9 @@ const NFCPayments = () => {
   };
 
   const renderEnterDetails = () => (
-    <SafeAreaView className="flex-1">
+    <SafeAreaView
+      className={`flex-1 ${isDark ? "bg-[#0a0a0f]" : "bg-[#f5f5fa]"}`}
+    >
       <ScreenHeader
         title="NFC Payment"
         subtitle="Enter payment details to get started"
@@ -155,14 +195,26 @@ const NFCPayments = () => {
       />
 
       <View className="flex-1 px-6">
-        <View className="bg-white/80 backdrop-blur rounded-3xl p-6 shadow-lg border border-white/50 mb-6">
-          <Text className="text-2xl font-bold text-gray-900 mb-6">
+        <View
+          className={`rounded-2xl p-6 mb-6 backdrop-blur-xl ${
+            isDark
+              ? "bg-white/10 border border-white/20"
+              : "bg-white/60 border border-gray-200/50 shadow-sm"
+          }`}
+        >
+          <Text
+            className={`text-2xl font-bold mb-6 ${
+              isDark ? "text-white" : "text-gray-900"
+            }`}
+          >
             Select Payment Type
           </Text>
 
           <TouchableOpacity
             onPress={handleCreditCard}
-            className="bg-indigo-700 p-6 rounded-2xl mb-4 shadow-lg"
+            className={`p-6 rounded-2xl mb-4 ${
+              isDark ? "bg-indigo-600" : "bg-indigo-700"
+            }`}
           >
             <View className="flex-row items-center justify-between">
               <View className="flex-row items-center">
@@ -181,8 +233,38 @@ const NFCPayments = () => {
           </TouchableOpacity>
 
           <TouchableOpacity
+            onPress={handlePhoneTap}
+            className={`p-6 rounded-2xl mb-4 ${
+              isDark ? "bg-lime-600" : "bg-lime-700"
+            }`}
+          >
+            <View className="flex-row items-center justify-between">
+              <View className="flex-row items-center">
+                <View className="w-12 h-12 rounded-2xl bg-white/20 items-center justify-center mr-4">
+                  <MaterialCommunityIcons
+                    name="cellphone-nfc"
+                    size={28}
+                    color="white"
+                  />
+                </View>
+                <View>
+                  <Text className="text-white font-bold text-lg">
+                    Phone Tap (BLE)
+                  </Text>
+                  <Text className="text-lime-100 text-sm">
+                    Bluetooth Payment
+                  </Text>
+                </View>
+              </View>
+              <Ionicons name="chevron-forward" size={24} color="white" />
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity
             onPress={handlePullPayment}
-            className="bg-emerald-700 p-6 rounded-2xl shadow-lg"
+            className={`p-6 rounded-2xl ${
+              isDark ? "bg-emerald-600" : "bg-emerald-700"
+            }`}
           >
             <View className="flex-row items-center justify-between">
               <View className="flex-row items-center">
@@ -205,25 +287,42 @@ const NFCPayments = () => {
       <Modal
         visible={showMerchantModal}
         animationType="slide"
-        presentationStyle="formSheet"
-        className="flex-1"
+        presentationStyle="pageSheet"
       >
-        <View className="flex-1 backdrop-blur rounded-3xl p-6 shadow-lg border border-white/50 mb-6">
-          <Text className="text-2xl font-bold text-gray-900 mb-6">
-            {paymentType === "CREDIT" ? "Credit Card" : "Payment Details"}
+        <View
+          className={`flex-1 p-8 ${isDark ? "bg-[#0a0a0f]" : "bg-[#f5f5fa]"}`}
+        >
+          <Text
+            className={`text-2xl font-bold mb-6 ${
+              isDark ? "text-white" : "text-gray-900"
+            }`}
+          >
+            {paymentType === "CREDIT"
+              ? "Credit Card"
+              : paymentType === "PHONE_TAP"
+                ? "Phone Tap Payment"
+                : "Payment Details"}
           </Text>
 
           {paymentType === "DEBIT" && <BalanceCard />}
 
-          {paymentType === "DEBIT" && (
+          {(paymentType === "DEBIT" || paymentType === "PHONE_TAP") && (
             <View className="mb-6">
-              <Text className="text-lg font-semibold text-gray-900 mb-3">
+              <Text
+                className={`text-lg font-semibold mb-3 ${
+                  isDark ? "text-white" : "text-gray-900"
+                }`}
+              >
                 Merchant ID
               </Text>
               <TextInput
-                className="bg-gray-50/80 border-2 border-gray-200 p-4 rounded-2xl text-gray-900 text-lg"
+                className={`p-4 rounded-2xl text-lg backdrop-blur-xl ${
+                  isDark
+                    ? "bg-white/10 border border-white/20 text-white"
+                    : "bg-white/60 border border-gray-200/50 text-gray-900"
+                }`}
                 placeholder="Enter merchant identifier"
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor={isDark ? "#9CA3AF" : "#6B7280"}
                 value={merchantId}
                 onChangeText={setMerchantId}
               />
@@ -231,17 +330,29 @@ const NFCPayments = () => {
           )}
 
           <View className="mb-8">
-            <Text className="text-lg font-semibold text-gray-900 mb-3">
+            <Text
+              className={`text-lg font-semibold mb-3 ${
+                isDark ? "text-white" : "text-gray-900"
+              }`}
+            >
               Amount (NGN)
             </Text>
-            <View className="flex-row items-center bg-gray-50/80 rounded-2xl border-2 border-gray-200">
+            <View
+              className={`flex-row items-center rounded-2xl backdrop-blur-xl ${
+                isDark
+                  ? "bg-white/10 border border-white/20"
+                  : "bg-white/60 border border-gray-200/50"
+              }`}
+            >
               <View className="bg-green-600 px-4 py-4 rounded-l-2xl">
-                <Text className="text-white font-bold text-xl">N</Text>
+                <Text className="text-white font-bold text-xl">₦</Text>
               </View>
               <TextInput
-                className="flex-1 p-4 text-gray-900 text-xl font-semibold"
+                className={`flex-1 p-4 text-xl font-semibold ${
+                  isDark ? "text-white" : "text-gray-900"
+                }`}
                 placeholder="0.00"
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor={isDark ? "#9CA3AF" : "#6B7280"}
                 value={amount}
                 onChangeText={setAmount}
                 keyboardType="decimal-pad"
@@ -250,21 +361,33 @@ const NFCPayments = () => {
           </View>
 
           <TouchableOpacity
-            className="bg-emerald-700 p-4 rounded-2xl shadow-lg mb-4"
+            className={`p-4 rounded-2xl mb-4 ${
+              isDark ? "bg-emerald-600" : "bg-emerald-700"
+            }`}
             onPress={handleStartPayment}
           >
             <Text className="text-white text-lg font-bold text-center">
               {paymentType === "CREDIT"
                 ? "Continue to Credit →"
-                : "Continue to Payment →"}
+                : paymentType === "PHONE_TAP"
+                  ? "Continue to Phone Tap →"
+                  : "Continue to Payment →"}
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            className="bg-white/50 p-4 rounded-2xl border-2 border-gray-300"
+            className={`p-4 rounded-2xl backdrop-blur-xl ${
+              isDark
+                ? "bg-white/5 border border-white/10"
+                : "bg-white/40 border border-gray-200/30"
+            }`}
             onPress={() => setShowMerchantModal(false)}
           >
-            <Text className="text-gray-700 text-lg font-semibold text-center">
+            <Text
+              className={`text-lg font-semibold text-center ${
+                isDark ? "text-gray-300" : "text-gray-700"
+              }`}
+            >
               Cancel
             </Text>
           </TouchableOpacity>
@@ -274,46 +397,24 @@ const NFCPayments = () => {
   );
 
   const renderEnterPin = () => (
-    <View className="flex-1">
-      <View className="flex-1 --bg-black/40 justify-center">
-        {/* <ScreenHeader
-          title={paymentType === "CREDIT" ? "Credit Card" : "Enter PIN"}
-          subtitle={
-            paymentType === "CREDIT"
-              ? "Enter PIN to credit your card"
-              : "Enter your secure transaction PIN to authorize payment"
-          }
-          onBack={handlePinCancel}
-          // isDark
-        /> */}
-
-        <View className="px-5">
-          <Text className="text-2xl font-bold mb-4 text-center">
-            Enter PIN
-          </Text>
-          <Text className="text-base text-center font-semibold mb-8">
-            Confirm Transfer of ₦{amount}
-            {/* to{" "}{transferData?.bankName} */}
-          </Text>
-          <Text className="font-semibold text-center text-xl mb-12">
-            {paymentType === "CREDIT"
-              ? "Enter PIN to credit your card"
-              : "Enter Transaction PIN to Authorize"}
-          </Text>
-
-          <View className="items-center">
-            <TransactionPin
-              onSuccess={handlePinSuccess}
-              onCancel={handlePinCancel}
-            />
-          </View>
-        </View>
-      </View>
-    </View>
+    <TransactionPin
+      paymentMessage={
+        paymentType === "CREDIT"
+          ? "Enter PIN to Credit your card"
+          : paymentType === "PHONE_TAP"
+            ? "Enter PIN to authorize Bluetooth payment"
+            : "Enter Transaction PIN to Authorize"
+      }
+      showPinModal={true}
+      onSuccess={handlePinSuccess}
+      onCancel={handlePinCancel}
+    />
   );
 
   const renderTapCard = () => (
-    <SafeAreaView className="flex-1">
+    <SafeAreaView
+      className={`flex-1 ${isDark ? "bg-[#0a0a0f]" : "bg-[#f5f5fa]"}`}
+    >
       <ScreenHeader
         title="NFC Card Tap"
         subtitle="Hold your card near the device to complete payment"
@@ -321,36 +422,74 @@ const NFCPayments = () => {
       />
 
       <View className="flex-1 justify-center px-6">
-        <View className="bg-white/80 backdrop-blur rounded-3xl p-8 items-center mb-8 shadow-lg border border-white/50">
-          <View className="w-32 h-32 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 items-center justify-center mb-6 shadow-xl">
-            <Text className="text-6xl text-white">📱</Text>
+        <View
+          className={`rounded-2xl p-8 items-center mb-8 backdrop-blur-xl ${
+            isDark
+              ? "bg-white/10 border border-white/20"
+              : "bg-white/60 border border-gray-200/50 shadow-sm"
+          }`}
+        >
+          <View className="w-32 h-32 rounded-full bg-indigo-500 items-center justify-center mb-6">
+            <Text className="text-6xl">📱</Text>
           </View>
-          <Text className="text-2xl font-bold text-gray-900 mb-2">
+          <Text
+            className={`text-2xl font-bold mb-2 ${
+              isDark ? "text-white" : "text-gray-900"
+            }`}
+          >
             Ready to Scan
           </Text>
-          <Text className="text-lg text-gray-600 text-center">
+          <Text
+            className={`text-lg text-center ${
+              isDark ? "text-gray-400" : "text-gray-600"
+            }`}
+          >
             Position your NFC card against the back of your device
           </Text>
         </View>
 
-        <View className="bg-white/80 backdrop-blur rounded-3xl p-6 mb-8 shadow-lg border border-white/50">
-          <Text className="text-xl font-bold text-gray-900 mb-4">
+        <View
+          className={`rounded-2xl p-6 mb-8 backdrop-blur-xl ${
+            isDark
+              ? "bg-white/10 border border-white/20"
+              : "bg-white/60 border border-gray-200/50 shadow-sm"
+          }`}
+        >
+          <Text
+            className={`text-xl font-bold mb-4 ${
+              isDark ? "text-white" : "text-gray-900"
+            }`}
+          >
             {paymentType === "CREDIT" ? "Credit Summary" : "Payment Summary"}
           </Text>
           <View className="space-y-3">
             {paymentType === "DEBIT" && (
               <View className="flex-row justify-between items-center">
-                <Text className="text-lg text-gray-600">Merchant</Text>
-                <Text className="text-lg font-semibold text-gray-900">
+                <Text
+                  className={`text-lg ${
+                    isDark ? "text-gray-400" : "text-gray-600"
+                  }`}
+                >
+                  Merchant
+                </Text>
+                <Text
+                  className={`text-lg font-semibold ${
+                    isDark ? "text-white" : "text-gray-900"
+                  }`}
+                >
                   {merchantId}
                 </Text>
               </View>
             )}
             <View className="flex-row justify-between items-center">
-              <Text className="text-lg text-gray-600">
+              <Text
+                className={`text-lg ${
+                  isDark ? "text-gray-400" : "text-gray-600"
+                }`}
+              >
                 {paymentType === "CREDIT" ? "Credit Amount" : "Amount"}
               </Text>
-              <Text className="text-2xl font-bold text-green-600">
+              <Text className="text-2xl font-bold text-green-500">
                 ₦{amount}
               </Text>
             </View>
@@ -359,7 +498,9 @@ const NFCPayments = () => {
 
         {!loading && (
           <TouchableOpacity
-            className="bg-emerald-700 p-4 rounded-2xl shadow-lg mb-4"
+            className={`p-4 rounded-2xl mb-4 ${
+              isDark ? "bg-emerald-600" : "bg-emerald-700"
+            }`}
             onPress={handleCardTap}
           >
             <Text className="text-white text-lg font-bold text-center">
@@ -369,22 +510,47 @@ const NFCPayments = () => {
         )}
 
         {loading && (
-          <View className="bg-white/80 backdrop-blur rounded-2xl p-6 items-center mb-4 shadow-lg border border-white/50">
-            <ActivityIndicator size="large" color="#2563eb" />
-            <Text className="text-lg font-semibold text-gray-700 mt-3">
+          <View
+            className={`rounded-2xl p-6 items-center mb-4 backdrop-blur-xl ${
+              isDark
+                ? "bg-white/10 border border-white/20"
+                : "bg-white/60 border border-gray-200/50 shadow-sm"
+            }`}
+          >
+            <ActivityIndicator
+              size="large"
+              color={isDark ? "#a78bfa" : "#7c3aed"}
+            />
+            <Text
+              className={`text-lg font-semibold mt-3 ${
+                isDark ? "text-white" : "text-gray-700"
+              }`}
+            >
               Processing payment...
             </Text>
-            <Text className="text-sm text-gray-500 mt-1">
+            <Text
+              className={`text-sm mt-1 ${
+                isDark ? "text-gray-400" : "text-gray-500"
+              }`}
+            >
               Please keep your card close
             </Text>
           </View>
         )}
 
         <TouchableOpacity
-          className="bg-white/50 p-4 rounded-2xl border-2 border-gray-300"
+          className={`p-4 rounded-2xl backdrop-blur-xl ${
+            isDark
+              ? "bg-white/5 border border-white/10"
+              : "bg-white/40 border border-gray-200/30"
+          }`}
           onPress={() => setStep("ENTER_DETAILS")}
         >
-          <Text className="text-gray-700 text-lg font-semibold text-center">
+          <Text
+            className={`text-lg font-semibold text-center ${
+              isDark ? "text-gray-300" : "text-gray-700"
+            }`}
+          >
             Cancel Payment
           </Text>
         </TouchableOpacity>
@@ -401,10 +567,20 @@ const NFCPayments = () => {
         <TransactionSuccess
           data={{
             amount: amount,
-            recipient: paymentType === "CREDIT" ? "Card Credit" : merchantId,
+            recipient:
+              paymentType === "CREDIT"
+                ? "Card Credit"
+                : paymentType === "PHONE_TAP"
+                  ? "BLE Payment"
+                  : merchantId,
             reference: paymentResult?.transaction?.txId || "",
             date: new Date().toLocaleDateString(),
-            type: paymentType === "CREDIT" ? "NFC Card Credit" : "NFC Payment",
+            type:
+              paymentType === "CREDIT"
+                ? "NFC Card Credit"
+                : paymentType === "PHONE_TAP"
+                  ? "Bluetooth Payment"
+                  : "NFC Payment",
           }}
           onClose={handleClose}
           onDownloadReceipt={() => {}}

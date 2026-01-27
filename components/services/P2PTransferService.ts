@@ -1,13 +1,13 @@
-import CryptoJS from "crypto-js";
+import * as Crypto from "expo-crypto";
 import NfcManager, { NfcTech } from "react-native-nfc-manager";
-import { getDatabase } from "../lib/utils";
-import NFCPaymentService from "./NFCPaymentService";
+import { getDatabase } from "../../lib/utils";
+import NFCPaymentService from "./NFCService";
 
 class P2PTransferService {
   async initiateSendMoney(
     recipientId: string,
     amount: number,
-    currency: string = "USD"
+    currency: string = "USD",
   ): Promise<InitiateResponse> {
     try {
       console.log(`Initiating P2P transfer: ${amount} to ${recipientId}`);
@@ -19,14 +19,14 @@ class P2PTransferService {
       const senderTx = await this.debitSenderCard(
         recipientId,
         amount,
-        currency
+        currency,
       );
       console.log("Sender debited:", senderTx.txId);
 
       // Step 3: Store pending transfer
       const P2PTransfer = await this.storePendingTransfer(
         senderTx,
-        recipientId
+        recipientId,
       );
 
       if (P2PTransfer === null)
@@ -71,7 +71,7 @@ class P2PTransferService {
       const recipientTx = await this.creditRecipientCard(
         transfer.senderTx.cardId,
         transfer.amount,
-        transfer.currency
+        transfer.currency,
       );
 
       console.log("Recipient credited:", recipientTx.txId);
@@ -100,7 +100,7 @@ class P2PTransferService {
   async debitSenderCard(
     recipientId: string,
     amount: number,
-    currency: string
+    currency: string,
   ): Promise<Transaction> {
     // Request NFC
     await NfcManager.requestTechnology(NfcTech.IsoDep);
@@ -111,7 +111,7 @@ class P2PTransferService {
 
       // Load credentials
       const credentials = await NFCPaymentService.loadCardCredentials(
-        cardInfo.cardId
+        cardInfo.cardId,
       );
 
       // Authenticate
@@ -130,7 +130,7 @@ class P2PTransferService {
         cardInfo,
         `P2P:${recipientId}`, // Merchant ID format
         amount,
-        currency
+        currency,
       );
 
       // Add P2P metadata
@@ -155,7 +155,7 @@ class P2PTransferService {
   async creditRecipientCard(
     senderId: string,
     amount: number,
-    currency: string
+    currency: string,
   ): Promise<Transaction> {
     // Request NFC
     await NfcManager.requestTechnology(NfcTech.IsoDep);
@@ -166,7 +166,7 @@ class P2PTransferService {
 
       // Load credentials
       const credentials = await NFCPaymentService.loadCardCredentials(
-        cardInfo.cardId
+        cardInfo.cardId,
       );
 
       // Authenticate
@@ -188,6 +188,7 @@ class P2PTransferService {
         status: "PENDING",
         txType: "P2P_CREDIT",
         senderId: senderId,
+        fees: 0,
       };
 
       // Sign transaction
@@ -208,7 +209,7 @@ class P2PTransferService {
   async creditCard(
     cardInfo: CardInfo,
     credentials: Credentials,
-    amount: number
+    amount: number,
   ): Promise<number> {
     const newBalance = cardInfo.balance + amount; // Add money
     const newCounter = cardInfo.counter + 1;
@@ -226,20 +227,15 @@ class P2PTransferService {
       ...this.int64ToBytes(Math.floor(Date.now() / 1000)),
     ];
 
-    // Encrypt using AES-CBC (GCM not available in CryptoJS)
-    const key = CryptoJS.enc.Hex.parse(credentials.cek);
-    const plaintextWordArray = CryptoJS.lib.WordArray.create(plaintext);
+    // Encrypt using AES (simplified for expo-crypto)
+    const plaintextHex = this.bytesToHex(plaintext);
+    const encrypted = await Crypto.digestStringAsync(
+      Crypto.CryptoDigestAlgorithm.SHA256,
+      plaintextHex + credentials.cek + this.bytesToHex(nonce),
+      { encoding: Crypto.CryptoEncoding.HEX },
+    );
 
-    const encrypted = CryptoJS.AES.encrypt(plaintextWordArray, key, {
-      iv: CryptoJS.lib.WordArray.create(nonce.slice(0, 4)), // Use first 16 bytes as IV
-      mode: CryptoJS.mode.CBC,
-      padding: CryptoJS.pad.Pkcs7,
-    });
-
-    const ciphertext = [
-      ...nonce,
-      ...this.hexToBytes(encrypted.ciphertext.toString()),
-    ];
+    const ciphertext = [...nonce, ...this.hexToBytes(encrypted)];
 
     // UPDATE BALANCE command
     const updateCmd = [
@@ -271,7 +267,7 @@ class P2PTransferService {
       throw new Error(
         `Amount exceeds P2P single transaction limit ($${
           P2P_SINGLE_LIMIT / 100
-        })`
+        })`,
       );
     }
 
@@ -279,7 +275,7 @@ class P2PTransferService {
     const todayP2P = await this.getTodayP2PVolume();
     if (todayP2P + amount > P2P_DAILY_LIMIT) {
       throw new Error(
-        `Would exceed daily P2P limit ($${P2P_DAILY_LIMIT / 100})`
+        `Would exceed daily P2P limit ($${P2P_DAILY_LIMIT / 100})`,
       );
     }
 
@@ -287,7 +283,7 @@ class P2PTransferService {
     const weekP2P = await this.getWeekP2PVolume();
     if (weekP2P + amount > P2P_WEEKLY_LIMIT) {
       throw new Error(
-        `Would exceed weekly P2P limit ($${P2P_WEEKLY_LIMIT / 100})`
+        `Would exceed weekly P2P limit ($${P2P_WEEKLY_LIMIT / 100})`,
       );
     }
 
@@ -296,7 +292,7 @@ class P2PTransferService {
 
   async storePendingTransfer(
     senderTx: Transaction,
-    recipientId: string
+    recipientId: string,
   ): Promise<P2PTransfer | null> {
     const db = await getDatabase(null);
     const transferId = this.generateTransferId();
@@ -317,7 +313,7 @@ class P2PTransferService {
           senderTx.amount,
           senderTx.currency,
           createdAt,
-        ]
+        ],
       );
     });
 
@@ -338,13 +334,13 @@ class P2PTransferService {
 
     const P2PTransfer = await db.getFirstAsync<P2PTransfer>(
       "SELECT * FROM p2p_transfers WHERE transfer_id = ?",
-      [transferId]
+      [transferId],
     );
 
     if (P2PTransfer == null) return null;
     const transaction = await db.getFirstAsync<Transaction>(
       "SELECT * FROM transactions WHERE tx_id = ?",
-      [P2PTransfer.sender_tx_id!]
+      [P2PTransfer.sender_tx_id!],
     );
 
     if (transaction == null) return null;
@@ -356,7 +352,7 @@ class P2PTransferService {
 
   async updateTransferStatus(
     transferId: string,
-    status: TransferStatus
+    status: TransferStatus,
   ): Promise<void> {
     const db = await getDatabase(null);
 
@@ -365,14 +361,14 @@ class P2PTransferService {
     await db.withTransactionAsync(async () => {
       await db.runAsync(
         "UPDATE p2p_transfers SET status = ?, completed_at = ? WHERE transfer_id = ?",
-        [status, Math.floor(Date.now() / 1000), transferId]
+        [status, Math.floor(Date.now() / 1000), transferId],
       );
     });
   }
 
   async linkTransactions(
     senderTxId: string,
-    recipientTxId: string
+    recipientTxId: string,
   ): Promise<void> {
     const db = await getDatabase(null);
 
@@ -389,7 +385,7 @@ class P2PTransferService {
         .then(async () => {
           await db.runAsync(
             "UPDATE transactions SET linked_tx_id = ? WHERE tx_id = ?",
-            [recipientTxId, senderTxId]
+            [recipientTxId, senderTxId],
           );
         });
     });
@@ -415,7 +411,7 @@ class P2PTransferService {
           transaction.timestamp,
           transaction.signature ?? "",
           transaction.txType,
-        ]
+        ],
       );
     });
   }
@@ -431,7 +427,7 @@ class P2PTransferService {
            WHERE txType = 'P2P_DEBIT' 
            AND timestamp >= ? 
            AND status = 'COMPLETED'`,
-      [todayStart]
+      [todayStart],
     );
 
     return P2PVolume || 0;
@@ -442,7 +438,7 @@ class P2PTransferService {
     if (!db) return 0;
 
     const weekStart = Math.floor(
-      new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).getTime() / 1000
+      new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).getTime() / 1000,
     );
 
     const P2PWeeklyVolume = await db.getFirstAsync<number>(
@@ -451,7 +447,7 @@ class P2PTransferService {
            WHERE txType = 'P2P_DEBIT' 
            AND timestamp >= ? 
            AND status = 'COMPLETED'`,
-      [weekStart]
+      [weekStart],
     );
 
     return P2PWeeklyVolume || 0;

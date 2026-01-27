@@ -1,20 +1,23 @@
-import { getDatabase } from "@/components/lib/utils";
 import { BankTransferService } from "@/components/services/BankTransferService";
 import ScreenHeader from "@/components/ui/ScreenHeader";
 import { formatAmount } from "@/lib/formatAmount";
+import { getDatabase } from "@/lib/utils";
 import { useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   FlatList,
   RefreshControl,
   Text,
   TouchableOpacity,
   View,
+  useColorScheme,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const TransactionHistory = () => {
   const router = useRouter();
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === "dark";
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -60,38 +63,52 @@ const TransactionHistory = () => {
 
     return (
       <TouchableOpacity
-        className="bg-white/80 backdrop-blur mx-4 mb-4 p-5 rounded-3xl border border-white/50 shadow-lg active:bg-white/90"
+        className={`mx-4 mb-4 p-5 rounded-2xl backdrop-blur-xl ${
+          isDark
+            ? "bg-white/10 border border-white/20"
+            : "bg-white/60 border border-gray-200/50 shadow-sm"
+        }`}
         onPress={() => router.push(`/(transaction)/${item.txId}`)}
       >
         <View className="flex-row items-center justify-between mb-4">
           <View className="flex-row items-center">
             <View
               className={`w-12 h-12 rounded-2xl items-center justify-center mr-4 ${
-                isCredit
-                  ? "bg-gradient-to-br from-green-400 to-emerald-500"
-                  : "bg-gradient-to-br from-red-400 to-pink-500"
+                isCredit ? "bg-green-500" : "bg-red-500"
               }`}
             >
               <Text className="text-2xl">{typeInfo.emoji}</Text>
             </View>
             <View>
-              <Text className="text-lg font-bold text-gray-900">
+              <Text
+                className={`text-lg font-bold ${isDark ? "text-white" : "text-gray-900"}`}
+              >
                 {typeInfo.label}
               </Text>
-              <Text className="text-sm text-gray-600">{item.merchantId}</Text>
+              <Text
+                className={`text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}
+              >
+                {item.merchantId}
+              </Text>
             </View>
           </View>
           <Text
             className={`text-lg font-bold ${
-              isCredit ? "text-green-600" : "text-red-600"
+              isCredit ? "text-green-500" : "text-red-500"
             }`}
           >
             {formatAmount(item.amount, item.currency, true, isCredit)}
           </Text>
         </View>
 
-        <View className="flex-row justify-between items-center pt-4 border-t border-gray-200">
-          <Text className="text-sm text-gray-500">
+        <View
+          className={`flex-row justify-between items-center pt-4 border-t ${
+            isDark ? "border-white/10" : "border-gray-200"
+          }`}
+        >
+          <Text
+            className={`text-sm ${isDark ? "text-gray-400" : "text-gray-500"}`}
+          >
             {new Date(item.timestamp * 1000).toLocaleDateString()} at{" "}
             {new Date(item.timestamp * 1000).toLocaleTimeString([], {
               hour: "2-digit",
@@ -101,15 +118,19 @@ const TransactionHistory = () => {
           <View
             className={`px-3 py-1 rounded-full ${
               item.status === "COMPLETED"
-                ? "bg-green-100 border border-green-200"
-                : "bg-orange-100 border border-orange-200"
+                ? isDark
+                  ? "bg-green-500/20 border border-green-500/30"
+                  : "bg-green-100 border border-green-200"
+                : isDark
+                  ? "bg-orange-500/20 border border-orange-500/30"
+                  : "bg-orange-100 border border-orange-200"
             }`}
           >
             <Text
               className={`text-xs font-semibold ${
                 item.status === "COMPLETED"
-                  ? "text-green-700"
-                  : "text-orange-700"
+                  ? "text-green-500"
+                  : "text-orange-500"
               }`}
             >
               {item.status}
@@ -121,7 +142,9 @@ const TransactionHistory = () => {
   };
 
   return (
-    <SafeAreaView className="flex-1">
+    <SafeAreaView
+      className={`flex-1 ${isDark ? "bg-[#0a0a0f]" : "bg-[#f5f5fa]"}`}
+    >
       <ScreenHeader
         title="Transaction History"
         subtitle="View all your recent transactions"
@@ -141,14 +164,22 @@ const TransactionHistory = () => {
           />
         }
         ListEmptyComponent={
-          <View className="flex-1 justify-center items-center">
-            <View className="w-24 h-24 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 items-center justify-center mb-6">
+          <View className="flex-1 justify-center items-center py-20">
+            <View
+              className={`w-24 h-24 rounded-full items-center justify-center mb-6 ${
+                isDark ? "bg-white/10" : "bg-gray-100"
+              }`}
+            >
               <Text className="text-4xl">📊</Text>
             </View>
-            <Text className="text-xl font-semibold text-gray-700 mb-2">
+            <Text
+              className={`text-xl font-semibold mb-2 ${isDark ? "text-white" : "text-gray-700"}`}
+            >
               No Transactions Yet
             </Text>
-            <Text className="text-base text-gray-500 text-center px-8">
+            <Text
+              className={`text-base text-center px-8 ${isDark ? "text-gray-400" : "text-gray-500"}`}
+            >
               Your transaction history will appear here once you start making
               payments
             </Text>

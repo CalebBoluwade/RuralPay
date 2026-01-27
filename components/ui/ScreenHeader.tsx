@@ -1,12 +1,11 @@
 import React from "react";
-import { Text, TouchableOpacity, View } from "react-native";
+import { Text, TouchableOpacity, View, useColorScheme } from "react-native";
 
 interface ScreenHeaderProps {
   title: string;
   subtitle?: string;
   goBack?: boolean;
   onBack?: () => void;
-  isDark?: boolean;
 }
 
 const ScreenHeader: React.FC<ScreenHeaderProps> = ({
@@ -14,17 +13,19 @@ const ScreenHeader: React.FC<ScreenHeaderProps> = ({
   subtitle,
   goBack = true,
   onBack,
-  isDark = false,
 }) => {
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === "dark";
+
   return (
-    <View className="px-6 pt-4 pb-3 mb-3">
-      <View className="flex-row justify-between items-center mb-3">
+    <View className="px-3 mb-3 pt-3">
+      <View className="flex-row justify-between items-center">
         {goBack && (
           <TouchableOpacity
-            className={` w-10 h-10 rounded-2xl items-center justify-center border mr-4 ${
+            className={`w-10 h-10 rounded-2xl items-center justify-center mr-4 backdrop-blur-xl ${
               isDark
-                ? "bg-white/10 backdrop-blur border-white/20"
-                : "bg-white/50 backdrop-blur border-white/50"
+                ? "bg-white/10 border border-white/20"
+                : "bg-white/60 border border-gray-200/50"
             }`}
             onPress={() => onBack?.()}
           >

@@ -1,40 +1,19 @@
 import { axiosInstance } from "@/lib/api";
 
-interface TransferPayload {
-  amount: number;
-  currency: string;
-  fromAccount: string;
-  reference: string;
-  toAccount: string;
-  toBankCode: string;
-  location?: LocationData;
-}
-
-interface TransferResponse {
-  success: boolean;
-  status: string;
-  transactionId: string;
-}
-
-interface USSDCodePayload {
-  type: "Send" | "Receive";
-  amount?: number;
-  currency?: string;
-}
-
-interface USSDCodeResponse {
-  success: boolean;
-  ussdCode: string;
-  expiresIn: number;
-}
-
 export class BankTransferService {
+  static async GetBanks(): Promise<
+    { name: string; code: string; logoData: string }[]
+  > {
+    const response = await axiosInstance.get("/banks");
+    return response.data;
+  }
+
   static async B2BTransfer(
-    payload: TransferPayload
+    payload: TransferPayload,
   ): Promise<TransferResponse> {
     const response = await axiosInstance.post(
       "/transactions/external",
-      payload
+      payload,
     );
     return response.data;
   }
@@ -44,21 +23,23 @@ export class BankTransferService {
     return response.data;
   }
 
+  static generateTransactionId(): string {
+    const timestamp = Date.now();
+    const random = Math.floor(Math.random() * 1000000);
+    return `TX-${timestamp}-${random}`;
+  }
+
   static async FetchRecentTransactions(
-    limit: number = 5
+    limit: number = 5,
   ): Promise<RecentTransaction[]> {
     const response = await axiosInstance.get(
-      `/transactions/recent?limit=${limit}`
+      `/transactions/recent?limit=${limit}`,
     );
-
-    console.log(response.data);
     return response.data;
   }
 
   static async FetchTransactionById(txId: string): Promise<Transaction> {
     const response = await axiosInstance.get(`/transactions?id=${txId}`);
-
-    console.log(response.data);
     return response.data;
   }
 
@@ -78,9 +59,28 @@ export class BankTransferService {
   }
 
   static async generateUSSDCode(
-    payload: USSDCodePayload
+    payload: USSDCodePayload,
   ): Promise<USSDCodeResponse> {
     const response = await axiosInstance.post("/ussd/generate", payload);
     return response.data;
+  }
+
+  static async TranscribeVoiceCommand(audioBase64: string): Promise<string> {
+    try {
+      // Call your backend API (which calls speech-to-text service)
+      const response = await axiosInstance.post(
+        "transactions/voice-transcribe",
+        {
+          audio: audioBase64,
+          encoding: "LINEAR16",
+        },
+      );
+
+      const { transcript } = await response.data;
+
+      return transcript;
+    } catch (error) {
+      return "Error transcribing voice command";
+    }
   }
 }

@@ -9,8 +9,11 @@ const LockTimeout = 5 * 1000;
 export const UserInactivityProvider = ({ children }: { children: any }) => {
   const { user } = useAuth();
   const appState = React.useRef(AppState.currentState);
+  const isMounted = React.useRef(true);
 
   React.useEffect(() => {
+    isMounted.current = true;
+    
     const subscription = AppState.addEventListener("change", (nextAppState) => {
       console.log("appState", appState.current, nextAppState);
 
@@ -33,20 +36,32 @@ export const UserInactivityProvider = ({ children }: { children: any }) => {
         appState.current === "background"
       ) {
         const checkInactivity = async () => {
-          if (!user) return; // Only check inactivity if user is authenticated
+          if (!user || !isMounted.current) return;
           const startTimeStr = await AsyncStorage.getItem("lastActive");
           const startTime = startTimeStr ? Number.parseInt(startTimeStr) : null;
           if (startTime && Date.now() - startTime > LockTimeout) {
-            router.push("/(modal)/lock"); // Navigate to lock screen if inactive
+            setTimeout(() => {
+              if (isMounted.current) {
+                router.push("/(modal)/lock");
+              }
+            }, 0);
           }
         };
         checkInactivity();
       }
 
       if (nextAppState === "inactive") {
-        router.push("/(modal)/overlay"); // Navigate to overlay screen on inactive
-      } else {
-        router.canGoBack() && router.back();
+        setTimeout(() => {
+          if (isMounted.current) {
+            router.push("/(modal)/overlay");
+          }
+        }, 0);
+      } else if (appState.current === "inactive" && nextAppState === "active") {
+        setTimeout(() => {
+          if (isMounted.current && router.canGoBack()) {
+            router.back();
+          }
+        }, 0);
       }
 
       appState.current = nextAppState;
@@ -54,9 +69,10 @@ export const UserInactivityProvider = ({ children }: { children: any }) => {
     });
 
     return () => {
+      isMounted.current = false;
       subscription.remove();
     };
-  }, []);
+  }, [user]);
 
   return <>{children}</>;
 };

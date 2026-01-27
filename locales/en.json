@@ -1,0 +1,62 @@
+{
+  "auth": {
+    "login": "Sign In",
+    "register": "Create Account",
+    "welcomeBack": "Welcome Back",
+    "email": "Email",
+    "password": "Password",
+    "firstName": "First Name",
+    "lastName": "Last Name",
+    "phoneNumber": "Phone Number",
+    "confirmPassword": "Confirm Password",
+    "forgotPassword": "Forgot Password?",
+    "alreadyHaveAccount": "Already have an account?",
+    "dontHaveAccount": "Don't have an account?",
+    "signUp": "Sign Up"
+  },
+  "home": {
+    "balance": "Balance",
+    "quickLinks": "Quick Links",
+    "recentTransactions": "Recent Transactions",
+    "viewAll": "View All",
+    "goodMorning": "Good Morning",
+    "goodAfternoon": "Good Afternoon",
+    "goodEvening": "Good Evening"
+  },
+  "payments": {
+    "title": "Payments",
+    "voice": "Voice Banking",
+    "bluetooth": "Bluetooth Payment",
+    "bankTransfer": "Bank Transfer",
+    "ussd": "USSD Payment",
+    "nfc": "NFC Payment",
+    "history": "Transaction History",
+    "merchant": "Merchant Services"
+  },
+  "transactions": {
+    "spendingTrackerSubtitle": "Where did your money go? 🤔",
+    "transferMoneyDescription": "Transfer Money to Other Accounts"
+  },
+  "profile": {
+    "title": "Profile",
+    "security": "Security & Privacy",
+    "biometricLogin": "Biometric Login",
+    "transactionSecurity": "Transaction Security",
+    "visibleBalance": "Visible Balance",
+    "language": "App Language",
+    "changePin": "Change Security PIN",
+    "spendingLimits": "Spending Limits",
+    "dailyLimit": "Daily Spending Limit",
+    "monthlyLimit": "Monthly Spending Limit",
+    "signOut": "Sign Out"
+  },
+  "common": {
+    "continue": "Continue",
+    "cancel": "Cancel",
+    "save": "Save",
+    "confirm": "Confirm",
+    "success": "Success",
+    "error": "Error",
+    "loading": "Loading..."
+  }
+}

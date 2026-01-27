@@ -1,9 +1,15 @@
-import { PinService, biometricService } from "@/components/lib/SecureStorage";
+import { PinService, biometricService } from "@/lib/SecureStorage";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import * as LocalAuthentication from "expo-local-authentication";
 import React, { useEffect } from "react";
-import { Text, TouchableOpacity, View } from "react-native";
+import {
+  Modal,
+  Text,
+  TouchableOpacity,
+  View,
+  useColorScheme,
+} from "react-native";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -14,15 +20,21 @@ import Animated, {
 import { useAuth } from "../../context/AuthProvider";
 
 interface TransactionPinProps {
+  paymentMessage: string;
+  showPinModal: boolean;
   onSuccess?: () => void;
   onCancel?: () => void;
 }
 
 const TransactionPin: React.FC<TransactionPinProps> = ({
+  paymentMessage,
+  showPinModal,
   onSuccess,
   onCancel,
 }) => {
   const { nativeAuthTransactions } = useAuth();
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === "dark";
   const [code, setCode] = React.useState<number[]>([]);
   const [isBiometricSupported, setIsBiometricSupported] =
     React.useState<boolean>(false);
@@ -40,13 +52,13 @@ const TransactionPin: React.FC<TransactionPinProps> = ({
           await LocalAuthentication.supportedAuthenticationTypesAsync();
         if (
           biometricTypes.includes(
-            LocalAuthentication.AuthenticationType.FINGERPRINT
+            LocalAuthentication.AuthenticationType.FINGERPRINT,
           )
         ) {
           setBiometricType("fingerprint");
         } else if (
           biometricTypes.includes(
-            LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION
+            LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION,
           )
         ) {
           setBiometricType("facial");
@@ -71,12 +83,12 @@ const TransactionPin: React.FC<TransactionPinProps> = ({
     try {
       console.log("Face ID button pressed");
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      
+
       if (!isBiometricSupported) {
         console.log("Biometric not supported");
         return;
       }
-      
+
       const result = await LocalAuthentication.authenticateAsync({
         promptMessage: "Authenticate for transaction",
         fallbackLabel: "Use PIN",
@@ -109,9 +121,17 @@ const TransactionPin: React.FC<TransactionPinProps> = ({
     <TouchableOpacity
       key={num}
       onPress={() => OnNumberPressDown(num)}
-      className="w-20 h-20 justify-center items-center bg-green-700/25 backdrop-blur shadow-lg rounded-full"
+      className={`w-20 h-20 justify-center items-center rounded-full backdrop-blur-xl ${
+        isDark
+          ? "bg-white/10 border border-white/20"
+          : "bg-white/30 border border-gray-200/50"
+      }`}
     >
-      <Text className="text-white text-2xl font-light">{num}</Text>
+      <Text
+        className={`text-2xl font-light ${isDark ? "text-white" : "text-gray-900"}`}
+      >
+        {num}
+      </Text>
     </TouchableOpacity>
   );
 
@@ -138,7 +158,7 @@ const TransactionPin: React.FC<TransactionPinProps> = ({
           offset.value = withSequence(
             withTiming(-OFFSET, { duration: TIME / 2 }),
             withRepeat(withTiming(OFFSET, { duration: TIME }), 4, true),
-            withTiming(0, { duration: TIME / 2 })
+            withTiming(0, { duration: TIME / 2 }),
           );
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
           setCode([]);
@@ -150,75 +170,126 @@ const TransactionPin: React.FC<TransactionPinProps> = ({
   }, [code, onSuccess]);
 
   return (
-    <View>
-      <Animated.View style={style} className="flex-row justify-center mb-12">
-        {codeLength.map((_, index) => (
-          <View
-            key={index + 1}
-            className={`w-4 h-4 border-2 border-emerald-700 mx-2 justify-center items-center rounded-lg ${
-              code[index] ? "bg-emerald-700" : "bg-transparent"
+    <Modal
+      visible={showPinModal}
+      animationType="slide"
+      presentationStyle="fullScreen"
+    >
+      <View
+        className={`flex-1 justify-center ${
+          isDark ? "bg-[#0a0a0f]" : "bg-[#f5f5fa]"
+        }`}
+      >
+        <View className="px-5 items-center">
+          <Text
+            className={`text-2xl font-bold mb-4 text-center ${
+              isDark ? "text-white" : "text-gray-900"
             }`}
           >
-            <Text className="text-2xl text-white">
-              {code.length > index ? "•" : ""}
-            </Text>
-          </View>
-        ))}
-      </Animated.View>
-
-      <View className="items-center">
-        <View className="flex-row justify-between w-80 mb-6">
-          {[1, 2, 3].map((num) => RenderButton(num))}
-        </View>
-        <View className="flex-row justify-between w-80 mb-6">
-          {[4, 5, 6].map((num) => RenderButton(num))}
-        </View>
-        <View className="flex-row justify-between w-80 mb-6">
-          {[7, 8, 9].map((num) => RenderButton(num))}
-        </View>
-        <View className="flex-row justify-between w-64 mb-4">
-          {isBiometricSupported && nativeAuthTransactions ? (
-            <TouchableOpacity
-              className="w-20 h-20 justify-center items-center"
-              onPress={onFingerPrintPress}
-            >
-              <MaterialCommunityIcons
-                name={
-                  biometricType === "facial"
-                    ? "face-recognition"
-                    : biometricType === "fingerprint"
-                    ? "fingerprint"
-                    : "passport-biometric"
-                }
-                size={32}
-                color="#9CA3AF"
-              />
-            </TouchableOpacity>
-          ) : (
-            <View className="w-20 h-20" />
-          )}
-
-          <TouchableOpacity
-            onPress={() => OnNumberPressDown(0)}
-            className="w-20 h-20 justify-center items-center bg-white/10 rounded-full"
+            Enter PIN
+          </Text>
+          <Text
+            className={`text-base font-semibold text-center mb-12 ${
+              isDark ? "text-gray-400" : "text-gray-600"
+            }`}
           >
-            <Text className="text-white text-2xl font-light">0</Text>
-          </TouchableOpacity>
+            {paymentMessage}
+          </Text>
+        </View>
 
-          <View className="w-20 h-20 justify-center items-center">
-            {code.length > 0 ? (
-              <TouchableOpacity onPress={() => onBackspacePress()}>
-                <Ionicons name="backspace" size={28} color="#9CA3AF" />
+        <Animated.View style={style} className="flex-row justify-center mb-12">
+          {codeLength.map((_, index) => (
+            <View
+              key={index + 1}
+              className={`w-4 h-4 mx-2 justify-center items-center rounded-lg backdrop-blur-xl ${
+                code[index]
+                  ? isDark
+                    ? "bg-lime-500 border-2 border-lime-400"
+                    : "bg-lime-600 border-2 border-lime-500"
+                  : isDark
+                    ? "border-2 border-white/30 bg-transparent"
+                    : "border-2 border-gray-400 bg-transparent"
+              }`}
+            >
+              <Text
+                className={`text-2xl ${isDark ? "text-white" : "text-gray-900"}`}
+              >
+                {code.length > index ? "•" : ""}
+              </Text>
+            </View>
+          ))}
+        </Animated.View>
+
+        <View className="items-center">
+          <View className="flex-row justify-between w-80 mb-6">
+            {[1, 2, 3].map((num) => RenderButton(num))}
+          </View>
+          <View className="flex-row justify-between w-80 mb-6">
+            {[4, 5, 6].map((num) => RenderButton(num))}
+          </View>
+          <View className="flex-row justify-between w-80 mb-6">
+            {[7, 8, 9].map((num) => RenderButton(num))}
+          </View>
+          <View className="flex-row justify-between w-64 mb-4">
+            {isBiometricSupported && nativeAuthTransactions ? (
+              <TouchableOpacity
+                className="w-20 h-20 justify-center items-center"
+                onPress={onFingerPrintPress}
+              >
+                <MaterialCommunityIcons
+                  name={
+                    biometricType === "facial"
+                      ? "face-recognition"
+                      : biometricType === "fingerprint"
+                        ? "fingerprint"
+                        : "passport-biometric"
+                  }
+                  size={32}
+                  color={isDark ? "#a78bfa" : "#7c3aed"}
+                />
               </TouchableOpacity>
-            ) : onCancel ? (
-              <TouchableOpacity onPress={onCancel}>
-                <Ionicons name="close" size={28} color="#9CA3AF" />
-              </TouchableOpacity>
-            ) : null}
+            ) : (
+              <View className="w-20 h-20" />
+            )}
+
+            <TouchableOpacity
+              onPress={() => OnNumberPressDown(0)}
+              className={`w-20 h-20 justify-center items-center rounded-full backdrop-blur-xl ${
+                isDark
+                  ? "bg-white/10 border border-white/20"
+                  : "bg-white/30 border border-gray-200/50"
+              }`}
+            >
+              <Text
+                className={`text-2xl font-light ${isDark ? "text-white" : "text-gray-900"}`}
+              >
+                0
+              </Text>
+            </TouchableOpacity>
+
+            <View className="w-20 h-20 justify-center items-center">
+              {code.length > 0 ? (
+                <TouchableOpacity onPress={() => onBackspacePress()}>
+                  <Ionicons
+                    name="backspace"
+                    size={28}
+                    color={isDark ? "#9ca3af" : "#6b7280"}
+                  />
+                </TouchableOpacity>
+              ) : onCancel ? (
+                <TouchableOpacity onPress={onCancel}>
+                  <Ionicons
+                    name="close"
+                    size={28}
+                    color={isDark ? "#9ca3af" : "#6b7280"}
+                  />
+                </TouchableOpacity>
+              ) : null}
+            </View>
           </View>
         </View>
       </View>
-    </View>
+    </Modal>
   );
 };
 

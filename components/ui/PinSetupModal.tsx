@@ -1,4 +1,4 @@
-import { PinService } from "@/components/lib/SecureStorage";
+import { PinService } from "@/lib/SecureStorage";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import React, { useEffect, useState } from "react";
@@ -72,9 +72,16 @@ const PinSetupModal: React.FC<PinSetupModalProps> = ({
     <TouchableOpacity
       key={num}
       onPress={() => onNumberPress(num)}
-      className="w-16 h-16 justify-center items-center bg-emerald-50 rounded-full"
+      className="w-[72px] h-[72px] justify-center items-center bg-white border-2 border-gray-200 rounded-full active:bg-gray-50"
+      style={{
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 8,
+        elevation: 2,
+      }}
     >
-      <Text className="text-emerald-600 text-xl font-medium">{num}</Text>
+      <Text className="text-gray-900 text-3xl font-light">{num}</Text>
     </TouchableOpacity>
   );
 
@@ -99,7 +106,7 @@ const PinSetupModal: React.FC<PinSetupModalProps> = ({
         offset.value = withSequence(
           withTiming(-OFFSET, { duration: TIME / 2 }),
           withRepeat(withTiming(OFFSET, { duration: TIME }), 4, true),
-          withTiming(0, { duration: TIME / 2 })
+          withTiming(0, { duration: TIME / 2 }),
         );
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
         Alert.alert("Error", "PINs don't match. Please try again.");
@@ -116,123 +123,83 @@ const PinSetupModal: React.FC<PinSetupModalProps> = ({
       animationType="slide"
       presentationStyle="pageSheet"
     >
-      <View className="flex-1 bg-white --px-6 py-8">
-        <ScreenHeader
-          title={isConfirming ? "Confirm PIN" : "Create PIN"}
-          subtitle={
-            isConfirming
-              ? "Please re-enter your PIN to confirm"
-              : "Create a 6-digit PIN for secure transactions"
-          }
-          goBack={false}
-        />
-
-        {/* <View className="flex-row items-center justify-between mb-8">
-          <Text className="text-2xl font-bold text-gray-900"></Text>
-          <TouchableOpacity onPress={onCancel}>
-            <Ionicons name="close" size={24} color="#6B7280" />
-          </TouchableOpacity>
-        </View> */}
-
-        <Animated.View style={style} className="flex-row justify-center my-16">
-          {codeLength.map((_, index) => (
-            <View
-              key={index + 1}
-              className={`w-4 h-4 border-2 border-gray-400 mx-2 justify-center items-center rounded-lg ${
-                currentCode[index] ? "bg-blue-600" : "bg-transparent"
-              }`}
-            >
-              <Text className="text-2xl text-white">
-                {currentCode.length > index ? "•" : ""}
+      <View className="flex-1 bg-gradient-to-b from-indigo-50 to-white">
+        <View className="px-6 pt-12 pb-6">
+          <View className="flex-row items-center justify-between">
+            <View className="flex-1">
+              <Text className="text-2xl font-bold text-gray-900">
+                {isConfirming ? "Confirm Your PIN" : "Set Up Your PIN"}
+              </Text>
+              <Text className="text-sm text-gray-500 mt-1">
+                {isConfirming
+                  ? "Enter your PIN again to confirm"
+                  : "Enter a 6-digit PIN to secure your account"}
               </Text>
             </View>
-          ))}
-        </Animated.View>
-
-        <View className="items-center space-y-8">
-          <View className="flex-row justify-between w-80 mb-16">
-            {[1, 2, 3].map((num) => RenderButton(num))}
-          </View>
-          <View className="flex-row justify-between w-80 mb-16">
-            {[4, 5, 6].map((num) => RenderButton(num))}
-          </View>
-          <View className="flex-row justify-between w-80 mb-16">
-            {[7, 8, 9].map((num) => RenderButton(num))}
-          </View>
-          <View className="flex-row justify-between w-80 mb-16">
-            <View className="w-16 h-16" />
-
-            <TouchableOpacity
-              onPress={() => onNumberPress(0)}
-              className="w-20 h-20 justify-center items-center bg-white/10 rounded-full"
+            <TouchableOpacity 
+              onPress={onCancel} 
+              className="w-10 h-10 items-center justify-center rounded-full bg-gray-100"
             >
-              <Text className="text-white text-2xl font-light">0</Text>
+              <Ionicons name="close" size={24} color="#6B7280" />
             </TouchableOpacity>
-
-            <View className="w-16 h-16 justify-center items-center">
-              {currentCode.length > 0 && (
-                <TouchableOpacity onPress={onBackspacePress}>
-                  <Ionicons name="backspace" size={24} color="#6B7280" />
-                </TouchableOpacity>
-              )}
-            </View>
-
-            {/* <View className="w-20 h-20 justify-center items-center">
-            {code.length > 0 ? (
-              <TouchableOpacity onPress={() => onBackspacePress()}>
-                <Ionicons name="backspace" size={28} color="#9CA3AF" />
-              </TouchableOpacity>
-            ) : onCancel ? (
-              <TouchableOpacity onPress={onCancel}>
-                <Ionicons name="close" size={28} color="#9CA3AF" />
-              </TouchableOpacity>
-            ) : null}
-          </View> */}
           </View>
         </View>
 
-        {/* <Animated.View style={style} className="flex-row justify-center mb-12">
-          {codeLength.map((_, index) => (
-            <View
-              key={index + 1}
-              className={`w-4 h-4 border-2 border-gray-300 mx-2 rounded-lg ${
-                currentCode[index] ? "bg-blue-600 border-blue-600" : "bg-transparent"
-              }`}
-            >
-              <Text className="text-center text-white text-xs">
-                {currentCode.length > index ? "•" : ""}
-              </Text>
-            </View>
-          ))}
-        </Animated.View>
+        <View className="flex-1 justify-between pb-12">
+          <Animated.View style={style} className="flex-row justify-center mt-12">
+            {codeLength.map((_, index) => (
+              <View
+                key={index + 1}
+                className={`w-4 h-4 mx-3 rounded-full ${
+                  currentCode[index] 
+                    ? "bg-indigo-600" 
+                    : "bg-gray-300"
+                }`}
+              />
+            ))}
+          </Animated.View>
 
-        <View className="flex-1 justify-center">
-          <View className="flex-row justify-between mb-4">
-            {[1, 2, 3].map((num) => RenderButton(num))}
-          </View>
-          <View className="flex-row justify-between mb-4">
-            {[4, 5, 6].map((num) => RenderButton(num))}
-          </View>
-          <View className="flex-row justify-between mb-4">
-            {[7, 8, 9].map((num) => RenderButton(num))}
-          </View>
-          <View className="flex-row justify-between items-center">
-            <View className="w-16 h-16" />
-            <TouchableOpacity
-              onPress={() => onNumberPress(0)}
-              className="w-16 h-16 justify-center items-center bg-blue-50 rounded-full"
-            >
-              <Text className="text-blue-600 text-xl font-medium">0</Text>
-            </TouchableOpacity>
-            <View className="w-16 h-16 justify-center items-center">
-              {currentCode.length > 0 && (
-                <TouchableOpacity onPress={onBackspacePress}>
-                  <Ionicons name="backspace" size={24} color="#6B7280" />
+          <View className="items-center px-8">
+            <View className="gap-4">
+              <View className="flex-row justify-center gap-6">
+                {[1, 2, 3].map((num) => RenderButton(num))}
+              </View>
+              <View className="flex-row justify-center gap-6">
+                {[4, 5, 6].map((num) => RenderButton(num))}
+              </View>
+              <View className="flex-row justify-center gap-6">
+                {[7, 8, 9].map((num) => RenderButton(num))}
+              </View>
+              <View className="flex-row justify-center gap-6 items-center">
+                <View className="w-[72px] h-[72px]" />
+                <TouchableOpacity
+                  onPress={() => onNumberPress(0)}
+                  className="w-[72px] h-[72px] justify-center items-center bg-white border-2 border-gray-200 rounded-full active:bg-gray-50"
+                  style={{
+                    shadowColor: "#000",
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.05,
+                    shadowRadius: 8,
+                    elevation: 2,
+                  }}
+                >
+                  <Text className="text-gray-900 text-3xl font-light">0</Text>
                 </TouchableOpacity>
-              )}
+                <TouchableOpacity
+                  onPress={onBackspacePress}
+                  className="w-[72px] h-[72px] justify-center items-center"
+                  disabled={currentCode.length === 0}
+                >
+                  <Ionicons 
+                    name="backspace-outline" 
+                    size={28} 
+                    color={currentCode.length > 0 ? "#4F46E5" : "#D1D5DB"} 
+                  />
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
-        </View> */}
+        </View>
       </View>
     </Modal>
   );

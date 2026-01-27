@@ -14,13 +14,24 @@ const ADAPTIVE_ICON = "./assets/images/android-icon-foreground.png";
 const SCHEME = "nfccardpayments";
 
 export default ({ config }: ConfigContext): ExpoConfig => {
-  const appEnv = process.env.APP_ENV || process.env.EXPO_PUBLIC_ENVIRONMENT || "development";
+  const appEnv = process.env.APP_ENV || process.env.EXPO_PUBLIC_ENVIRONMENT;
+
+  if (!appEnv) {
+    throw new Error(
+      "APP_ENV or EXPO_PUBLIC_ENVIRONMENT environment variable is required"
+    );
+  }
   console.log("⚙️ Building app for environment:", appEnv);
 
-  const { name, bundleIdentifier, icon, adaptiveIcon, packageName, scheme, googleServicesFile } =
-    getDynamicAppConfig(
-      appEnv as "development" | "preview" | "production"
-    );
+  const {
+    name,
+    bundleIdentifier,
+    icon,
+    adaptiveIcon,
+    packageName,
+    scheme,
+    googleServicesFile,
+  } = getDynamicAppConfig(appEnv as "development" | "preview" | "production");
 
   return {
     ...config,
@@ -41,6 +52,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       },
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
+        NSCameraUsageDescription:
+          "This app uses the camera to scan QR codes for payments",
         NFCReaderUsageDescription:
           "This app uses NFC to read payment cards for secure transactions.",
         NSLocationWhenInUseUsageDescription:
@@ -61,6 +74,9 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       ...(googleServicesFile && { googleServicesFile }),
       permissions: [
         "android.permission.NFC",
+        "android.permission.CAMERA",
+        "android.permission.BLUETOOTH",
+        "android.permission.BLUETOOTH_ADMIN",
         "android.permission.ACCESS_FINE_LOCATION",
         "android.permission.ACCESS_COARSE_LOCATION",
       ],
@@ -70,6 +86,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     },
     updates: {
       url: `https://u.expo.dev/${EAS_PROJECT_ID}`,
+      enabled: true,
+      fallbackToCacheTimeout: 0,
     },
     runtimeVersion: {
       policy: "appVersion",
@@ -88,13 +106,28 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       favicon: "./assets/images/favicon.png",
     },
     plugins: [
-      "expo-router",
+      [
+        "expo-router",
+        {
+          // asyncRoutes: true,
+        },
+      ],
       "./plugins/withModularHeaders",
+      "./plugins/withBLEPermissions",
       [
         "expo-location",
         {
           locationAlwaysAndWhenInUsePermission:
             "Allow $(PRODUCT_NAME) to use your location.",
+        },
+      ],
+      [
+        "expo-camera",
+        {
+          cameraPermission: "Allow $(PRODUCT_NAME) to access your camera",
+          microphonePermission:
+            "Allow $(PRODUCT_NAME) to access your microphone",
+          recordAudioAndroid: true,
         },
       ],
       [
@@ -159,8 +192,8 @@ export const getDynamicAppConfig = (
   if (environment === "preview") {
     return {
       name: `${APP_NAME} Preview`,
-      bundleIdentifier: `${BUNDLE_IDENTIFIER}.preview`,
-      packageName: `${PACKAGE_NAME}.preview`,
+      bundleIdentifier: BUNDLE_IDENTIFIER,
+      packageName: PACKAGE_NAME,
       icon: "./assets/images/icon.png",
       adaptiveIcon: "./assets/images/android-icon-foreground.png",
       scheme: `${SCHEME}-prev`,
@@ -171,7 +204,7 @@ export const getDynamicAppConfig = (
   return {
     name: `${APP_NAME} Development`,
     bundleIdentifier: `${BUNDLE_IDENTIFIER}.dev`,
-    packageName: `${PACKAGE_NAME}.dev`,
+    packageName: PACKAGE_NAME,
     icon: "./assets/images/icon.png",
     adaptiveIcon: "./assets/images/android-icon-foreground.png",
     scheme: `${SCHEME}-dev`,
@@ -183,7 +216,9 @@ export const getApiUrl = (
 ): string => {
   const envApiUrl = process.env.EXPO_PUBLIC_API_URL;
   if (!envApiUrl) {
-    throw new Error(`EXPO_PUBLIC_API_URL environment variable is required for ${environment} environment`);
+    throw new Error(
+      `EXPO_PUBLIC_API_URL environment variable is required for ${environment} environment`
+    );
   }
   return envApiUrl;
 };

@@ -10,8 +10,9 @@ import "react-native-reanimated";
 import "../global.css";
 
 import { AuthProvider } from "@/components/context/AuthProvider";
+import { LanguageProvider } from "@/components/context/LanguageContext";
+import { ToastProvider } from "@/components/context/ToastProvider";
 import { UserInactivityProvider } from "@/components/context/UserInactivityProvider";
-import Analytics from "@/components/services/Analytics";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useEffect } from "react";
 
@@ -20,34 +21,38 @@ export default function RootLayout() {
 
   useEffect(() => {
     // Initialize analytics
-    Analytics.initialize();
+    // Analytics.initialize();
   }, []);
 
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
       <StatusBar style="auto" />
-      <AuthProvider>
-        <UserInactivityProvider>
-          <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen name="(transaction)" options={{ headerShown: false }} />
-            <Stack.Screen
-              name="(modal)/lock"
-              options={{
-                headerShown: false,
-                animation: "fade",
-              }}
-            />
-            <Stack.Screen
-              name="(modal)/overlay"
-              options={{
-                headerShown: false,
-              }}
-            />
-          </Stack>
-        </UserInactivityProvider>
-      </AuthProvider>
+      <LanguageProvider>
+        <AuthProvider>
+          <ToastProvider>
+            <UserInactivityProvider>
+              <Stack screenOptions={{ headerShown: false }}>
+                <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                <Stack.Screen name="(transaction)" options={{ headerShown: false }} />
+                <Stack.Screen
+                  name="(modal)/lock"
+                  options={{
+                    headerShown: false,
+                    animation: "fade",
+                  }}
+                />
+                <Stack.Screen
+                  name="(modal)/overlay"
+                  options={{
+                    headerShown: false,
+                  }}
+                />
+              </Stack>
+            </UserInactivityProvider>
+          </ToastProvider>
+        </AuthProvider>
+      </LanguageProvider>
     </ThemeProvider>
   );
 }

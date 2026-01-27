@@ -1,8 +1,9 @@
 import { BankTransferService } from "@/components/services/BankTransferService";
 import ScreenHeader from "@/components/ui/ScreenHeader";
+import { ToastService } from "@/hooks/use-toast";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
-import { ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const USSDCodeDetail = () => {
@@ -19,8 +20,9 @@ const USSDCodeDetail = () => {
           setLoading(false);
         }
       );
-    } catch (error) {
-      console.error("Error fetching USSD code:", error);
+    } catch {
+      ToastService.error("Error fetching USSD code:");
+
       setLoading(false);
     }
   }, [ussdCode]);

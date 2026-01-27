@@ -49,7 +49,6 @@ Join our community of developers creating universal apps.
 - [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
 - [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
 
-
 bunx expo prebuild --clean
 bunx expo prebuild --clean --platform android
 
@@ -61,4 +60,8 @@ rm -rf ~/.gradle/buildOutputCleanup
 cd android
 ./gradlew clean
 cd ..
-expo run:android --device
+expo run:android --device --no-build-cache
+
+NODE_ENV=production bunx expo run:android --device --variant debug
+
+chmod -R u+rw node_modules

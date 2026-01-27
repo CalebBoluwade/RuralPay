@@ -1,10 +1,11 @@
 import { useAuth } from "@/components/context/AuthProvider";
-import { PinService } from "@/components/lib/SecureStorage";
+import { ToastService } from "@/hooks/use-toast";
+import { PinService } from "@/lib/SecureStorage";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
 import React, { useEffect } from "react";
-import { Text, TouchableOpacity, View } from "react-native";
+import { Text, TouchableOpacity, View, useColorScheme } from "react-native";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -15,7 +16,9 @@ import Animated, {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const Lock = () => {
-  const {nativeAuthLogin, user} = useAuth();
+  const { nativeAuthLogin, user } = useAuth();
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === "dark";
   const [code, setCode] = React.useState<number[]>([]);
   const codeLength = new Array(6).fill(0);
 
@@ -53,17 +56,17 @@ const Lock = () => {
         const isValid = await PinService.validatePin(code.join(""));
 
         if (isValid) {
-          console.log("PIN is correct");
+          ToastService.info("PIN is Correct");
           router.replace("/");
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
           setCode([]);
         } else {
-          console.log("PIN is incorrect");
+          ToastService.error("PIN is incorrect");
 
           offset.value = withSequence(
             withTiming(-OFFSET, { duration: TIME / 2 }),
             withRepeat(withTiming(OFFSET, { duration: TIME }), 4, true),
-            withTiming(0, { duration: TIME / 2 })
+            withTiming(0, { duration: TIME / 2 }),
           );
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
           setCode([]);
@@ -75,8 +78,12 @@ const Lock = () => {
   }, [code]);
 
   return (
-    <SafeAreaView className="flex-1 bg-white px-12 py-8">
-      <Text className="text-2xl font-semibold text-center mb-12 mt-16">
+    <SafeAreaView
+      className={`flex-1 px-12 py-8 ${isDark ? "bg-[#0a0a0f]" : "bg-[#f5f5fa]"}`}
+    >
+      <Text
+        className={`text-2xl font-semibold text-center mb-12 mt-16 ${isDark ? "text-white" : "text-gray-900"}`}
+      >
         Welcome Back, {user?.FirstName}
       </Text>
 
@@ -84,11 +91,19 @@ const Lock = () => {
         {codeLength.map((_, index) => (
           <View
             key={index + 1}
-            className={`w-4 h-4 border-2 border-gray-400 mx-2 justify-center items-center rounded-lg ${
-              code[index] ? "bg-blue-600" : "bg-transparent"
+            className={`w-4 h-4 mx-2 justify-center items-center rounded-lg backdrop-blur-xl ${
+              code[index]
+                ? isDark
+                  ? "bg-lime-500 border-2 border-lime-400"
+                  : "bg-lime-600 border-2 border-lime-500"
+                : isDark
+                  ? "border-2 border-white/30 bg-transparent"
+                  : "border-2 border-gray-400 bg-transparent"
             }`}
           >
-            <Text className="text-2xl text-white">
+            <Text
+              className={`text-2xl ${isDark ? "text-white" : "text-gray-900"}`}
+            >
               {code.length > index ? "•" : ""}
             </Text>
           </View>
@@ -101,9 +116,17 @@ const Lock = () => {
             <TouchableOpacity
               key={num}
               onPress={() => OnNumberPressDown(num)}
-              className="w-20 h-20 justify-center items-center bg-gray-100 rounded-full"
+              className={`w-20 h-20 justify-center items-center rounded-full backdrop-blur-xl ${
+                isDark
+                  ? "bg-white/10 border border-white/20"
+                  : "bg-white/60 border border-gray-200/50"
+              }`}
             >
-              <Text className="text-2xl font-medium">{num}</Text>
+              <Text
+                className={`text-2xl font-medium ${isDark ? "text-white" : "text-gray-900"}`}
+              >
+                {num}
+              </Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -113,9 +136,17 @@ const Lock = () => {
             <TouchableOpacity
               key={num}
               onPress={() => OnNumberPressDown(num)}
-              className="w-20 h-20 justify-center items-center bg-gray-100 rounded-full"
+              className={`w-20 h-20 justify-center items-center rounded-full backdrop-blur-xl ${
+                isDark
+                  ? "bg-white/10 border border-white/20"
+                  : "bg-white/60 border border-gray-200/50"
+              }`}
             >
-              <Text className="text-2xl font-medium">{num}</Text>
+              <Text
+                className={`text-2xl font-medium ${isDark ? "text-white" : "text-gray-900"}`}
+              >
+                {num}
+              </Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -125,9 +156,17 @@ const Lock = () => {
             <TouchableOpacity
               key={num}
               onPress={() => OnNumberPressDown(num)}
-              className="w-20 h-20 justify-center items-center bg-gray-100 rounded-full"
+              className={`w-20 h-20 justify-center items-center rounded-full backdrop-blur-xl ${
+                isDark
+                  ? "bg-white/10 border border-white/20"
+                  : "bg-white/60 border border-gray-200/50"
+              }`}
             >
-              <Text className="text-2xl font-medium">{num}</Text>
+              <Text
+                className={`text-2xl font-medium ${isDark ? "text-white" : "text-gray-900"}`}
+              >
+                {num}
+              </Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -137,20 +176,36 @@ const Lock = () => {
             className="w-20 h-20 justify-center items-center"
             onPress={() => onFingerPrintPress()}
           >
-            <Ionicons name="finger-print" size={32} color="#6B7280" />
+            <Ionicons
+              name="finger-print"
+              size={32}
+              color={isDark ? "#a78bfa" : "#7c3aed"}
+            />
           </TouchableOpacity>
 
           <TouchableOpacity
             onPress={() => OnNumberPressDown(0)}
-            className="w-20 h-20 justify-center items-center bg-gray-100 rounded-full"
+            className={`w-20 h-20 justify-center items-center rounded-full backdrop-blur-xl ${
+              isDark
+                ? "bg-white/10 border border-white/20"
+                : "bg-white/60 border border-gray-200/50"
+            }`}
           >
-            <Text className="text-2xl font-medium">0</Text>
+            <Text
+              className={`text-2xl font-medium ${isDark ? "text-white" : "text-gray-900"}`}
+            >
+              0
+            </Text>
           </TouchableOpacity>
 
           <View className="w-20 h-20 justify-center items-center">
             {code.length > 0 && (
               <TouchableOpacity onPress={() => onBackspacePress()}>
-                <Ionicons name="backspace" size={28} color="#6B7280" />
+                <Ionicons
+                  name="backspace"
+                  size={28}
+                  color={isDark ? "#9ca3af" : "#6b7280"}
+                />
               </TouchableOpacity>
             )}
           </View>
