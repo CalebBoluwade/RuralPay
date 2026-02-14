@@ -1,3 +1,4 @@
+import OptimizedInput from "@/components/ui/Input/OptimizedInput";
 import ScreenHeader from "@/components/ui/ScreenHeader";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "expo-router";
@@ -12,7 +13,6 @@ import {
     useColorScheme,
 } from "react-native";
 import { z } from "zod";
-import OptimizedInput from "../../components/Input/OptimizedInput";
 
 const customerSchema = z.object({
   customerName: z.string().min(2, "Name must be at least 2 characters"),

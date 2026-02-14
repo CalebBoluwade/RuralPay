@@ -65,3 +65,11 @@ expo run:android --device --no-build-cache
 NODE_ENV=production bunx expo run:android --device --variant debug
 
 chmod -R u+rw node_modules
+
+cd ios
+rm -rf Pods
+rm -rf Podfile.lock
+rm -rf ~/Library/Caches/CocoaPods
+rm -rf ~/.cocoapods/repos
+pod repo update
+cd ..

@@ -1,9 +1,15 @@
-import { BankTransferService } from "@/components/services/BankTransferService";
 import ScreenHeader from "@/components/ui/ScreenHeader";
-import { formatAmount } from "@/lib/formatAmount";
+import PaymentService from "@/lib/services/PaymentService";
+import { formatAmount } from "@/lib/utils/formatAmount";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
-import { FlatList, RefreshControl, Text, TouchableOpacity, View } from "react-native";
+import {
+  FlatList,
+  RefreshControl,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const USSDHistory = () => {
@@ -11,23 +17,23 @@ const USSDHistory = () => {
   const [transactions, setTransactions] = useState<USSDTransaction[]>([]);
   const [refreshing, setRefreshing] = useState(false);
 
-    useEffect(() => {
-      loadTransactions();
-    }, []);
-  
-    const loadTransactions = async () => {
-      try {
-        setRefreshing(true);
-  
-        const transactions = await BankTransferService.FetchAllUSSDTransactions();
-  
-        setTransactions(transactions);
-      } catch (error) {
-        console.log(error);
-      } finally {
-        setRefreshing(false);
-      }
-    };
+  useEffect(() => {
+    loadTransactions();
+  }, []);
+
+  const loadTransactions = async () => {
+    try {
+      setRefreshing(true);
+
+      const transactions = await PaymentService.FetchAllUSSDTransactions();
+
+      setTransactions(transactions);
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   const renderUSSDTransaction = ({ item }: { item: USSDTransaction }) => {
     const isCredit = (item.txType || "DEBIT").includes("CREDIT");
@@ -41,9 +47,7 @@ const USSDHistory = () => {
           <View className="flex-row items-center">
             <View
               className={`w-12 h-12 rounded-2xl items-center justify-center mr-4 ${
-                isCredit
-                  ? "bg-emerald-500"
-                  : "bg-red-400"
+                isCredit ? "bg-emerald-500" : "bg-red-400"
               }`}
             >
               <Text className="text-2xl">{item.code}</Text>
@@ -81,9 +85,7 @@ const USSDHistory = () => {
           >
             <Text
               className={`text-xs font-semibold ${
-                item.expired
-                  ? "text-green-700"
-                  : "text-gray-700"
+                item.expired ? "text-green-700" : "text-gray-700"
               }`}
             >
               {item.expired ? "Expored" : "Active"}

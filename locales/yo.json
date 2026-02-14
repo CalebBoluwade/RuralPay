@@ -26,6 +26,7 @@
   "payments": {
     "title": "Awọn Isanwo",
     "voice": "Isanwo Ohùn",
+    "bluetooth": "Isanwo Bluetooth",
     "bankTransfer": "Gbigbe Owo Ile-ifowopamọ",
     "ussd": "Isanwo USSD",
     "nfc": "Isanwo NFC",

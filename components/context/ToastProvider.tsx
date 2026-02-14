@@ -1,3 +1,4 @@
+import ToastService from "@/lib/services/ToastService";
 import React, {
   createContext,
   ReactNode,
@@ -6,8 +7,7 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { View } from "react-native";
-import ToastService from "../services/ToastService";
+import { View, Modal } from "react-native";
 import { Toast, ToastType } from "../ui/Toast";
 
 interface ToastItem {
@@ -56,18 +56,20 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
   return (
     <ToastContext.Provider value={{ showToast }}>
       {children}
-      <View className="absolute top-16 left-0 right-0 z-50">
-        {toasts.map((toast) => (
-          <Toast
-            key={toast.id}
-            id={toast.id}
-            message={toast.message}
-            type={toast.type}
-            duration={toast.duration}
-            onDismiss={dismissToast}
-          />
-        ))}
-      </View>
+      <Modal visible={toasts.length > 0} transparent animationType="none" statusBarTranslucent>
+        <View style={{ position: 'absolute', top: 64, left: 0, right: 0 }} pointerEvents="box-none">
+          {toasts.map((toast) => (
+            <Toast
+              key={toast.id}
+              id={toast.id}
+              message={toast.message}
+              type={toast.type}
+              duration={toast.duration}
+              onDismiss={dismissToast}
+            />
+          ))}
+        </View>
+      </Modal>
     </ToastContext.Provider>
   );
 };

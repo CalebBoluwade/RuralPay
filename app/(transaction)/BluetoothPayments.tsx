@@ -1,18 +1,20 @@
-import BLEService from "@/components/services/BLEService";
 import BalanceCard from "@/components/ui/BalanceCard";
+import AmountInput from "@/components/ui/Input/AmountInput";
 import ScreenHeader from "@/components/ui/ScreenHeader";
 import TransactionFailure from "@/components/ui/Transaction/TransactionFailure";
-import TransactionPin from "@/components/ui/Transaction/TransactionPin";
+import TransactionPin from "@/components/ui/Transaction/TransactionPinModal";
 import TransactionSuccess from "@/components/ui/Transaction/TransactionSuccess";
-import { ToastService } from "@/hooks/use-toast";
+import BLEService from "@/lib/services/BLEService";
+import ToastService from "@/lib/services/ToastService";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  FlatList,
+  Modal,
   Text,
-  TextInput,
   TouchableOpacity,
   useColorScheme,
   View,
@@ -28,17 +30,16 @@ const BluetoothPayments = () => {
   const [error, setError] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState("ENTER_DETAILS");
-  const [paymentType, setPaymentType] = useState<
-    "CREDIT" | "DEBIT" | "PHONE_TAP"
-  >("DEBIT");
+  const [paymentType, setPaymentType] = useState<"CREDIT" | "DEBIT">("DEBIT");
 
-  const [merchantId, setMerchantId] = useState("");
+  const [availableTerminals, setAvailableTerminals] = useState<any[]>([]);
+  const [showDeviceModal, setShowDeviceModal] = useState(false);
+  const [scanning, setScanning] = useState(false);
 
   useEffect(() => {
     const initPaymentMethod = async () => {
       const bleResult = await BLEService.initialize();
-      const bleStatus = await BLEService.isAvailable();
-      setBleReady(bleResult.success && bleStatus.enabled);
+      setBleReady(bleResult.success);
     };
 
     initPaymentMethod();
@@ -47,66 +48,113 @@ const BluetoothPayments = () => {
   const handleStartPayment = async () => {
     if (
       paymentType === "DEBIT" &&
-      (!merchantId || !amount || Number.parseFloat(amount) <= 0)
+      (!amount || Number.parseFloat(amount) <= 0)
     ) {
-      ToastService.error("Please Enter Valid merchant ID and Amount");
+      try {
+        ToastService.error("Please Enter Valid merchant ID and Amount");
+      } catch {}
       return;
     }
 
     if (
-      (paymentType === "CREDIT" || paymentType === "PHONE_TAP") &&
+      paymentType === "CREDIT" &&
       (!amount || Number.parseFloat(amount) <= 0)
     ) {
-      ToastService.error("Please Enter Valid Amount");
+      try {
+        ToastService.error("Please Enter Valid Amount");
+      } catch {}
       return;
     }
 
-    if (paymentType === "PHONE_TAP" && !bleReady) {
-      ToastService.warning(
-        // "Bluetooth Not Available",
-        "Bluetooth is not available. Please enable Bluetooth in settings.",
-      );
+    if (!bleReady) {
+      try {
+        ToastService.warning(
+          // "Bluetooth Not Available",
+          "Bluetooth is not available. Please enable Bluetooth in settings.",
+        );
+      } catch {}
+
+      // await handleBLEPayment();
+      // await BLEService.
 
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       setStep("ENTER_PIN");
-      return;
+      // return;
     }
   };
 
   const handleBLEPayment = async () => {
     try {
       setLoading(true);
-      const result = await BLEService.startPaymentAdvertising(
-        amount,
-        merchantId || "Merchant",
-      );
 
-      if (result.success) {
-        ToastService.info("Broadcasting payment via Bluetooth...");
-        await new Promise((resolve) => setTimeout(resolve, 2000));
+      if (paymentType === "DEBIT") {
+        // Customer mode: Scan for merchant terminals
+        setScanning(true);
+        setShowDeviceModal(true);
+        try {
+          ToastService.info("Scanning For Payment Terminals...");
+        } catch {}
+        const scanResult = await BLEService.scanForPaymentTerminals();
 
-        const payment = await BLEService.acceptPayment(result.paymentId!, {
+        console.log(scanResult);
+
+        if (!scanResult.success || !scanResult.terminals?.length) {
+          setShowDeviceModal(false);
+          throw new Error("No Payment Terminals Found nearby");
+        }
+
+        setAvailableTerminals(scanResult.terminals);
+        setScanning(false);
+      } else {
+        // Merchant mode: Advertise terminal
+        ToastService.info("Starting Payment Terminal...");
+        const advertiseResult = await BLEService.startAdvertising({
+          amount,
+          currency: "NGN",
+        });
+
+        if (!advertiseResult.success) {
+          throw new Error(
+            ("error" in advertiseResult ? advertiseResult.error : undefined) ||
+              "Failed to start terminal",
+          );
+        }
+
+        ToastService.info("Waiting for Customer...");
+        await new Promise((resolve) => setTimeout(resolve, 10000));
+
+        const paymentId =
+          "paymentId" in advertiseResult ? advertiseResult.paymentId : "";
+        const payment = await BLEService.acceptPayment(paymentId, {
           type: "Visa",
           lastFourDigits: "4242",
         });
 
-        if (payment.success) {
+        if (payment.success && "transactionId" in payment) {
           setPaymentResult({
             transaction: { txId: payment.transactionId },
             newBalance: 50000,
           });
           setStep("SUCCESS");
         } else {
-          ToastService.error("Bluetooth Payment Failed");
-          setError("Bluetooth Payment Failed");
-          setStep("FAILURE");
+          throw new Error(
+            "error" in payment
+              ? String(payment.error)
+              : "Payment acceptance failed",
+          );
         }
-      } else {
-        setError("Failed to start Bluetooth payment");
-        setStep("FAILURE");
       }
     } catch (error) {
-      setError((error as Error).message);
+      setScanning(false);
+      setShowDeviceModal(false);
+      const errorMessage =
+        error instanceof Error ? error.message : "An unexpected error occurred";
+      try {
+        ToastService.error(errorMessage);
+      } catch (toastError) {
+        console.error("Toast error:", toastError);
+      }
+      setError(errorMessage);
       setStep("FAILURE");
     } finally {
       setLoading(false);
@@ -114,12 +162,47 @@ const BluetoothPayments = () => {
     }
   };
 
-  const handlePinSuccess = () => {
-    if (paymentType === "PHONE_TAP") {
-      setStep("BLE_PAYMENT");
-    } else {
-      setStep("TAP_CARD");
+  const handleDeviceSelect = async (terminal: any) => {
+    setShowDeviceModal(false);
+    try {
+      setLoading(true);
+      try {
+        ToastService.info(
+          `Connecting to ${terminal.name || "Unknown Device"}...`,
+        );
+      } catch {}
+
+      const paymentResult = await BLEService.connectAndPay(
+        terminal.id,
+        terminal.amount || amount,
+      );
+
+      if (paymentResult.success && "transactionId" in paymentResult) {
+        setPaymentResult({
+          transaction: { txId: paymentResult.transactionId },
+          newBalance: 50000,
+        });
+        setStep("SUCCESS");
+      } else {
+        throw new Error(
+          "error" in paymentResult ? paymentResult.error : "Payment Failed",
+        );
+      }
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Connection failed";
+      try {
+        ToastService.error(errorMessage);
+      } catch {}
+      setError(errorMessage);
+      setStep("FAILURE");
+    } finally {
+      setLoading(false);
     }
+  };
+
+  const handlePinSuccess = () => {
+    setStep("TAP_CARD");
   };
 
   const handlePinCancel = () => {
@@ -127,11 +210,8 @@ const BluetoothPayments = () => {
   };
 
   const handleRetry = () => {
-    if (paymentType === "PHONE_TAP") {
-      setStep("ENTER_PIN");
-    } else {
-      setStep("TAP_CARD");
-    }
+    setStep("ENTER_PIN");
+
     setError("");
   };
 
@@ -149,34 +229,14 @@ const BluetoothPayments = () => {
         onBack={() => router.back()}
       />
 
+      {paymentType === "DEBIT" && <BalanceCard />}
+
       <View
         className={`flex-1 p-8 ${isDark ? "bg-[#0a0a0f]" : "bg-[#f5f5fa]"}`}
       >
-        {paymentType === "DEBIT" && <BalanceCard />}
+        <AmountInput onAmountChange={(amount) => setAmount(amount)} />
 
-        {(paymentType === "DEBIT" || paymentType === "PHONE_TAP") && (
-          <View className="mb-6">
-            <Text
-              className={`text-lg font-semibold mb-3 ${
-                isDark ? "text-white" : "text-gray-900"
-              }`}
-            >
-              Merchant ID
-            </Text>
-            <TextInput
-              className={`p-4 rounded-2xl text-lg backdrop-blur-xl ${
-                isDark
-                  ? "bg-white/10 border border-white/20 text-white"
-                  : "bg-white/60 border border-gray-200/50 text-gray-900"
-              }`}
-              placeholder="Enter merchant identifier"
-              placeholderTextColor={isDark ? "#9CA3AF" : "#6B7280"}
-              value={merchantId}
-              onChangeText={setMerchantId}
-            />
-          </View>
-        )}
-
+        {/* 
         <View className="mb-8">
           <Text
             className={`text-lg font-semibold mb-3 ${
@@ -206,20 +266,18 @@ const BluetoothPayments = () => {
               keyboardType="decimal-pad"
             />
           </View>
-        </View>
+        </View> */}
 
         <TouchableOpacity
           className={`p-4 rounded-2xl mb-4 ${
             isDark ? "bg-emerald-600" : "bg-emerald-700"
           }`}
-          onPress={handleStartPayment}
+          onPress={handleBLEPayment}
         >
           <Text className="text-white text-lg font-bold text-center">
             {paymentType === "CREDIT"
-              ? "Continue to Credit →"
-              : paymentType === "PHONE_TAP"
-                ? "Continue to Phone Tap →"
-                : "Continue to Payment →"}
+              ? "Continue to Credit"
+              : "Continue to Payment"}
           </Text>
         </TouchableOpacity>
 
@@ -229,15 +287,23 @@ const BluetoothPayments = () => {
               ? "bg-white/5 border border-white/10"
               : "bg-white/40 border border-gray-200/30"
           }`}
-          onPress={handleClose}
+          onPress={() => router.push("/(merchant)/BluetoothReceive")}
         >
-          <Text
-            className={`text-lg font-semibold text-center ${
-              isDark ? "text-gray-300" : "text-gray-700"
-            }`}
-          >
-            Cancel
-          </Text>
+          <View className="flex-row items-center justify-center">
+            <MaterialCommunityIcons
+              name="bluetooth-audio"
+              size={24}
+              color={isDark ? "#d1d5db" : "#374151"}
+              style={{ marginRight: 8 }}
+            />
+            <Text
+              className={`text-lg font-semibold ${
+                isDark ? "text-gray-300" : "text-gray-700"
+              }`}
+            >
+              Receive Payment
+            </Text>
+          </View>
         </TouchableOpacity>
       </View>
 
@@ -291,7 +357,9 @@ const BluetoothPayments = () => {
 
   const renderEnterPin = () => (
     <TransactionPin
-      paymentMessage={`Enter PIN to Confirm Bluetooth Payment of ₦${amount} to (${merchantId}) [{bankName}]`}
+      amount={amount}
+      recipient={""}
+      paymentMessage={`Enter PIN to Confirm Bluetooth Payment of ₦${amount} to [{bankName}]`}
       showPinModal={true}
       onSuccess={handlePinSuccess}
       onCancel={handlePinCancel}
@@ -356,22 +424,6 @@ const BluetoothPayments = () => {
                   isDark ? "text-gray-400" : "text-gray-600"
                 }`}
               >
-                Merchant
-              </Text>
-              <Text
-                className={`text-lg font-semibold ${
-                  isDark ? "text-white" : "text-gray-900"
-                }`}
-              >
-                {merchantId || "Merchant"}
-              </Text>
-            </View>
-            <View className="flex-row justify-between items-center">
-              <Text
-                className={`text-lg ${
-                  isDark ? "text-gray-400" : "text-gray-600"
-                }`}
-              >
                 Amount
               </Text>
               <Text className="text-2xl font-bold text-green-500">
@@ -430,17 +482,13 @@ const BluetoothPayments = () => {
       {step === "BLE_PAYMENT" && renderBLEPayment()}
       {step === "SUCCESS" && (
         <TransactionSuccess
+          visible
           data={{
             amount: amount,
-            recipient: paymentType === "DEBIT" ? "BLE Payment" : merchantId,
+            recipient: "BLE Payment",
             reference: paymentResult?.transaction?.txId || "",
             date: new Date().toLocaleDateString(),
-            type:
-              paymentType === "CREDIT"
-                ? "NFC Card Credit"
-                : paymentType === "PHONE_TAP"
-                  ? "Bluetooth Payment"
-                  : "NFC Payment",
+            type: "Bluetooth Payment",
           }}
           onClose={handleClose}
           onDownloadReceipt={() => {}}
@@ -448,24 +496,114 @@ const BluetoothPayments = () => {
       )}
       {step === "FAILURE" && (
         <TransactionFailure
+          visible
           error={error}
           onRetry={handleRetry}
           onClose={handleClose}
         />
       )}
 
-      {/* {!loading && (
-                      <TouchableOpacity
-                        className={`p-4 rounded-2xl mb-4 ${
-                          isDark ? "bg-emerald-600" : "bg-emerald-700"
-                        }`}
-                        onPress={handleBLEPayment}
-                      >
-                        <Text className="text-white text-lg font-bold text-center">
-                          ✓ Start Broadcasting
+      <Modal
+        visible={showDeviceModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowDeviceModal(false)}
+      >
+        <View className="flex-1 bg-black/50 justify-end">
+          <View
+            className={`rounded-t-3xl p-6 max-h-[70%] ${
+              isDark ? "bg-[#1a1a1f]" : "bg-white"
+            }`}
+          >
+            <View className="flex-row justify-between items-center mb-4">
+              <Text
+                className={`text-xl font-bold ${
+                  isDark ? "text-white" : "text-gray-900"
+                }`}
+              >
+                {scanning ? "Scanning..." : "Select Payment Terminal"}
+              </Text>
+              <TouchableOpacity onPress={() => setShowDeviceModal(false)}>
+                <MaterialCommunityIcons
+                  name="close"
+                  size={24}
+                  color={isDark ? "white" : "black"}
+                />
+              </TouchableOpacity>
+            </View>
+
+            {scanning ? (
+              <View className="items-center py-12">
+                <ActivityIndicator
+                  size="large"
+                  color={isDark ? "#10b981" : "#059669"}
+                />
+                <Text
+                  className={`mt-4 text-lg ${
+                    isDark ? "text-gray-300" : "text-gray-600"
+                  }`}
+                >
+                  Searching for payment terminals...
+                </Text>
+              </View>
+            ) : (
+              <FlatList
+                data={availableTerminals}
+                keyExtractor={(item) => item.id}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    className={`p-4 rounded-xl mb-3 border ${
+                      isDark
+                        ? "bg-white/5 border-white/10"
+                        : "bg-gray-50 border-gray-200"
+                    }`}
+                    onPress={() => handleDeviceSelect(item)}
+                  >
+                    <View className="flex-row justify-between items-center">
+                      <View className="flex-1">
+                        <Text
+                          className={`font-semibold text-lg ${
+                            isDark ? "text-white" : "text-gray-900"
+                          }`}
+                        >
+                          {item.name || "Unknown Device"}
                         </Text>
-                      </TouchableOpacity>
-                    )} */}
+                        <Text
+                          className={`text-sm ${
+                            isDark ? "text-gray-400" : "text-gray-600"
+                          }`}
+                        >
+                          {item.id}
+                        </Text>
+                      </View>
+                      <View className="items-end">
+                        <Text
+                          className={`text-sm font-medium ${
+                            item.rssi > -70
+                              ? "text-green-500"
+                              : item.rssi > -85
+                                ? "text-yellow-500"
+                                : "text-red-500"
+                          }`}
+                        >
+                          {item.rssi} dBm
+                        </Text>
+                        <Text
+                          className={`text-xs ${
+                            isDark ? "text-gray-500" : "text-gray-500"
+                          }`}
+                        >
+                          {item.distance}
+                        </Text>
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                )}
+              />
+            )}
+          </View>
+        </View>
+      </Modal>
     </>
   );
 };

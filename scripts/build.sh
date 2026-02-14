@@ -5,16 +5,22 @@ PLATFORM=${2:-android}
 
 echo "Building for $ENV environment on $PLATFORM..."
 
-cp .env.$ENV .env
+cp .env."$ENV" .env
 
-export $(grep -v '^#' .env | xargs)
+set -a
+source .env
+set +a
 
 if [ "$PLATFORM" = "android" ]; then
   bunx expo prebuild --clean --platform android
-  bunx expo run:android --device --variant debug
+  bunx expo run:android --device --no-build-cache --variant debug
 elif [ "$PLATFORM" = "ios" ]; then
   bunx expo prebuild --clean --platform ios
-  bunx expo run:ios --device
+  if [ "$ENV" = "development" ]; then
+    bunx expo run:ios
+  else
+    bunx expo run:ios --device
+  fi
 else
   echo "Invalid platform. Use 'android' or 'ios'"
   exit 1

@@ -1,24 +1,24 @@
-import { BankTransferService } from "@/components/services/BankTransferService";
 import ScreenHeader from "@/components/ui/ScreenHeader";
 import TransactionFailure from "@/components/ui/Transaction/TransactionFailure";
-import TransactionPin from "@/components/ui/Transaction/TransactionPin";
+import TransactionPin from "@/components/ui/Transaction/TransactionPinModal";
 import TransactionSuccess from "@/components/ui/Transaction/TransactionSuccess";
-import { ToastService } from "@/hooks/use-toast";
+import PaymentService from "@/lib/services/PaymentService";
+import ToastService from "@/lib/services/ToastService";
 import {
-    FontAwesome5,
-    Ionicons,
-    MaterialCommunityIcons,
+  FontAwesome5,
+  Ionicons,
+  MaterialCommunityIcons,
 } from "@expo/vector-icons";
 import { AudioModule, RecordingPresets, useAudioRecorder } from "expo-audio";
 import { router } from "expo-router";
 import * as Speech from "expo-speech";
 import React, { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    Text,
-    TouchableOpacity,
-    View,
-    useColorScheme,
+  ActivityIndicator,
+  Text,
+  TouchableOpacity,
+  View,
+  useColorScheme,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -111,7 +111,7 @@ const VoiceTransactionBanking = () => {
       });
 
       const voiceTranscript =
-        await BankTransferService.TranscribeVoiceCommand(audioBase64);
+        await PaymentService.TranscribeVoiceCommand(audioBase64);
 
       await handleVoiceBankingTransferCommand(voiceTranscript);
     } catch (error) {
@@ -159,11 +159,15 @@ const VoiceTransactionBanking = () => {
     });
 
     const confirmation =
-      await BankTransferService.TranscribeVoiceCommand(audioBase64);
+      await PaymentService.TranscribeVoiceCommand(audioBase64);
 
     console.log("Confirmation transcription:", confirmation);
 
-    if (confirmation.toLowerCase().includes("yes") || confirmation.toLowerCase().includes("yeah") || confirmation.toLowerCase().includes("confirm")) {
+    if (
+      confirmation.toLowerCase().includes("yes") ||
+      confirmation.toLowerCase().includes("yeah") ||
+      confirmation.toLowerCase().includes("confirm")
+    ) {
       setStep("ENTER_PIN");
     } else {
       setStep("SELECT_COMMAND");

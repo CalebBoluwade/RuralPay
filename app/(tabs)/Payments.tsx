@@ -1,14 +1,14 @@
 import { useLanguage } from "@/components/context/LanguageContext";
 import ScreenHeader from "@/components/ui/ScreenHeader";
+import NFCService from "@/lib/services/NFCService";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { Text, TouchableOpacity, View, useColorScheme } from "react-native";
+import { useEffect, useState } from "react";
+import { Pressable, Text, View, useColorScheme } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 function onSelectMethod(id: string): void {
   switch (id) {
-    case "NFC":
-      router.push("/(transaction)/NFCPayments");
-      break;
     case "qr":
       router.push("/(transaction)/QRPayments");
       break;
@@ -27,6 +27,18 @@ export default function Payments() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const { t } = useLanguage();
+  const [isNFCSupported, setIsNFCSupported] = useState<boolean>(false);
+
+  useEffect(() => {
+    const checkNFC = async () => {
+      const supported = await NFCService.isSupported();
+      // const isBLEupported = await BLEService.();
+
+      setIsNFCSupported(supported);
+    };
+
+    checkNFC();
+  }, []);
 
   const methods = [
     {
@@ -35,6 +47,7 @@ export default function Payments() {
       description: "NFC Contactless",
       icon: "radio",
       available: true,
+      // available: isNFCSupported,
     },
     {
       id: "qr",
@@ -60,7 +73,9 @@ export default function Payments() {
   ];
 
   return (
-    <View className={isDark ? "flex-1 bg-[#0a0a0f]" : "flex-1 bg-[#f5f5fa]"}>
+    <SafeAreaView
+      className={isDark ? "flex-1 bg-[#0a0a0f]" : "flex-1 bg-[#f5f5fa]"}
+    >
       <View className="flex-1 flex gap-3 justify-center px-6 space-y-8">
         <ScreenHeader
           title={t("payments.title")}
@@ -68,7 +83,7 @@ export default function Payments() {
           onBack={() => router.back()}
         />
 
-        <View className="mb-6">
+        <View className="mb-3">
           <Text
             className={`text-lg font-bold mb-4 ${
               isDark ? "text-white" : "text-gray-900"
@@ -77,7 +92,7 @@ export default function Payments() {
             {t("home.quickLinks")}
           </Text>
           <View className="flex-row justify-between gap-2">
-            <TouchableOpacity
+            <Pressable
               className={`flex-1 py-5 rounded-2xl items-center backdrop-blur-xl ${
                 isDark
                   ? "bg-white/10 border border-white/20"
@@ -102,14 +117,16 @@ export default function Payments() {
               >
                 {t("payments.bankTransfer")}
               </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
+            </Pressable>
+            <Pressable
               className={`flex-1 py-5 rounded-2xl items-center backdrop-blur-xl ${
                 isDark
                   ? "bg-white/10 border border-white/20"
                   : "bg-white/60 border border-gray-200/50 shadow-lg"
               }`}
-              onPress={() => router.push("/(transaction)/TransactionHistory")}
+              onPress={() =>
+                router.push("/(common)/Transaction/TransactionHistory")
+              }
               style={{
                 shadowColor: isDark ? "#fff" : "#000",
                 shadowOpacity: 0.05,
@@ -128,9 +145,9 @@ export default function Payments() {
               >
                 {t("payments.history")}
               </Text>
-            </TouchableOpacity>
+            </Pressable>
 
-            <TouchableOpacity
+            {/* <TouchableOpacity
               className={`flex-1 py-5 rounded-2xl items-center backdrop-blur-xl ${
                 isDark
                   ? "bg-white/10 border border-white/20"
@@ -155,23 +172,65 @@ export default function Payments() {
               >
                 {t("payments.merchant")}
               </Text>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
           </View>
         </View>
 
+        <Pressable
+          className={`px-6 py-5 rounded-2xl backdrop-blur-xl ${
+            isDark
+              ? "bg-white/10 border border-white/20"
+              : "bg-gray-50 border border-gray-200 shadow-sm"
+          }`}
+          onPress={() => router.push("/(transaction)/SpendingTracker")}
+          style={{
+            shadowColor: isDark ? "#fff" : "#000",
+            shadowOpacity: 0.05,
+            shadowRadius: 10,
+          }}
+        >
+          <View className="flex-row items-center gap-4">
+            <Ionicons
+              name="analytics-outline"
+              size={28}
+              color={isDark ? "#f59e0b" : "#d97706"}
+            />
+            <View className="flex-1">
+              <Text
+                className={`text-lg font-bold ${
+                  isDark ? "text-white" : "text-gray-900"
+                }`}
+              >
+                Spending Tracker
+              </Text>
+              <Text
+                className={`text-sm mt-1 ${
+                  isDark ? "text-gray-400" : "text-gray-600"
+                }`}
+              >
+                Track your expenses and budgets
+              </Text>
+            </View>
+            <Ionicons
+              name="chevron-forward"
+              size={22}
+              color={isDark ? "#9ca3af" : "#6b7280"}
+            />
+          </View>
+        </Pressable>
+
         {methods.map((method) => (
-          <TouchableOpacity
+          <Pressable
             key={method.id}
             className={`px-6 py-5 rounded-2xl backdrop-blur-xl ${
               isDark
                 ? "bg-white/10 border border-white/20"
-                : "bg-white/60 border border-gray-200/50 shadow-lg"
-            }`}
+                : "bg-gray-50 border border-gray-200 shadow-sm"
+            } ${method.available ? "" : "opacity-40"}`}
             onPress={() => method.available && onSelectMethod(method.id)}
             disabled={!method.available}
-            activeOpacity={0.7}
           >
-            <View className="flex-row gap-3 items-center">
+            <View className="flex-row gap-4 items-center">
               <Ionicons
                 size={32}
                 name={method.icon as any}
@@ -181,20 +240,25 @@ export default function Payments() {
                 <Text
                   className={`text-xl font-bold ${
                     isDark ? "text-white" : "text-gray-900"
-                  }`}
+                  } ${method.available ? "" : "opacity-50"}`}
                 >
                   {method.name}
                 </Text>
                 <Text
                   className={`text-sm mt-1 ${
                     isDark ? "text-gray-400" : "text-gray-600"
-                  }`}
+                  } ${method.available ? "" : "opacity-50"}`}
                 >
                   {method.description}
                 </Text>
               </View>
+              <Ionicons
+                name="chevron-forward"
+                size={22}
+                color={isDark ? "#9ca3af" : "#6b7280"}
+              />
             </View>
-          </TouchableOpacity>
+          </Pressable>
         ))}
         {/* 
         <TouchableOpacity
@@ -296,6 +360,6 @@ export default function Payments() {
           </View>
         </TouchableOpacity> */}
       </View>
-    </View>
+    </SafeAreaView>
   );
 }

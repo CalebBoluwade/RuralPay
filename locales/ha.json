@@ -26,6 +26,7 @@
   "payments": {
     "title": "Biyan Kuɗi",
     "voice": "Biyan Kuɗi Voice",
+    "bluetooth": "Biyan Kuɗi Bluetooth",
     "bankTransfer": "Canja Wurin Kuɗin Banki",
     "ussd": "Biyan Kuɗi USSD",
     "nfc": "Biyan Kuɗi NFC",

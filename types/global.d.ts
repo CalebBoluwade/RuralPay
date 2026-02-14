@@ -4,18 +4,52 @@ global {
   type TransferStatus = "PENDING_RECIPIENT" | "COMPLETED" | "FAILED";
   type TransactionType = "CREDIT" | "DEBIT" | "P2P_DEBIT" | "P2P_CREDIT";
 
+  type PaymentMode = "CARD" | "QR" | "BANK_TRANSFER" | "USSD" | "VOICE" | "BLE";
+
+  interface ReceiptData {
+    amount: string;
+    recipient: string;
+    reference: string;
+    date: string;
+    narration?: string;
+    type: PaymentMode;
+    senderName?: string;
+    senderAccount?: string;
+    merchantId?: string;
+    terminalId?: string;
+    cardLast4?: string;
+  }
+
   interface LocationData {
     latitude: number;
     longitude: number;
     accuracy?: number;
   }
 
+  interface MerchantAnaltyics {
+    count: number;
+    total: number;
+  }
+
+  interface MerchantProfile {
+    id: string;
+    businessName: string;
+    businessAddress: string;
+    businessType: string;
+    commisionRate: number;
+    status: "pending" | "approved" | "rejected";
+    createdAt: string;
+  }
+
   export interface User {
     id: string;
     email: string;
+    phoneNumber: string;
     FirstName: string;
     LastName: string;
     AccountId: string;
+    role: "consumer" | "merchant";
+    merchant?: MerchantProfile;
   }
 
   export interface AuthResponse {
@@ -28,19 +62,18 @@ global {
     code?: string;
   }
 
+  interface Bank {
+    name: string;
+    code: string;
+    logoData: string;
+    uptimePrediction: number;
+  }
+
   interface AccountData {
     accountId: string;
     accountName: string;
     currency: string;
     cardNumber: string;
-  }
-
-  interface RecentTransaction {
-    txId: string;
-    merchantId: string;
-    createdAt: string;
-    amount: number;
-    timestamp: string;
   }
 
   interface BalanceEnquiry {
@@ -57,37 +90,79 @@ global {
     accountId: string;
   }
 
-  interface Transaction {
-    version: number;
-    txId: string;
-    status: string;
-    timestamp: number;
-    cardId: string;
+  interface AccountBalanceEnquiry {
+    accounts: BalanceEnquiry[];
+    dailyLimit: number;
+    singleTransactionLimit: number;
+    dailySpent: number;
+  }
+
+  interface EmvTransactionResult {
+    cryptogram: string; // Tag 9F26 (The signature)
+    issuerAppData: string; // Tag 9F10 (Required by bank)
+    atc: string; // Tag 9F36 (Anti-replay counter)
+    unpredictableNumber: string; // The random nonce used
+    transactionDate: string;
+    transactionAmount: string;
+  }
+
+  interface NFCCardTransaction {
+    transactionID: string;
+    location?: LocationData;
+    paymentMode: PaymentMode;
+    transactionDate: number;
+    cardInfo: CardInfo;
     merchantId: string;
     amount: number;
-    currency: string;
-    counter: number;
     txType: TransactionType;
     signature?: string;
-    recipientId?: string;
-    senderId?: string;
-    fees: number;
+    narration?: string;
+  }
+
+  interface TransactionHistory {
+    fee: number;
+    transactionDate: string;
+    transactionID: string;
+    currency: string;
+    amount: number;
+    merchantId?: string;
+    fromAccount: string;
+    narration?: string;
+    status: string;
+    txType: TransactionType;
+    paymentMode: PaymentMode;
+  }
+
+  interface Transaction {
+    version: number;
+    transactionID: string;
+    transactionDate: number;
+
+    amount: number;
+    currency: string;
+    txType: TransactionType;
+    signature?: string;
+    recipientAccount?: string;
+    senderAccount?: string;
     narration?: string;
   }
 
   interface TransferPayload {
     amount: number;
+    txType: TransactionType;
     currency: string;
     fromAccount: string;
     reference: string;
     toAccount: string;
     toBankCode: string;
     location?: LocationData;
+    paymentMode: PaymentMode;
+    transactionID: string;
   }
 
-  interface TransferResponse {
+  interface APIResponse {
     success: boolean;
-    status: string;
+    errorMessage: string;
     transactionId: string;
   }
 
@@ -119,7 +194,7 @@ global {
   }
 
   interface P2PTransfer {
-    transferId: string;
+    transactionID: string;
     senderTx: Transaction;
     recipientId: string;
     status: TransferStatus;
@@ -153,11 +228,21 @@ global {
   }
 
   interface CardInfo {
-    cardId: string;
-    balance: number;
-    counter: number;
-    dailyLimit: number;
-    singleTxLimit: number;
+    success: boolean;
+    PAN: string;
+    PIN: string;
+    expiryDate: string;
+    cryptogram: string;
+    issuerAppData: string;
+    currencyCode: string;
+    ATC: number;
+    CVR: string;
+    cardNonce: string;
+
+    cardholderName: string;
+    applicationLabel: string;
+    countryCode: string;
+    language: string;
   }
 
   interface Credentials {
@@ -169,9 +254,14 @@ global {
 
   interface PaymentResult {
     success: boolean;
-    transaction: Transaction;
-    newBalance: number;
-    offline: boolean;
+    transaction?: NFCCardTransaction;
+  }
+
+  interface MerchantRegistrationData {
+    businessName: string;
+    businessAddress: string;
+    businessType: string;
+    userId: string;
   }
 }
 

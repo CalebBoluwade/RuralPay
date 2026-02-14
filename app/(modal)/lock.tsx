@@ -1,12 +1,14 @@
 import { useAuth } from "@/components/context/AuthProvider";
-import { ToastService } from "@/hooks/use-toast";
-import { PinService } from "@/lib/SecureStorage";
+import ToastService from "@/lib/services/ToastService";
+import { PinService } from "@/lib/utils/SecureStorage";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import { router } from "expo-router";
+import { useRouter } from "expo-router";
 import React, { useEffect } from "react";
 import { Text, TouchableOpacity, View, useColorScheme } from "react-native";
 import Animated, {
+  FadeIn,
+  FadeInDown,
   useAnimatedStyle,
   useSharedValue,
   withRepeat,
@@ -16,7 +18,8 @@ import Animated, {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const Lock = () => {
-  const { nativeAuthLogin, user } = useAuth();
+  const { user } = useAuth();
+  const navigation = useRouter();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const [code, setCode] = React.useState<number[]>([]);
@@ -53,13 +56,20 @@ const Lock = () => {
   useEffect(() => {
     if (code.length === 6) {
       const validatePin = async () => {
-        const isValid = await PinService.validatePin(code.join(""));
+        const isValid = await PinService.ValidatePin(code.join(""));
 
         if (isValid) {
           ToastService.info("PIN is Correct");
-          router.replace("/");
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
           setCode([]);
+
+          try {
+            if (navigation.canGoBack()) {
+              navigation.back();
+            }
+          } catch (e) {
+            console.log("Navigation error:", e);
+          }
         } else {
           ToastService.error("PIN is incorrect");
 
@@ -79,137 +89,163 @@ const Lock = () => {
 
   return (
     <SafeAreaView
-      className={`flex-1 px-12 py-8 ${isDark ? "bg-[#0a0a0f]" : "bg-[#f5f5fa]"}`}
+      className={`flex-1 ${isDark ? "bg-gradient-to-b from-[#0a0a0f] to-[#1a1a2e]" : "bg-gradient-to-b from-white to-gray-50"}`}
     >
-      <Text
-        className={`text-2xl font-semibold text-center mb-12 mt-16 ${isDark ? "text-white" : "text-gray-900"}`}
-      >
-        Welcome Back, {user?.FirstName}
-      </Text>
-
-      <Animated.View style={style} className="flex-row justify-center mb-16">
-        {codeLength.map((_, index) => (
+      <View className="flex-1 px-6 justify-between py-12">
+        <Animated.View
+          entering={FadeIn.duration(600)}
+          className="items-center mt-8"
+        >
           <View
-            key={index + 1}
-            className={`w-4 h-4 mx-2 justify-center items-center rounded-lg backdrop-blur-xl ${
-              code[index]
-                ? isDark
-                  ? "bg-lime-500 border-2 border-lime-400"
-                  : "bg-lime-600 border-2 border-lime-500"
-                : isDark
-                  ? "border-2 border-white/30 bg-transparent"
-                  : "border-2 border-gray-400 bg-transparent"
+            className={`w-20 h-20 rounded-full items-center justify-center mb-6 ${
+              isDark
+                ? "bg-gradient-to-br from-lime-500/20 to-emerald-500/20"
+                : "bg-gradient-to-br from-lime-100 to-emerald-100"
             }`}
-          >
-            <Text
-              className={`text-2xl ${isDark ? "text-white" : "text-gray-900"}`}
-            >
-              {code.length > index ? "•" : ""}
-            </Text>
-          </View>
-        ))}
-      </Animated.View>
-
-      <View className="flex-1 justify-center">
-        <View className="flex-row justify-between mb-6">
-          {[1, 2, 3].map((num) => (
-            <TouchableOpacity
-              key={num}
-              onPress={() => OnNumberPressDown(num)}
-              className={`w-20 h-20 justify-center items-center rounded-full backdrop-blur-xl ${
-                isDark
-                  ? "bg-white/10 border border-white/20"
-                  : "bg-white/60 border border-gray-200/50"
-              }`}
-            >
-              <Text
-                className={`text-2xl font-medium ${isDark ? "text-white" : "text-gray-900"}`}
-              >
-                {num}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        <View className="flex-row justify-between mb-6">
-          {[4, 5, 6].map((num) => (
-            <TouchableOpacity
-              key={num}
-              onPress={() => OnNumberPressDown(num)}
-              className={`w-20 h-20 justify-center items-center rounded-full backdrop-blur-xl ${
-                isDark
-                  ? "bg-white/10 border border-white/20"
-                  : "bg-white/60 border border-gray-200/50"
-              }`}
-            >
-              <Text
-                className={`text-2xl font-medium ${isDark ? "text-white" : "text-gray-900"}`}
-              >
-                {num}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        <View className="flex-row justify-between mb-6">
-          {[7, 8, 9].map((num) => (
-            <TouchableOpacity
-              key={num}
-              onPress={() => OnNumberPressDown(num)}
-              className={`w-20 h-20 justify-center items-center rounded-full backdrop-blur-xl ${
-                isDark
-                  ? "bg-white/10 border border-white/20"
-                  : "bg-white/60 border border-gray-200/50"
-              }`}
-            >
-              <Text
-                className={`text-2xl font-medium ${isDark ? "text-white" : "text-gray-900"}`}
-              >
-                {num}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        <View className="flex-row justify-between items-center">
-          <TouchableOpacity
-            className="w-20 h-20 justify-center items-center"
-            onPress={() => onFingerPrintPress()}
           >
             <Ionicons
-              name="finger-print"
-              size={32}
-              color={isDark ? "#a78bfa" : "#7c3aed"}
+              name="lock-closed"
+              size={36}
+              color={isDark ? "#84cc16" : "#65a30d"}
             />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={() => OnNumberPressDown(0)}
-            className={`w-20 h-20 justify-center items-center rounded-full backdrop-blur-xl ${
-              isDark
-                ? "bg-white/10 border border-white/20"
-                : "bg-white/60 border border-gray-200/50"
-            }`}
-          >
-            <Text
-              className={`text-2xl font-medium ${isDark ? "text-white" : "text-gray-900"}`}
-            >
-              0
-            </Text>
-          </TouchableOpacity>
-
-          <View className="w-20 h-20 justify-center items-center">
-            {code.length > 0 && (
-              <TouchableOpacity onPress={() => onBackspacePress()}>
-                <Ionicons
-                  name="backspace"
-                  size={28}
-                  color={isDark ? "#9ca3af" : "#6b7280"}
-                />
-              </TouchableOpacity>
-            )}
           </View>
+          <Text
+            className={`text-3xl font-bold mb-2 ${isDark ? "text-white" : "text-gray-900"}`}
+          >
+            Welcome Back
+          </Text>
+          <Text
+            className={`text-lg ${isDark ? "text-gray-400" : "text-gray-600"}`}
+          >
+            {user?.FirstName}
+          </Text>
+        </Animated.View>
+
+        <View className="items-center">
+          <Animated.View entering={FadeInDown.delay(200).duration(600)}>
+            <Text
+              className={`text-sm mb-6 ${isDark ? "text-gray-500" : "text-gray-500"}`}
+            >
+              Enter your PIN
+            </Text>
+            <Animated.View
+              style={style}
+              className="flex-row justify-center mb-12"
+            >
+              {codeLength.map((_, index) => (
+                <View
+                  key={index + 1}
+                  className={`w-14 h-14 mx-2 justify-center items-center rounded-2xl ${
+                    code[index]
+                      ? isDark
+                        ? "bg-lime-500 shadow-lg shadow-lime-500/50"
+                        : "bg-lime-600 shadow-lg shadow-lime-600/30"
+                      : isDark
+                        ? "bg-white/5 border-2 border-white/10"
+                        : "bg-gray-100 border-2 border-gray-200"
+                  }`}
+                >
+                  {code[index] && (
+                    <View className="w-3 h-3 rounded-full bg-white" />
+                  )}
+                </View>
+              ))}
+            </Animated.View>
+          </Animated.View>
+
+          <Animated.View
+            entering={FadeInDown.delay(400).duration(600)}
+            className="w-full max-w-sm"
+          >
+            <View className="gap-4 p-4">
+              {[
+                [1, 2, 3],
+                [4, 5, 6],
+                [7, 8, 9],
+              ].map((row, rowIndex) => (
+                <View key={rowIndex + 1} className="flex-row justify-between">
+                  {row.map((num) => (
+                    <TouchableOpacity
+                      key={num}
+                      onPress={() => OnNumberPressDown(num)}
+                      activeOpacity={0.7}
+                      className={`w-[30%] aspect-square justify-center items-center rounded-3xl ${
+                        isDark
+                          ? "bg-white/10 active:bg-white/20"
+                          : "bg-white active:bg-gray-50 shadow-sm"
+                      }`}
+                    >
+                      <Text
+                        className={`text-3xl font-semibold ${isDark ? "text-white" : "text-gray-900"}`}
+                      >
+                        {num}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              ))}
+
+              <View className="flex-row justify-between items-center">
+                <TouchableOpacity
+                  className="w-[30%] aspect-square justify-center items-center"
+                  onPress={onFingerPrintPress}
+                  activeOpacity={0.7}
+                >
+                  <View
+                    className={`w-16 h-16 rounded-full items-center justify-center ${
+                      isDark ? "bg-purple-500/20" : "bg-purple-100"
+                    }`}
+                  >
+                    <Ionicons
+                      name="finger-print"
+                      size={32}
+                      color={isDark ? "#a78bfa" : "#7c3aed"}
+                    />
+                  </View>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={() => OnNumberPressDown(0)}
+                  activeOpacity={0.7}
+                  className={`w-[30%] aspect-square justify-center items-center rounded-3xl ${
+                    isDark
+                      ? "bg-white/10 active:bg-white/20"
+                      : "bg-white active:bg-gray-50 shadow-sm"
+                  }`}
+                >
+                  <Text
+                    className={`text-3xl font-semibold ${isDark ? "text-white" : "text-gray-900"}`}
+                  >
+                    0
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  className="w-[30%] aspect-square justify-center items-center"
+                  onPress={onBackspacePress}
+                  activeOpacity={0.7}
+                  disabled={code.length === 0}
+                >
+                  {code.length > 0 && (
+                    <View
+                      className={`w-16 h-16 rounded-full items-center justify-center ${
+                        isDark ? "bg-red-500/20" : "bg-red-100"
+                      }`}
+                    >
+                      <Ionicons
+                        name="backspace-outline"
+                        size={28}
+                        color={isDark ? "#f87171" : "#dc2626"}
+                      />
+                    </View>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+          </Animated.View>
         </View>
+
+        <View className="h-8" />
       </View>
     </SafeAreaView>
   );

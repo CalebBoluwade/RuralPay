@@ -2,7 +2,7 @@ import React from "react";
 import { Text, View, useColorScheme } from "react-native";
 
 interface TransactionReceiptProps {
-  transaction: Transaction;
+  transaction: TransactionHistory;
 }
 
 const TransactionReceipt: React.FC<TransactionReceiptProps> = ({
@@ -72,7 +72,7 @@ const TransactionReceipt: React.FC<TransactionReceiptProps> = ({
           <Text
             className={`text-lg font-semibold text-right flex-1 ml-4 ${isDark ? "text-white" : "text-gray-900"}`}
           >
-            {transaction.txId}
+            {transaction.transactionID}
           </Text>
         </View>
 
@@ -106,9 +106,9 @@ const TransactionReceipt: React.FC<TransactionReceiptProps> = ({
           <Text
             className={`text-lg font-semibold text-right flex-1 ml-4 ${isDark ? "text-white" : "text-gray-900"}`}
           >
-            {new Date(transaction.timestamp * 1000).toLocaleDateString()}
+            {new Date(transaction.transactionDate).toLocaleDateString()}
             {"\n"}
-            {new Date(transaction.timestamp * 1000).toLocaleTimeString([], {
+            {new Date(transaction.transactionDate).toLocaleTimeString([], {
               hour: "2-digit",
               minute: "2-digit",
             })}
@@ -128,7 +128,7 @@ const TransactionReceipt: React.FC<TransactionReceiptProps> = ({
           <Text
             className={`text-lg font-semibold text-right flex-1 ml-4 ${isDark ? "text-white" : "text-gray-900"}`}
           >
-            {transaction.cardId}
+            {transaction.fromAccount}
           </Text>
         </View>
 
@@ -162,11 +162,11 @@ const TransactionReceipt: React.FC<TransactionReceiptProps> = ({
           <Text
             className={`text-lg font-semibold ${isDark ? "text-white" : "text-gray-900"}`}
           >
-            {transaction.fees || 0}
+            {transaction.fee || 0}
           </Text>
         </View>
 
-        {transaction.recipientId && (
+        {transaction.merchantId && (
           <View
             className={`flex-row justify-between items-center py-3 border-b ${
               isDark ? "border-white/10" : "border-gray-200"
@@ -180,12 +180,12 @@ const TransactionReceipt: React.FC<TransactionReceiptProps> = ({
             <Text
               className={`text-lg font-semibold text-right flex-1 ml-4 ${isDark ? "text-white" : "text-gray-900"}`}
             >
-              {transaction.recipientId}
+              {transaction.merchantId}
             </Text>
           </View>
         )}
 
-        {transaction.senderId && (
+        {transaction.fromAccount && (
           <View className="flex-row justify-between items-center py-3">
             <Text
               className={`text-lg font-medium ${isDark ? "text-gray-400" : "text-gray-600"}`}
@@ -195,7 +195,7 @@ const TransactionReceipt: React.FC<TransactionReceiptProps> = ({
             <Text
               className={`text-lg font-semibold text-right flex-1 ml-4 ${isDark ? "text-white" : "text-gray-900"}`}
             >
-              {transaction.senderId}
+              {transaction.fromAccount}
             </Text>
           </View>
         )}

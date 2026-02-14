@@ -1,6 +1,6 @@
-import NFCService from "@/components/services/NFCService";
 import ScreenHeader from "@/components/ui/ScreenHeader";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
+import NFCService from "@/lib/services/NFCService";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useState } from "react";
 import {
@@ -8,65 +8,52 @@ import {
   Alert,
   ScrollView,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
   useColorScheme,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function CardManagement() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
-  const [searchQuery, setSearchQuery] = useState("");
   const [isRegistering, setIsRegistering] = useState(false);
-
-  const cards = [
+  const [cards, setCards] = useState([
     {
       id: "1",
       cardNumber: "**** 4532",
       holder: "John Doe",
       status: "active",
-      balance: "$2,450.00",
+      balance: "N2,500,450.00",
     },
     {
       id: "2",
       cardNumber: "**** 8821",
       holder: "Jane Smith",
       status: "active",
-      balance: "$1,820.50",
+      balance: "N1,820.50",
     },
     {
       id: "3",
       cardNumber: "**** 3341",
       holder: "Mike Johnson",
       status: "blocked",
-      balance: "$0.00",
+      balance: "N0.00",
     },
-    {
-      id: "4",
-      cardNumber: "**** 7654",
-      holder: "Sarah Williams",
-      status: "active",
-      balance: "$3,200.75",
-    },
-  ];
+  ]);
 
   const handleRegisterCard = async () => {
     setIsRegistering(true);
     try {
-      // const nfcService = new NFCService();
-
       // Check NFC availability
       const isSupported = await NFCService.isSupported();
       if (!isSupported) {
-        Alert.alert("Error", "NFC is not supported on this device");
+        Alert.alert("Error", "NFC is not Supported on this Device");
         return;
       }
 
       const isEnabled = await NFCService.isEnabled();
       if (!isEnabled) {
-        Alert.alert("Error", "Please enable NFC in device settings");
+        Alert.alert("Error", "Please Enable NFC in Device Settings");
         return;
       }
 
@@ -77,7 +64,8 @@ export default function CardManagement() {
 
       // Read card info
       const cardInfo = await NFCService.readCard();
-      // const cardInfo = await NFCService.readCardInfo(true);
+
+      console.log(cardInfo);
 
       // Prompt for credentials
       Alert.prompt(
@@ -147,161 +135,191 @@ export default function CardManagement() {
     }
   };
 
-  const handleAction = (action: string, cardNumber: string) => {
-    Alert.alert(
-      `${action} Card`,
-      `Are you sure you want to ${action.toLowerCase()} card ${cardNumber}?`,
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Confirm",
-          onPress: () =>
-            Alert.alert(
-              "Success",
-              `Card ${cardNumber} ${action.toLowerCase()}ed`,
-            ),
-        },
-      ],
+  const handleBlockCard = (id: string) => {
+    Alert.alert("Block Card", "Are you sure you want to block this card?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Block",
+        style: "destructive",
+        onPress: () =>
+          setCards((prev) =>
+            prev.map((c) => (c.id === id ? { ...c, status: "blocked" } : c)),
+          ),
+      },
+    ]);
+  };
+
+  const handleActivateCard = (id: string) => {
+    setCards((prev) =>
+      prev.map((c) => (c.id === id ? { ...c, status: "active" } : c)),
     );
   };
 
-  const filteredCards = cards.filter(
-    (card) =>
-      card.holder.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      card.cardNumber.includes(searchQuery),
-  );
-
   return (
-    <SafeAreaView
-      className={`flex-1 px-6 pb-8 ${isDark ? "bg-[#0a0a0f]" : "bg-[#f5f5fa]"}`}
-    >
-      <ScrollView showsVerticalScrollIndicator={false}>
+    <View className={isDark ? "flex-1 bg-[#0a0a0f]" : "flex-1 bg-white"}>
+      <ScrollView
+        className="flex-1 px-6 pt-24"
+        showsVerticalScrollIndicator={false}
+      >
         <ScreenHeader
           title="Card Management"
-          subtitle="Activate, block, or replace cards"
+          subtitle={`${cards.length} Card${cards.length > 1 ? "s" : ""} Registered`}
           onBack={() => router.back()}
         />
 
         <TouchableOpacity
+          className={`px-6 py-5 rounded-2xl backdrop-blur-xl mb-6 ${
+            isDark
+              ? "bg-lime-500/20 border-2 border-lime-500"
+              : "bg-lime-50 border-2 border-lime-500"
+          }`}
           onPress={handleRegisterCard}
           disabled={isRegistering}
-          className={`mb-6 p-4 rounded-2xl flex-row items-center justify-center ${
-            isDark
-              ? "bg-blue-500/20 border border-blue-500/30"
-              : "bg-blue-500 shadow-sm"
-          }`}
         >
-          {isRegistering ? (
-            <ActivityIndicator color={isDark ? "#60a5fa" : "#ffffff"} />
-          ) : (
-            <>
-              <MaterialCommunityIcons
-                name="nfc"
-                size={24}
-                color={isDark ? "#60a5fa" : "#ffffff"}
-              />
-              <Text
-                className={`ml-2 text-base font-semibold ${isDark ? "text-blue-400" : "text-white"}`}
-              >
-                Register New Card
-              </Text>
-            </>
-          )}
+          <View className="flex-row items-center justify-center gap-3">
+            {isRegistering ? (
+              <ActivityIndicator color="#84cc16" />
+            ) : (
+              <>
+                <MaterialCommunityIcons name="nfc" size={28} color="#84cc16" />
+                <Text
+                  className={`text-lg font-bold ${
+                    isDark ? "text-white" : "text-gray-900"
+                  }`}
+                >
+                  Register New Card
+                </Text>
+              </>
+            )}
+          </View>
         </TouchableOpacity>
 
-        <View
-          className={`mb-6 p-4 rounded-2xl ${isDark ? "bg-white/10" : "bg-white"}`}
+        <Text
+          className={`text-lg font-bold mb-4 ${
+            isDark ? "text-white" : "text-gray-900"
+          }`}
         >
-          <TextInput
-            placeholder="Search by card number or holder name"
-            placeholderTextColor={isDark ? "#9ca3af" : "#6b7280"}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            className={`text-base ${isDark ? "text-white" : "text-gray-900"}`}
-          />
-        </View>
+          Your Cards
+        </Text>
 
-        <View className="space-y-4">
-          {filteredCards.map((card) => (
-            <View
-              key={card.id}
-              className={`p-5 rounded-2xl ${
-                isDark
-                  ? "bg-white/10 border border-white/20"
-                  : "bg-white border border-gray-200/50 shadow-sm"
+        {cards.length === 0 ? (
+          <View className="items-center justify-center py-12">
+            <Ionicons
+              name="card-outline"
+              size={64}
+              color={isDark ? "#84cc16" : "#65a30d"}
+            />
+            <Text
+              className={`text-base mt-4 ${
+                isDark ? "text-gray-400" : "text-gray-500"
               }`}
             >
-              <View className="flex-row justify-between items-start mb-4">
+              No Cards Registered Yet
+            </Text>
+          </View>
+        ) : (
+          cards.map((card) => (
+            <View
+              key={card.id}
+              className={`px-6 py-5 rounded-2xl backdrop-blur-xl mb-3 ${
+                card.status === "active"
+                  ? isDark
+                    ? "bg-green-500/20 border-2 border-green-500"
+                    : "bg-green-50 border-2 border-green-500"
+                  : isDark
+                    ? "bg-white/10 border border-white/20"
+                    : "bg-gray-50 border border-gray-200"
+              }`}
+            >
+              <View className="flex-row justify-between items-start mb-3">
                 <View className="flex-1">
+                  <View className="flex-row items-center gap-2 mb-2">
+                    <MaterialCommunityIcons
+                      name="credit-card"
+                      size={24}
+                      color={isDark ? "#ffffff" : "#111827"}
+                    />
+                    <Text
+                      className={`text-lg font-bold ${
+                        isDark ? "text-white" : "text-gray-900"
+                      }`}
+                    >
+                      {card.cardNumber}
+                    </Text>
+                    {card.status === "active" && (
+                      <View
+                        className={`px-2 py-1 rounded-full ${
+                          isDark ? "bg-green-500/30" : "bg-green-200"
+                        }`}
+                      >
+                        <Text
+                          className={`text-xs font-bold ${
+                            isDark ? "text-green-300" : "text-green-700"
+                          }`}
+                        >
+                          Active
+                        </Text>
+                      </View>
+                    )}
+                  </View>
                   <Text
-                    className={`text-lg font-bold mb-1 ${isDark ? "text-white" : "text-gray-900"}`}
+                    className={`text-base font-semibold ${
+                      isDark ? "text-gray-300" : "text-gray-700"
+                    }`}
                   >
                     {card.holder}
                   </Text>
                   <Text
-                    className={`text-base ${isDark ? "text-gray-400" : "text-gray-600"}`}
-                  >
-                    {card.cardNumber}
-                  </Text>
-                </View>
-                <View
-                  className={`px-3 py-1 rounded-full ${
-                    card.status === "active"
-                      ? "bg-green-500/20"
-                      : "bg-red-500/20"
-                  }`}
-                >
-                  <Text
-                    className={`text-sm font-semibold ${
-                      card.status === "active"
-                        ? "text-green-400"
-                        : "text-red-400"
+                    className={`text-xl font-bold mt-2 ${
+                      isDark ? "text-white" : "text-gray-900"
                     }`}
                   >
-                    {card.status.toUpperCase()}
+                    {card.balance}
                   </Text>
                 </View>
               </View>
 
-              <Text
-                className={`text-xl font-bold mb-4 ${isDark ? "text-white" : "text-gray-900"}`}
-              >
-                {card.balance}
-              </Text>
-
-              <View className="flex-row justify-between gap-2">
+              <View className="flex-row gap-2">
                 {card.status === "active" ? (
-                  <>
-                    <TouchableOpacity
-                      onPress={() => handleAction("Block", card.cardNumber)}
-                      className="flex-1 py-3 rounded-xl bg-red-500/20 items-center"
+                  <TouchableOpacity
+                    className={`flex-1 py-3 rounded-xl ${
+                      isDark
+                        ? "bg-red-500/20 border border-red-500"
+                        : "bg-red-50 border border-red-500"
+                    }`}
+                    onPress={() => handleBlockCard(card.id)}
+                  >
+                    <Text
+                      className={`text-center text-sm font-bold ${
+                        isDark ? "text-red-300" : "text-red-700"
+                      }`}
                     >
-                      <Text className="text-red-400 font-semibold">Block</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      onPress={() => handleAction("Replace", card.cardNumber)}
-                      className="flex-1 py-3 rounded-xl bg-blue-500/20 items-center"
-                    >
-                      <Text className="text-blue-400 font-semibold">
-                        Replace
-                      </Text>
-                    </TouchableOpacity>
-                  </>
+                      Block Card
+                    </Text>
+                  </TouchableOpacity>
                 ) : (
                   <TouchableOpacity
-                    onPress={() => handleAction("Activate", card.cardNumber)}
-                    className="flex-1 py-3 rounded-xl bg-green-500/20 items-center"
+                    className={`flex-1 py-3 rounded-xl ${
+                      isDark
+                        ? "bg-lime-500/20 border border-lime-500"
+                        : "bg-lime-50 border border-lime-500"
+                    }`}
+                    onPress={() => handleActivateCard(card.id)}
                   >
-                    <Text className="text-green-400 font-semibold">
-                      Activate
+                    <Text
+                      className={`text-center text-sm font-bold ${
+                        isDark ? "text-lime-300" : "text-lime-700"
+                      }`}
+                    >
+                      Activate Card
                     </Text>
                   </TouchableOpacity>
                 )}
               </View>
             </View>
-          ))}
-        </View>
+          ))
+        )}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }

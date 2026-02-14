@@ -1,14 +1,16 @@
 import * as SecureStore from "expo-secure-store";
 import { axiosInstance } from "./api";
+import { ErrorHandler } from "./utils/ErrorHandler";
 
 const AUTH_TOKEN_KEY = "auth_token";
 const USER_DATA_KEY = "user_data";
+const USER_ROLE_KEY = "user_role";
 
 class AuthService {
-  async login(phoneNumber: string, password: string): Promise<AuthResponse> {
+  async login(identifier: string, password: string): Promise<AuthResponse> {
     try {
       const response = await axiosInstance.post("/auth/login", {
-        phoneNumber: phoneNumber,
+        identifier: identifier,
         password: password,
       });
 
@@ -17,10 +19,19 @@ class AuthService {
 
       return authResponse;
     } catch (error: any) {
-      console.log(error);
+      await ErrorHandler.handle(
+        error,
+        {
+          action: "Login",
+          metadata: { identifier },
+        },
+        false,
+      );
+
       const message =
-        error.error.includes("credentials") || error.response?.status === 401
-          ? "Invalid Phone number or Password"
+        (error.error ?? "").includes("credentials") ||
+        error.response?.status === 401
+          ? "Invalid Credentials"
           : error.response?.status === 429
             ? "Too many login attempts. Please try again later"
             : "Login failed. Please check your connection and try again";
@@ -37,13 +48,6 @@ class AuthService {
     phoneNumber: string;
     bvn: string;
   }): Promise<AuthResponse> {
-    console.log("AuthService.register called:", {
-      firstName: data.firstName,
-      lastName: data.lastName,
-      email: data.email,
-      phoneNumber: data.phoneNumber,
-    });
-
     try {
       const payload = {
         FirstName: String(data.firstName).trim(),
@@ -54,24 +58,27 @@ class AuthService {
         BVN: String(data.bvn).trim(),
       };
 
-      // console.log("Making API request to /auth/register with payload:", {
-      //   ...payload,
-      //   Password: "***",
-      //   BVN: "***",
-      // });
-
       const response = await axiosInstance.post("/auth/register", payload);
 
       const authResponse: AuthResponse = response.data;
       await this.storeAuthData(authResponse);
       return authResponse;
     } catch (error: any) {
-      let message = "Registration failed. Please try again";
+      await ErrorHandler.handle(
+        error,
+        {
+          action: "Register",
+          metadata: { email: data.email, phoneNumber: data.phoneNumber },
+        },
+        false,
+      );
+
+      let message = "Registration Failed. Please try again";
 
       if (error.response?.data?.message) {
         message = error.response.data.message;
       } else if (error.response?.status === 409) {
-        message = "Email already exists";
+        message = "Email Already Exists";
       } else if (error.response?.status === 400) {
         message = "Invalid registration details";
       } else if (error.message && !error.message.includes("Network")) {
@@ -90,7 +97,7 @@ class AuthService {
       await SecureStore.deleteItemAsync(AUTH_TOKEN_KEY);
       await SecureStore.deleteItemAsync(USER_DATA_KEY);
       return { success: true, message: "Logged out successfully" };
-    } catch (error: any) {
+    } catch {
       await SecureStore.deleteItemAsync(AUTH_TOKEN_KEY);
       await SecureStore.deleteItemAsync(USER_DATA_KEY);
       return { success: true, message: "Logged out locally" };
@@ -109,7 +116,13 @@ class AuthService {
         };
       }
     } catch (error) {
-      console.error("Error getting stored auth data:", error);
+      await ErrorHandler.handle(
+        error as Error,
+        {
+          action: "getStoredAuthData",
+        },
+        false,
+      );
     }
 
     return null;
@@ -123,7 +136,9 @@ class AuthService {
         JSON.stringify(authResponse.user),
       );
     } catch (error) {
-      console.error("Failed to store auth data:", error);
+      await ErrorHandler.handle(error as Error, {
+        action: "storeAuthData",
+      });
       throw new Error("Failed to save login information");
     }
   }

@@ -1,6 +1,7 @@
-import { BankTransferService } from "@/components/services/BankTransferService";
 import BalanceCard from "@/components/ui/BalanceCard";
 import ScreenHeader from "@/components/ui/ScreenHeader";
+import PaymentService from "@/lib/services/PaymentService";
+import ToastService from "@/lib/services/ToastService";
 import { AntDesign, Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
@@ -13,7 +14,6 @@ import {
   useColorScheme,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import ToastService from "../../components/services/ToastService";
 
 const USSDPay = () => {
   const router = useRouter();
@@ -36,7 +36,7 @@ const USSDPay = () => {
   ) => {
     setIsLoading(true);
     try {
-      const response = await BankTransferService.generateUSSDCode({
+      const response = await PaymentService.generateUSSDCode({
         type,
         currency: "NGN",
         amount: paymentAmount || 0,

@@ -7,18 +7,19 @@ const OWNER = "calebjnr";
 
 // App production config
 const APP_NAME = "RuralPay";
-const BUNDLE_IDENTIFIER = "com.groovetech.nfccardpayments";
-const PACKAGE_NAME = "com.groovetech.nfccardpayments";
+const BUNDLE_IDENTIFIER = "com.groovetech.ruralpay";
+const APP_DOMAIN = "applinks:app.ruralpay.com";
+const PACKAGE_NAME = "com.groovetech.ruralpay";
 const ICON = "./assets/images/icon.png";
-const ADAPTIVE_ICON = "./assets/images/android-icon-foreground.png";
-const SCHEME = "nfccardpayments";
+const ADAPTIVE_ICON = "./assets/images/icon.png";
+const SCHEME = "ruralpay";
 
 export default ({ config }: ConfigContext): ExpoConfig => {
   const appEnv = process.env.APP_ENV || process.env.EXPO_PUBLIC_ENVIRONMENT;
 
   if (!appEnv) {
     throw new Error(
-      "APP_ENV or EXPO_PUBLIC_ENVIRONMENT environment variable is required"
+      "APP_ENV or EXPO_PUBLIC_ENVIRONMENT environment variable is required",
     );
   }
   console.log("⚙️ Building app for environment:", appEnv);
@@ -46,6 +47,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     ios: {
       supportsTablet: true,
       bundleIdentifier: bundleIdentifier,
+      associatedDomains: [APP_DOMAIN],
       googleServicesFile: "./GoogleService-Info.plist",
       config: {
         googleMobileAdsAutoInit: false,
@@ -65,10 +67,24 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       adaptiveIcon: {
         foregroundImage: adaptiveIcon,
         backgroundColor: "#ffffff",
-        backgroundImage: "./assets/images/android-icon-background.png",
+        backgroundImage: "./assets/images/icon.png",
         monochromeImage: "./assets/images/android-icon-monochrome.png",
       },
       package: packageName,
+      intentFilters: [
+        {
+          action: "VIEW",
+          autoVerify: true,
+          data: [
+            {
+              scheme: "https",
+              host: APP_DOMAIN,
+              pathPrefix: "/(transaction)",
+            },
+          ],
+          category: ["BROWSABLE", "DEFAULT"],
+        },
+      ],
       edgeToEdgeEnabled: true,
       predictiveBackGestureEnabled: false,
       ...(googleServicesFile && { googleServicesFile }),
@@ -165,6 +181,16 @@ export default ({ config }: ConfigContext): ExpoConfig => {
           faceIDPermission: "Allow $(PRODUCT_NAME) to use Face ID.",
         },
       ],
+      [
+        "expo-build-properties",
+        {
+          android: {
+            compileSdkVersion: 35,
+            targetSdkVersion: 35,
+            buildToolsVersion: "35.0.0",
+          },
+        },
+      ],
     ],
     experiments: {
       typedRoutes: true,
@@ -175,7 +201,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
 };
 
 export const getDynamicAppConfig = (
-  environment: "development" | "preview" | "production"
+  environment: "development" | "preview" | "production",
 ) => {
   if (environment === "production") {
     return {
@@ -212,12 +238,12 @@ export const getDynamicAppConfig = (
 };
 
 export const getApiUrl = (
-  environment: "development" | "preview" | "production"
+  environment: "development" | "preview" | "production",
 ): string => {
   const envApiUrl = process.env.EXPO_PUBLIC_API_URL;
   if (!envApiUrl) {
     throw new Error(
-      `EXPO_PUBLIC_API_URL environment variable is required for ${environment} environment`
+      `EXPO_PUBLIC_API_URL environment variable is required for ${environment} environment`,
     );
   }
   return envApiUrl;

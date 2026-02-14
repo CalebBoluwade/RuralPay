@@ -26,6 +26,7 @@
   "payments": {
     "title": "Ịkwụ Ụgwọ",
     "voice": "Ịkwụ Ụgwọ Voice",
+    "bluetooth": "Ịkwụ Ụgwọ Bluetooth",
     "bankTransfer": "Mbufe Ego Ụlọ Akụ",
     "ussd": "Ịkwụ Ụgwọ USSD",
     "nfc": "Ịkwụ Ụgwọ NFC",

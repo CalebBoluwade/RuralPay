@@ -1,6 +1,7 @@
+import { authService } from "@/lib/auth";
+import { complianceService } from "@/lib/services/ComplianceService";
+import { biometricService } from "@/lib/utils/SecureStorage";
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { biometricService } from "../../lib/SecureStorage";
-import { authService } from "../../lib/auth";
 
 interface RegisterData {
   firstName: string;
@@ -19,15 +20,18 @@ interface AuthContextType {
   nativeAuthTransactions: boolean;
   visibleBalance: boolean;
   hasBiometricCredentials: boolean;
-  login: (phoneNumber: string, password: string) => Promise<void>;
+  hasRequiredConsents: boolean;
+  userRole: "consumer" | "merchant";
+  login: (identifier: string, password: string) => Promise<void>;
   biometricLogin: () => Promise<void>;
-  register: (data: RegisterData) => Promise<void>;
+  register: (data: RegisterData) => Promise<User>;
   logout: () => Promise<void>;
   updateNativeAuthSettings: (
     login: boolean,
     transactions: boolean,
   ) => Promise<void>;
   updateVisibleBalance: (visible: boolean) => void;
+  checkConsents: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -41,6 +45,8 @@ export function AuthProvider({
   const [nativeAuthTransactions, setNativeAuthTransactions] = useState(false);
   const [visibleBalance, setVisibleBalance] = useState(true);
   const [hasBiometricCredentials, setHasBiometricCredentials] = useState(false);
+  const [hasRequiredConsents, setHasRequiredConsents] = useState(false);
+  const [userRole, setUserRole] = useState<"consumer" | "merchant">("consumer");
 
   useEffect(() => {
     checkAuthState();
@@ -55,6 +61,9 @@ export function AuthProvider({
 
       const hasBiometric = await biometricService.hasBiometricCredentials();
       setHasBiometricCredentials(hasBiometric);
+
+      const hasConsents = await complianceService.hasRequiredConsents();
+      setHasRequiredConsents(hasConsents);
     } catch (error) {
       console.error("Auth check failed:", error);
     } finally {
@@ -62,13 +71,19 @@ export function AuthProvider({
     }
   };
 
-  const login = async (phoneNumber: string, password: string) => {
-    const authResponse = await authService.login(phoneNumber, password);
+  const checkConsents = async () => {
+    const hasConsents = await complianceService.hasRequiredConsents();
+    setHasRequiredConsents(hasConsents);
+  };
+
+  const login = async (identifier: string, password: string) => {
+    const authResponse = await authService.login(identifier, password);
     setUser(authResponse.user);
+    setUserRole(authResponse.user.role);
 
     // Store credentials for biometric login if enabled
     if (nativeAuthLogin) {
-      await biometricService.storeBiometricCredentials(phoneNumber, password);
+      await biometricService.storeBiometricCredentials(identifier, password);
       setHasBiometricCredentials(true);
     }
   };
@@ -80,7 +95,7 @@ export function AuthProvider({
     }
 
     const authResponse = await authService.login(
-      credentials.phoneNumber,
+      credentials.identifier,
       credentials.password,
     );
     setUser(authResponse.user);
@@ -89,6 +104,8 @@ export function AuthProvider({
   const register = async (data: RegisterData) => {
     const authResponse = await authService.register(data);
     setUser(authResponse.user);
+
+    return authResponse.user;
   };
 
   const logout = async () => {
@@ -126,12 +143,15 @@ export function AuthProvider({
         nativeAuthTransactions,
         visibleBalance,
         hasBiometricCredentials,
+        hasRequiredConsents,
+        userRole,
         login,
         biometricLogin,
         register,
         logout,
         updateNativeAuthSettings,
         updateVisibleBalance,
+        checkConsents,
       }}
     >
       {children}

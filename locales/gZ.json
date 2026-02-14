@@ -1,0 +1,62 @@
+{
+  "auth": {
+    "login": "Log In",
+    "register": "Join the Squad",
+    "welcomeBack": "You're Back! 🔥",
+    "email": "Email",
+    "password": "Password",
+    "firstName": "First Name",
+    "lastName": "Last Name",
+    "phoneNumber": "Phone Number",
+    "confirmPassword": "Confirm Password",
+    "forgotPassword": "Forgot Password?",
+    "alreadyHaveAccount": "Already part of the crew?",
+    "dontHaveAccount": "New here?",
+    "signUp": "Join Up"
+  },
+  "home": {
+    "balance": "Your Bag 💰",
+    "quickLinks": "Quick Moves",
+    "recentTransactions": "Recent Moves",
+    "viewAll": "See Everything",
+    "goodMorning": "Morning Vibes ☀️",
+    "goodAfternoon": "Afternoon Energy ⚡",
+    "goodEvening": "Evening Mood 🌙"
+  },
+  "payments": {
+    "title": "Send It",
+    "voice": "Voice Banking",
+    "bluetooth": "Bluetooth Pay",
+    "bankTransfer": "Bank Transfer",
+    "ussd": "USSD Pay",
+    "nfc": "Tap to Pay",
+    "history": "Payment History",
+    "merchant": "Business Stuff"
+  },
+  "transactions": {
+    "spendingTrackerSubtitle": "Where'd your money go? 👀",
+    "transferMoneyDescription": "Send Money to Your People"
+  },
+  "profile": {
+    "title": "Your Vibe",
+    "security": "Security & Privacy",
+    "biometricLogin": "Face/Touch ID",
+    "transactionSecurity": "Transaction Security",
+    "visibleBalance": "Show Balance",
+    "language": "App Language",
+    "changePin": "Change PIN",
+    "spendingLimits": "Spending Limits",
+    "dailyLimit": "Daily Limit",
+    "monthlyLimit": "Monthly Limit",
+    "signOut": "Peace Out ✌️"
+  },
+  "common": {
+    "continue": "Let's Go",
+    "cancel": "Nah",
+    "save": "Save It",
+    "confirm": "Bet",
+    "success": "W 🎉",
+    "error": "L 😬",
+    "loading": "Loading..."
+  }
+}

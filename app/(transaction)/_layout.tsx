@@ -18,6 +18,19 @@ export default function Layout() {
       />
 
       <Stack.Screen
+        name="QRScan"
+        options={{
+          title: "",
+          headerShown: false,
+          headerTransparent: Platform.OS === "ios",
+          presentation: "formSheet",
+          sheetGrabberVisible: true,
+          sheetAllowedDetents: [0.5, 1],
+          sheetInitialDetentIndex: 0,
+        }}
+      />
+
+      <Stack.Screen
         name="QRPayments"
         options={{
           presentation: Platform.OS === "ios" ? "modal" : "card",
