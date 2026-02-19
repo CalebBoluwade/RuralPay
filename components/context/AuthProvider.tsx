@@ -1,16 +1,8 @@
 import { authService } from "@/lib/auth";
 import { complianceService } from "@/lib/services/ComplianceService";
 import { biometricService } from "@/lib/utils/SecureStorage";
+import { router } from "expo-router";
 import React, { createContext, useContext, useEffect, useState } from "react";
-
-interface RegisterData {
-  firstName: string;
-  lastName: string;
-  email: string;
-  password: string;
-  phoneNumber: string;
-  bvn: string;
-}
 
 interface AuthContextType {
   user: User | null;
@@ -21,7 +13,6 @@ interface AuthContextType {
   visibleBalance: boolean;
   hasBiometricCredentials: boolean;
   hasRequiredConsents: boolean;
-  userRole: "consumer" | "merchant";
   login: (identifier: string, password: string) => Promise<void>;
   biometricLogin: () => Promise<void>;
   register: (data: RegisterData) => Promise<User>;
@@ -46,7 +37,6 @@ export function AuthProvider({
   const [visibleBalance, setVisibleBalance] = useState(true);
   const [hasBiometricCredentials, setHasBiometricCredentials] = useState(false);
   const [hasRequiredConsents, setHasRequiredConsents] = useState(false);
-  const [userRole, setUserRole] = useState<"consumer" | "merchant">("consumer");
 
   useEffect(() => {
     checkAuthState();
@@ -79,7 +69,12 @@ export function AuthProvider({
   const login = async (identifier: string, password: string) => {
     const authResponse = await authService.login(identifier, password);
     setUser(authResponse.user);
-    setUserRole(authResponse.user.role);
+
+    if (authResponse.user.role === "merchant") {
+      return router.push("/(merchant)");
+    } else if (authResponse.user.role === "consumer") {
+      return router.push("/(user)");
+    }
 
     // Store credentials for biometric login if enabled
     if (nativeAuthLogin) {
@@ -99,11 +94,28 @@ export function AuthProvider({
       credentials.password,
     );
     setUser(authResponse.user);
+
+    if (authResponse.user.role === "merchant") {
+      return router.push("/(merchant)");
+    } else if (authResponse.user.role === "consumer") {
+      return router.push("/(user)");
+    }
   };
 
   const register = async (data: RegisterData) => {
     const authResponse = await authService.register(data);
-    setUser(authResponse.user);
+
+    // if (authResponse.user.role === "merchant") {
+    //   await complianceService.createMerchantConsents(authResponse.user.id);
+    // } else if (authResponse.user.role === "consumer") {
+    //   await complianceService.createConsumerConsents(authResponse.user.id);
+    // }
+
+    router.push("/(auth)/Login");
+
+    if (!authResponse) {
+      throw new Error("Registration failed. Please try again.");
+    }
 
     return authResponse.user;
   };
@@ -144,7 +156,6 @@ export function AuthProvider({
         visibleBalance,
         hasBiometricCredentials,
         hasRequiredConsents,
-        userRole,
         login,
         biometricLogin,
         register,

@@ -1,4 +1,5 @@
 import { useLanguage } from "@/components/context/LanguageContext";
+import PieChart from "@/components/ui/PieChart";
 import ScreenHeader from "@/components/ui/ScreenHeader";
 import PaymentService from "@/lib/services/PaymentService";
 import { getDatabase } from "@/lib/utils";
@@ -55,7 +56,7 @@ const SpendingTracker = () => {
 
       const categories: Record<string, number> = {};
       debits.forEach((t) => {
-        const cat = t.recipientAccount || "Other";
+        const cat = t.paymentMode || "Other";
         categories[cat] = (categories[cat] || 0) + t.amount;
       });
       setCategorySpending(categories);
@@ -74,7 +75,7 @@ const SpendingTracker = () => {
     >
       <ScreenHeader
         title="💰 Spending Tracker"
-        subtitle={t("transactions.spendingTrackerSubtitle")}
+        // subtitle={t("transactions.spendingTrackerSubtitle")}
         onBack={() => router.back()}
       />
 
@@ -109,6 +110,20 @@ const SpendingTracker = () => {
                 : "Nice savings! 🎉"}
           </Text>
         </View>
+
+        {categories.length > 0 && (
+          <View className="items-center mb-6">
+            <PieChart
+              data={categories.map(([_, amount], i) => ({
+                value: amount,
+                color: ["#84cc16", "#3b82f6", "#22c55e", "#f97316", "#ec4899"][
+                  i
+                ],
+              }))}
+              size={200}
+            />
+          </View>
+        )}
 
         <View className="flex-row items-center gap-2 mb-4">
           <Text className="text-2xl">🏆</Text>

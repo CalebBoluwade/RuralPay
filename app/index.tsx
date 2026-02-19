@@ -1,9 +1,21 @@
 import { useAuth } from "@/components/context/AuthProvider";
-import { Redirect } from "expo-router";
+import { Redirect, router } from "expo-router";
+import { useEffect } from "react";
 import { ActivityIndicator, View } from "react-native";
 
 export default function Index() {
-  const { isAuthenticated, userRole, isLoading } = useAuth();
+  const { isAuthenticated, user, isLoading } = useAuth();
+
+  useEffect(() => {
+    console.log(user?.role);
+    if (isAuthenticated) {
+      if (user?.role === "merchant") {
+        router.push("/(merchant)");
+      } else if (user?.role === "consumer") {
+        router.push("/(user)");
+      }
+    }
+  }, [isAuthenticated, user]);
 
   if (isLoading) {
     return (
@@ -11,14 +23,6 @@ export default function Index() {
         <ActivityIndicator size="large" color="#3B82F6" />
       </View>
     );
-  }
-
-  if (isAuthenticated) {
-    if (userRole === "merchant") {
-      return <Redirect href="/(merchant)" />;
-    } else if (userRole === "consumer") {
-      return <Redirect href="/(user)" />;
-    }
   }
 
   return <Redirect href="/(auth)/Login" />;

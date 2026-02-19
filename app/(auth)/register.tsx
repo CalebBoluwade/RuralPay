@@ -1,8 +1,11 @@
+import { useAuth } from "@/components/context/AuthProvider";
+import { useLanguage } from "@/components/context/LanguageContext";
 import OptimizedInput from "@/components/ui/Input/OptimizedInput";
 import PinSetupModal from "@/components/ui/Modals/PinSetupModal";
 import ScreenHeader from "@/components/ui/ScreenHeader";
-import { languageNames } from "@/i18n";
+import { RegisterFormData, registerSchema } from "@/lib/schema/validations";
 import AccountService from "@/lib/services/AccountService";
+import { DeviceService } from "@/lib/services/Device";
 import MerchantService from "@/lib/services/MerchantService";
 import ToastService from "@/lib/services/ToastService";
 import { Ionicons } from "@expo/vector-icons";
@@ -13,20 +16,16 @@ import { useForm } from "react-hook-form";
 import {
   KeyboardAvoidingView,
   Platform,
+  Pressable,
   ScrollView,
   Text,
   TextInput,
-  TouchableOpacity,
   View,
   useColorScheme,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useAuth } from "../../components/context/AuthProvider";
-import { useLanguage } from "../../components/context/LanguageContext";
-import { RegisterFormData, registerSchema } from "../../lib/schema/validations";
 
 type RegistrationStep =
-  | "language"
   | "personal"
   | "merchant"
   | "bvn"
@@ -40,7 +39,7 @@ export default function RegisterScreen() {
   const { t } = useLanguage();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
-  const [step, setStep] = useState<RegistrationStep>("language");
+  const [step, setStep] = useState<RegistrationStep>("personal");
   const [showPinModal, setShowPinModal] = useState(false);
   const [registrationData, setRegistrationData] =
     useState<RegisterFormData | null>(null);
@@ -54,6 +53,20 @@ export default function RegisterScreen() {
   const [businessName, setBusinessName] = useState("");
   const [businessAddress, setBusinessAddress] = useState("");
   const [businessType, setBusinessType] = useState("");
+  const [showBusinessTypeDropdown, setShowBusinessTypeDropdown] = useState(false);
+
+  const businessTypes = [
+    "Restaurant",
+    "Retail",
+    "E-commerce",
+    "Services",
+    "Healthcare",
+    "Education",
+    "Entertainment",
+    "Transportation",
+    "Real Estate",
+    "Other",
+  ];
 
   const {
     control,
@@ -143,6 +156,7 @@ export default function RegisterScreen() {
     if (!registrationData) return;
 
     try {
+      const pushToken = await DeviceService.registerForPushNotificationsAsync();
       // Register user first
       const UserResult = await register({
         firstName: registrationData.firstName,
@@ -151,6 +165,7 @@ export default function RegisterScreen() {
         password: registrationData.password,
         phoneNumber: registrationData.phoneNumber,
         bvn: BVN,
+        pushToken: pushToken ?? "",
       });
 
       // If merchant registration, register merchant profile
@@ -168,8 +183,9 @@ export default function RegisterScreen() {
           ? "Merchant Registration Successful"
           : "Registration Successful",
       );
+
       setShowPinModal(false);
-      router.replace("/(tabs)");
+      router.replace("/(auth)/Login");
     } catch (error) {
       setShowPinModal(false);
       setStep("personal");
@@ -188,8 +204,8 @@ export default function RegisterScreen() {
 
   const RenderProgressBar = () => {
     const Steps: RegistrationStep[] = isMerchant
-      ? ["language", "personal", "merchant", "bvn", "phone-verify"]
-      : ["language", "personal", "bvn", "phone-verify"];
+      ? ["personal", "merchant", "bvn", "phone-verify"]
+      : ["personal", "bvn", "phone-verify"];
 
     const CurrentIndex = Steps.indexOf(step);
 
@@ -236,7 +252,6 @@ export default function RegisterScreen() {
   };
 
   const RenderSubtitle = (): string => {
-    if (step === "language") return "Choose your preferred language";
     if (step === "personal") return "Enter your personal details";
     if (step === "merchant") return "Enter your business information";
     if (step === "bvn") return "Verify your identity";
@@ -248,6 +263,18 @@ export default function RegisterScreen() {
     <SafeAreaView
       className={`flex-1 ${isDark ? "bg-[#0a0a0f]" : "bg-[#f5f5fa]"}`}
     >
+      {/* Header */}
+      <ScreenHeader
+        title={t("auth.register")}
+        subtitle={RenderSubtitle()}
+        onBack={() => {
+          if (step === "personal") router.back();
+          else if (step === "merchant") setStep("personal");
+          else if (step === "bvn")
+            setStep(isMerchant ? "merchant" : "personal");
+          else if (step === "phone-verify") setStep("bvn");
+        }}
+      />
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         className="flex-1"
@@ -257,19 +284,6 @@ export default function RegisterScreen() {
           contentContainerStyle={{ flexGrow: 1 }}
           showsVerticalScrollIndicator={false}
         >
-          {/* Header */}
-          <ScreenHeader
-            title={t("auth.register")}
-            subtitle={RenderSubtitle()}
-            onBack={() => {
-              if (step === "language") router.back();
-              else if (step === "personal") setStep("language");
-              else if (step === "merchant") setStep("personal");
-              else if (step === "bvn")
-                setStep(isMerchant ? "merchant" : "personal");
-              else if (step === "phone-verify") setStep("bvn");
-            }}
-          />
           <View className="flex-1 px-6 pt-2 pb-8 w-full">
             {RenderProgressBar()}
 
@@ -277,7 +291,7 @@ export default function RegisterScreen() {
             {step === "personal" && (
               <View className="flex-1">
                 {/* Merchant Registration Toggle */}
-                <TouchableOpacity
+                <Pressable
                   onPress={() => setIsMerchant(!isMerchant)}
                   className={`flex-row items-center p-4 rounded-2xl mb-4 backdrop-blur-xl ${
                     isDark
@@ -312,7 +326,7 @@ export default function RegisterScreen() {
                       Accept payments for your business
                     </Text>
                   </View>
-                </TouchableOpacity>
+                </Pressable>
 
                 <OptimizedInput
                   control={control}
@@ -378,7 +392,7 @@ export default function RegisterScreen() {
                   error={errors.confirmPassword}
                 />
 
-                <TouchableOpacity
+                <Pressable
                   onPress={handleSubmit(OnSubmit)}
                   disabled={isSubmitting}
                   className={`py-4 rounded-2xl mt-4 ${isDark ? "bg-lime-600" : "bg-lime-700"} ${
@@ -388,7 +402,7 @@ export default function RegisterScreen() {
                   <Text className="text-white text-lg font-semibold text-center">
                     {isSubmitting ? "Processing..." : t("common.continue")}
                   </Text>
-                </TouchableOpacity>
+                </Pressable>
 
                 <View className="flex-row justify-center items-center mt-6">
                   <Text
@@ -397,105 +411,15 @@ export default function RegisterScreen() {
                     {t("auth.alreadyHaveAccount")}{" "}
                   </Text>
                   <Link href="/(auth)/Login" asChild>
-                    <TouchableOpacity>
+                    <Pressable>
                       <Text
                         className={`text-base font-semibold ${isDark ? "text-lime-400" : "text-lime-600"}`}
                       >
                         {t("auth.login")}
                       </Text>
-                    </TouchableOpacity>
+                    </Pressable>
                   </Link>
                 </View>
-              </View>
-            )}
-
-            {/* Language Selection Step */}
-            {step === "language" && (
-              <View className="flex-1">
-                <View
-                  className={`rounded-2xl p-6 mb-6 backdrop-blur-xl ${
-                    isDark
-                      ? "bg-white/10 border border-white/20"
-                      : "bg-white/60 border border-gray-200/50"
-                  }`}
-                >
-                  <View className="items-center mb-6">
-                    <View
-                      className={`w-16 h-16 rounded-full items-center justify-center mb-4 ${
-                        isDark ? "bg-lime-500/20" : "bg-lime-100"
-                      }`}
-                    >
-                      <Ionicons
-                        name="language"
-                        size={32}
-                        color={isDark ? "#ffffff" : "#000000"}
-                      />
-                    </View>
-                    <Text
-                      className={`text-xl font-bold text-center ${isDark ? "text-white" : "text-gray-900"}`}
-                    >
-                      Select Language
-                    </Text>
-                    <Text
-                      className={`text-sm text-center mt-2 ${isDark ? "text-gray-400" : "text-gray-600"}`}
-                    >
-                      Choose your preferred language for the app
-                    </Text>
-                  </View>
-
-                  {Object.entries(languageNames).map(
-                    ([key, { label, flag }]) => (
-                      <TouchableOpacity
-                        key={key}
-                        onPress={async () => {
-                          setSelectedLanguage(key as Language);
-                        }}
-                        className={`p-4 rounded-2xl mb-3 backdrop-blur-xl ${
-                          selectedLanguage === key
-                            ? isDark
-                              ? "bg-lime-600 border-2 border-lime-400"
-                              : "bg-lime-700 border-2 border-lime-500"
-                            : isDark
-                              ? "bg-white/10 border border-white/20"
-                              : "bg-white/60 border border-gray-200/50"
-                        }`}
-                      >
-                        <View className="flex-row items-center justify-between">
-                          <View className="flex-row items-center">
-                            <Text className="text-2xl mr-3">{flag}</Text>
-                            <Text
-                              className={`text-lg font-semibold ${
-                                selectedLanguage === key
-                                  ? "text-white"
-                                  : isDark
-                                    ? "text-white"
-                                    : "text-gray-900"
-                              }`}
-                            >
-                              {label}
-                            </Text>
-                          </View>
-                          {selectedLanguage === key && (
-                            <Ionicons
-                              name="checkmark-circle"
-                              size={24}
-                              color="white"
-                            />
-                          )}
-                        </View>
-                      </TouchableOpacity>
-                    ),
-                  )}
-                </View>
-
-                <TouchableOpacity
-                  onPress={() => setStep("personal")}
-                  className={`py-4 rounded-2xl ${isDark ? "bg-lime-600" : "bg-lime-700"}`}
-                >
-                  <Text className="text-white text-lg font-semibold text-center">
-                    {t("common.continue")}
-                  </Text>
-                </TouchableOpacity>
               </View>
             )}
 
@@ -558,27 +482,87 @@ export default function RegisterScreen() {
                     multiline
                   />
 
-                  <TextInput
-                    className={`p-4 rounded-2xl text-base backdrop-blur-xl mb-4 ${
-                      isDark
-                        ? "bg-white/10 border border-white/20 text-white"
-                        : "bg-white/60 border border-gray-200/50 text-gray-900"
-                    }`}
-                    placeholder="Business Type (e.g., Restaurant, Retail, etc.)"
-                    placeholderTextColor={isDark ? "#9CA3AF" : "#6B7280"}
-                    value={businessType}
-                    onChangeText={setBusinessType}
-                  />
+                  <View className="mb-4">
+                    <Pressable
+                      onPress={() => setShowBusinessTypeDropdown(!showBusinessTypeDropdown)}
+                      className={`p-4 rounded-2xl backdrop-blur-xl flex-row justify-between items-center ${
+                        isDark
+                          ? "bg-white/10 border border-white/20"
+                          : "bg-white/60 border border-gray-200/50"
+                      }`}
+                    >
+                      <Text
+                        className={`text-base ${
+                          businessType
+                            ? isDark
+                              ? "text-white"
+                              : "text-gray-900"
+                            : isDark
+                              ? "text-gray-400"
+                              : "text-gray-500"
+                        }`}
+                      >
+                        {businessType || "Select Business Type"}
+                      </Text>
+                      <Ionicons
+                        name={showBusinessTypeDropdown ? "chevron-up" : "chevron-down"}
+                        size={20}
+                        color={isDark ? "#9CA3AF" : "#6B7280"}
+                      />
+                    </Pressable>
+
+                    {showBusinessTypeDropdown && (
+                      <View
+                        className={`mt-2 rounded-2xl backdrop-blur-xl overflow-hidden ${
+                          isDark
+                            ? "bg-white/10 border border-white/20"
+                            : "bg-white/60 border border-gray-200/50"
+                        }`}
+                      >
+                        {businessTypes.map((type, index) => (
+                          <Pressable
+                            key={type}
+                            onPress={() => {
+                              setBusinessType(type);
+                              setShowBusinessTypeDropdown(false);
+                            }}
+                            className={`p-4 flex-row justify-between items-center ${
+                              index !== businessTypes.length - 1
+                                ? isDark
+                                  ? "border-b border-white/10"
+                                  : "border-b border-gray-200"
+                                : ""
+                            }`}
+                          >
+                            <Text
+                              className={`text-base ${
+                                isDark ? "text-white" : "text-gray-900"
+                              }`}
+                            >
+                              {type}
+                            </Text>
+                            {businessType === type && (
+                              <Ionicons
+                                name="checkmark"
+                                size={20}
+                                color={isDark ? "#84cc16" : "#65a30d"}
+                              />
+                            )}
+                          </Pressable>
+                        ))}
+                      </View>
+                    )}
+                  </View>
                 </View>
 
-                <TouchableOpacity
+                <Pressable
                   onPress={HandleMerchantSubmit}
                   className={`py-4 rounded-2xl ${isDark ? "bg-lime-600" : "bg-lime-700"}`}
                 >
                   <Text className="text-white text-lg font-semibold text-center">
                     Continue to Verification
                   </Text>
-                </TouchableOpacity>
+                </Pressable>
               </View>
             )}
 
@@ -642,14 +626,14 @@ export default function RegisterScreen() {
                   </View>
                 </View>
 
-                <TouchableOpacity
+                <Pressable
                   onPress={HandleBvnSubmit}
                   className={`py-4 rounded-2xl ${isDark ? "bg-lime-600" : "bg-lime-700"}`}
                 >
                   <Text className="text-white text-lg font-semibold text-center">
                     Verify BVN
                   </Text>
-                </TouchableOpacity>
+                </Pressable>
               </View>
             )}
 
@@ -698,26 +682,27 @@ export default function RegisterScreen() {
                     value={phoneOTP}
                     onChangeText={setPhoneOTP}
                     keyboardType="numeric"
+                    autoComplete="one-time-code"
                     maxLength={8}
                   />
 
-                  <TouchableOpacity onPress={HandleBvnSubmit}>
+                  <Pressable onPress={HandleBvnSubmit}>
                     <Text
                       className={`text-center ${isDark ? "text-lime-400" : "text-lime-600"}`}
                     >
                       Resend Code
                     </Text>
-                  </TouchableOpacity>
+                  </Pressable>
                 </View>
 
-                <TouchableOpacity
+                <Pressable
                   onPress={HandlePhoneVerify}
                   className={`py-4 rounded-2xl ${isDark ? "bg-lime-600" : "bg-lime-700"}`}
                 >
                   <Text className="text-white text-lg font-semibold text-center">
                     Complete Registration
                   </Text>
-                </TouchableOpacity>
+                </Pressable>
               </View>
             )}
           </View>

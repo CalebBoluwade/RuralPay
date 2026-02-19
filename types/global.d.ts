@@ -41,10 +41,22 @@ global {
     createdAt: string;
   }
 
+  interface RegisterData {
+    firstName: string;
+    lastName: string;
+    email: string;
+    password: string;
+    phoneNumber: string;
+    bvn: string;
+    pushToken: string;
+  }
+
   export interface User {
     id: string;
     email: string;
+    Username: string;
     phoneNumber: string;
+    BVN: string;
     FirstName: string;
     LastName: string;
     AccountId: string;
@@ -74,6 +86,14 @@ global {
     accountName: string;
     currency: string;
     cardNumber: string;
+  }
+
+  interface VirtualAccount {
+    merchantId: string;
+    bankName: string;
+    accountName: string;
+    accountNumber: string;
+    accountName: string;
   }
 
   interface BalanceEnquiry {
@@ -252,8 +272,9 @@ global {
     accountId: string;
   }
 
-  interface PaymentResult {
+  interface CardDetailsResult {
     success: boolean;
+    message: string;
     transaction?: NFCCardTransaction;
   }
 

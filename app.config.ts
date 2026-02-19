@@ -10,8 +10,8 @@ const APP_NAME = "RuralPay";
 const BUNDLE_IDENTIFIER = "com.groovetech.ruralpay";
 const APP_DOMAIN = "applinks:app.ruralpay.com";
 const PACKAGE_NAME = "com.groovetech.ruralpay";
-const ICON = "./assets/images/icon.png";
-const ADAPTIVE_ICON = "./assets/images/icon.png";
+const ICON = "./assets/images/MS.png";
+const ADAPTIVE_ICON = "./assets/images/MS.png";
 const SCHEME = "ruralpay";
 
 export default ({ config }: ConfigContext): ExpoConfig => {
@@ -47,19 +47,24 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     ios: {
       supportsTablet: true,
       bundleIdentifier: bundleIdentifier,
+      appleTeamId: "",
       associatedDomains: [APP_DOMAIN],
       googleServicesFile: "./GoogleService-Info.plist",
       config: {
         googleMobileAdsAutoInit: false,
       },
+      entitlements: {
+        "com.apple.developer.nfc.readersession.formats": ["NDEF", "TAG"],
+      },
       infoPlist: {
+        UIBackgroundModes: ["fetch", "remote-notification"],
         ITSAppUsesNonExemptEncryption: false,
-        NSCameraUsageDescription:
-          "This app uses the camera to scan QR codes for payments",
-        NFCReaderUsageDescription:
-          "This app uses NFC to read payment cards for secure transactions.",
+        NSCameraUsageDescription: "This App Uses The Camera To Scan QR Codes",
+        NFCReaderUsageDescription: "This App uses NFC to Read Payment Cards",
+        NSLocationAlwaysAndWhenInUseUsageDescription:
+          "This App Uses Device Location To Enhance Transaction Security and Aid Fraud Prevention",
         NSLocationWhenInUseUsageDescription:
-          "This app uses location to enhance transaction security and fraud prevention.",
+          "This App Uses Device Location To Enhance Transaction Security and Aid Fraud Prevention",
         FIREBASE_ANALYTICS_COLLECTION_ENABLED: true,
       },
     },
@@ -67,8 +72,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       adaptiveIcon: {
         foregroundImage: adaptiveIcon,
         backgroundColor: "#ffffff",
-        backgroundImage: "./assets/images/icon.png",
-        monochromeImage: "./assets/images/android-icon-monochrome.png",
+        backgroundImage: "./assets/images/MS.png",
+        monochromeImage: "./assets/images/MS.png",
       },
       package: packageName,
       intentFilters: [
@@ -128,8 +133,19 @@ export default ({ config }: ConfigContext): ExpoConfig => {
           // asyncRoutes: true,
         },
       ],
+      [
+        "expo-notifications",
+        {
+          icon: "./assets/images/MS.png",
+          color: "#ffffff",
+        },
+      ],
       "./plugins/withModularHeaders",
       "./plugins/withBLEPermissions",
+      [
+        "react-native-nfc-manager",
+        { nfcReaderUsageDescription: "Allow NFC to Scan Devices." },
+      ],
       [
         "expo-location",
         {
@@ -149,7 +165,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       [
         "expo-splash-screen",
         {
-          image: "./assets/images/splash-icon.png",
+          image: "./assets/images/MS.png",
           imageWidth: 200,
           resizeMode: "contain",
           backgroundColor: "#ffffff",
@@ -220,8 +236,8 @@ export const getDynamicAppConfig = (
       name: `${APP_NAME} Preview`,
       bundleIdentifier: BUNDLE_IDENTIFIER,
       packageName: PACKAGE_NAME,
-      icon: "./assets/images/icon.png",
-      adaptiveIcon: "./assets/images/android-icon-foreground.png",
+      icon: ICON,
+      adaptiveIcon: ADAPTIVE_ICON,
       scheme: `${SCHEME}-prev`,
       googleServicesFile: "./google-services.json",
     };
@@ -231,8 +247,8 @@ export const getDynamicAppConfig = (
     name: `${APP_NAME} Development`,
     bundleIdentifier: `${BUNDLE_IDENTIFIER}.dev`,
     packageName: PACKAGE_NAME,
-    icon: "./assets/images/icon.png",
-    adaptiveIcon: "./assets/images/android-icon-foreground.png",
+    icon: ICON,
+    adaptiveIcon: ADAPTIVE_ICON,
     scheme: `${SCHEME}-dev`,
   };
 };

@@ -3,7 +3,7 @@ import { useLanguage } from "@/components/context/LanguageContext";
 import ScreenHeader from "@/components/ui/ScreenHeader";
 import ToastService from "@/lib/services/ToastService";
 import { biometricService, PinService } from "@/lib/utils/SecureStorage";
-import { Ionicons } from "@expo/vector-icons";
+import { Feather, Ionicons } from "@expo/vector-icons";
 import * as LocalAuthentication from "expo-local-authentication";
 import { router } from "expo-router";
 import { useState } from "react";
@@ -15,7 +15,6 @@ import {
   Switch,
   Text,
   TextInput,
-  TouchableOpacity,
   useColorScheme,
   View,
 } from "react-native";
@@ -38,6 +37,10 @@ export default function ProfileScreen() {
   const [monthlyLimit, setMonthlyLimit] = useState("5000");
   const [showPinModal, setShowPinModal] = useState(false);
   const [showWalletModal, setShowWalletModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editedFirstName, setEditedFirstName] = useState(user?.FirstName || "");
+  const [editedLastName, setEditedLastName] = useState(user?.LastName || "");
+
   const [oldPin, setOldPin] = useState("");
   const [newPin, setNewPin] = useState("");
   const [confirmPin, setConfirmPin] = useState("");
@@ -126,7 +129,7 @@ export default function ProfileScreen() {
   };
 
   const handleLogout = async () => {
-    Alert.prompt("Logout", "Are you sure you want to logout?", [
+    Alert.alert("Logout", "Are you sure you want to logout?", [
       { text: "Cancel", style: "cancel" },
       {
         text: "Logout",
@@ -139,65 +142,131 @@ export default function ProfileScreen() {
     ]);
   };
 
+  const handleEdit = () => {
+    setEditedFirstName(user?.FirstName || "");
+    setEditedLastName(user?.LastName || "");
+    setShowEditModal(true);
+  };
+
+  const handleSaveDetails = () => {
+    // TODO: Add API call to update user details
+    if (user) {
+      user.FirstName = editedFirstName;
+      user.LastName = editedLastName;
+    }
+    ToastService.success("Profile Updated Successfully!");
+    setShowEditModal(false);
+  };
+
   return (
     <SafeAreaView
       className={`flex-1 ${isDark ? "bg-[#0a0a0f]" : "bg-[#f5f5fa]"}`}
     >
+      <ScreenHeader
+        title="Profile"
+        subtitle="Everything You"
+        onBack={() => router.back()}
+      />
+
       <ScrollView
         className="flex-1"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 20 }}
       >
-        <ScreenHeader
-          title="Profile"
-          subtitle="Everything You"
-          onBack={() => router.back()}
-        />
-
         <View className="px-6 pt-4">
           {/* Header Card */}
           <View
-            className={`rounded-2xl p-8 mb-4 backdrop-blur-xl ${
+            className={`rounded-2xl p-6 mb-4 backdrop-blur-xl ${
               isDark
                 ? "bg-white/10 border border-white/20"
                 : "bg-white/95 border border-gray-200/50 shadow-sm"
             }`}
           >
-            {/* Logout */}
-            <TouchableOpacity
-              className={`p-2 flex-row justify-end ${isDark ? "text-red-600" : "text-red-700"}`}
-              onPress={handleLogout}
-            >
-              <Ionicons name="power" size={21} color="red" />
-            </TouchableOpacity>
-
-            <View className="items-center">
-              <View className="w-28 h-28 rounded-full bg-lime-600 justify-center items-center mb-6">
-                <Text className="text-4xl text-white font-bold">
+            <View className="flex-row justify-between items-center">
+              <View className="w-16 h-16 rounded-full bg-lime-600 justify-center items-center mb-4">
+                <Text className="text-2xl text-white font-bold">
                   {(user?.FirstName?.[0] || "U") + (user?.LastName?.[0] || "N")}
                 </Text>
               </View>
-              <Text
-                className={`text-3xl font-bold mb-2 ${isDark ? "text-white" : "text-gray-900"}`}
-              >
-                {user?.FirstName + " " + user?.LastName || "User Name"}
-              </Text>
-              <Text
-                className={`text-lg mb-1 ${isDark ? "text-gray-400" : "text-gray-600"}`}
-              >
-                {user?.email || "user@example.com"}
-              </Text>
-              <TouchableOpacity
-                className={`px-4 py-2 rounded-full mt-2 ${isDark ? "bg-indigo-500/20" : "bg-indigo-100"}`}
-                onPress={() => setShowWalletModal(true)}
-              >
-                <Text
-                  className={`text-sm font-semibold ${isDark ? "text-indigo-300" : "text-indigo-700"}`}
+
+              {/* Action Buttons */}
+              <View className="flex-row justify-end gap-2 mb-4">
+                <Pressable
+                  className={`p-3 rounded-xl ${
+                    isDark ? "bg-white/10" : "bg-gray-100"
+                  }`}
+                  onPress={handleEdit}
+                  // activeOpacity={0.7}
                 >
-                  {user?.AccountId ? "View Wallet" : "Setup Wallet"}
-                </Text>
-              </TouchableOpacity>
+                  <Feather
+                    name="edit-2"
+                    size={18}
+                    color={isDark ? "white" : "black"}
+                  />
+                </Pressable>
+
+                <Pressable
+                  className={`p-3 rounded-xl ${
+                    isDark ? "bg-red-500/20" : "bg-red-100"
+                  }`}
+                  onPress={handleLogout}
+                  // activeOpacity={0.7}
+                >
+                  <Ionicons name="power" size={20} color="#ef4444" />
+                </Pressable>
+              </View>
             </View>
+
+            {/* Profile Info */}
+
+            <View className="flex-row items-center gap-1 mb-2">
+              <Ionicons
+                name="person-outline"
+                size={18}
+                color={isDark ? "#9ca3af" : "#6b7280"}
+              />
+              <Text
+                className={`text-xl font-bold mb-1 ${isDark ? "text-white" : "text-gray-900"}`}
+              >
+                {user?.FirstName + " " + user?.LastName}
+              </Text>
+            </View>
+
+            <View className="flex-row items-center gap-1 mb-2">
+              <Ionicons
+                name="mail"
+                size={18}
+                color={isDark ? "#9ca3af" : "#6b7280"}
+              />
+              <Text
+                className={`text-lg ${isDark ? "text-gray-400" : "text-gray-600"}`}
+              >
+                {user?.email}
+              </Text>
+            </View>
+
+            <View className="flex-row items-center gap-1 mb-4">
+              <Ionicons
+                name="call"
+                size={18}
+                color={isDark ? "#9ca3af" : "#6b7280"}
+              />
+              <Text
+                className={`text-lg ${isDark ? "text-gray-400" : "text-gray-600"}`}
+              >
+                {user?.phoneNumber}
+              </Text>
+            </View>
+
+            <Pressable
+              className={`px-6 py-3 rounded-xl ${isDark ? "bg-lime-600" : "bg-lime-700"}`}
+              onPress={() => setShowWalletModal(true)}
+              // activeOpacity={0.8}
+            >
+              <Text className="text-white font-bold">
+                {user?.AccountId ? "View Wallet" : "Setup Wallet"}
+              </Text>
+            </Pressable>
           </View>
 
           <Pressable
@@ -206,12 +275,8 @@ export default function ProfileScreen() {
                 ? "bg-white/10 border border-white/20"
                 : "bg-gray-50 border border-gray-200 shadow-sm"
             }`}
-            onPress={() => router.push("/ManageLinkedAccounts")}
-            style={{
-              shadowColor: isDark ? "#fff" : "#000",
-              shadowOpacity: 0.05,
-              shadowRadius: 10,
-            }}
+            onPress={() => router.push("/(auth)/ManageLinkedAccounts")}
+            // activeOpacity={0.7}
           >
             <View className="flex-row items-center gap-4">
               <Ionicons
@@ -260,7 +325,7 @@ export default function ProfileScreen() {
                 <Ionicons
                   name="shield-checkmark-sharp"
                   size={24}
-                  color={isDark ? "#a78bfa" : "#7c3aed"}
+                  color={isDark ? "#84cc16" : "#65a30d"}
                 />
               </View>
               <Text
@@ -297,7 +362,7 @@ export default function ProfileScreen() {
                     onValueChange={handleBiometricLoginToggle}
                     trackColor={{
                       false: isDark ? "#374151" : "#E5E7EB",
-                      true: "#6366F1",
+                      true: "#84cc16",
                     }}
                     thumbColor={nativeAuthLogin ? "#FFFFFF" : "#9CA3AF"}
                   />
@@ -329,7 +394,7 @@ export default function ProfileScreen() {
                     onValueChange={handleTransactionSecurityToggle}
                     trackColor={{
                       false: isDark ? "#374151" : "#E5E7EB",
-                      true: "#6366F1",
+                      true: "#84cc16",
                     }}
                     thumbColor={nativeAuthTransactions ? "#FFFFFF" : "#9CA3AF"}
                   />
@@ -361,7 +426,7 @@ export default function ProfileScreen() {
                     onValueChange={updateVisibleBalance}
                     trackColor={{
                       false: isDark ? "#374151" : "#E5E7EB",
-                      true: "#6366F1",
+                      true: "#84cc16",
                     }}
                     thumbColor={visibleBalance ? "#FFFFFF" : "#9CA3AF"}
                   />
@@ -370,11 +435,11 @@ export default function ProfileScreen() {
             </View>
 
             {/* PIN Management */}
-            <TouchableOpacity
+            <Pressable
               className={`p-4 rounded-2xl backdrop-blur-xl ${
                 isDark
-                  ? "bg-indigo-600/30 border border-indigo-500/30"
-                  : "bg-indigo-100 border border-indigo-200"
+                  ? "bg-lime-600/30 border border-lime-500/30"
+                  : "bg-lime-100 border border-lime-200"
               }`}
               onPress={() => setShowPinModal(true)}
             >
@@ -383,7 +448,7 @@ export default function ProfileScreen() {
                   <Ionicons
                     name="key"
                     size={20}
-                    color={isDark ? "#a78bfa" : "#7c3aed"}
+                    color={isDark ? "#84cc16" : "#65a30d"}
                   />
                   <Text
                     className={`font-bold ml-3 text-lg ${isDark ? "text-white" : "text-gray-900"}`}
@@ -394,13 +459,124 @@ export default function ProfileScreen() {
                 <Ionicons
                   name="chevron-forward"
                   size={20}
-                  color={isDark ? "#a78bfa" : "#7c3aed"}
+                  color={isDark ? "#84cc16" : "#65a30d"}
                 />
               </View>
-            </TouchableOpacity>
+            </Pressable>
           </View>
         </View>
       </ScrollView>
+
+      {/* Edit Profile Modal */}
+      <Modal
+        visible={showEditModal}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setShowEditModal(false)}
+      >
+        <View
+          className={`flex-1 justify-center items-center px-5 ${isDark ? "bg-black/80" : "bg-black/40"}`}
+        >
+          <View
+            className={`rounded-2xl p-6 w-full backdrop-blur-xl ${
+              isDark
+                ? "bg-gray-900 border border-white/20"
+                : "bg-white border border-gray-200/50"
+            }`}
+          >
+            <View className="items-center mb-6">
+              <View
+                className={`w-16 h-16 rounded-full items-center justify-center mb-4 ${
+                  isDark ? "bg-lime-500/20" : "bg-lime-100"
+                }`}
+              >
+                <Feather
+                  name="edit-2"
+                  size={28}
+                  color={isDark ? "#84cc16" : "#65a30d"}
+                />
+              </View>
+              <Text
+                className={`text-2xl font-bold ${isDark ? "text-white" : "text-gray-900"}`}
+              >
+                Edit Profile
+              </Text>
+              <Text
+                className={`text-center mt-1 ${isDark ? "text-gray-400" : "text-gray-600"}`}
+              >
+                Update your personal information
+              </Text>
+            </View>
+
+            <View className="mb-4">
+              <Text
+                className={`text-sm font-semibold mb-2 ${isDark ? "text-gray-300" : "text-gray-700"}`}
+              >
+                First Name
+              </Text>
+              <TextInput
+                className={`p-4 rounded-xl text-lg ${
+                  isDark
+                    ? "bg-white/10 border border-white/20 text-white"
+                    : "bg-gray-50 border-2 border-gray-200 text-gray-900"
+                }`}
+                placeholder="Enter first name"
+                placeholderTextColor={isDark ? "#9CA3AF" : "#6B7280"}
+                value={editedFirstName}
+                onChangeText={setEditedFirstName}
+                autoCapitalize="words"
+              />
+            </View>
+
+            <View className="mb-6">
+              <Text
+                className={`text-sm font-semibold mb-2 ${isDark ? "text-gray-300" : "text-gray-700"}`}
+              >
+                Last Name
+              </Text>
+              <TextInput
+                className={`p-4 rounded-xl text-lg ${
+                  isDark
+                    ? "bg-white/10 border border-white/20 text-white"
+                    : "bg-gray-50 border-2 border-gray-200 text-gray-900"
+                }`}
+                placeholder="Enter last name"
+                placeholderTextColor={isDark ? "#9CA3AF" : "#6B7280"}
+                value={editedLastName}
+                onChangeText={setEditedLastName}
+                autoCapitalize="words"
+              />
+            </View>
+
+            <View className="flex-row gap-3">
+              <Pressable
+                className={`flex-1 p-4 rounded-xl ${
+                  isDark
+                    ? "bg-white/5 border border-white/10"
+                    : "bg-gray-100 border border-gray-200"
+                }`}
+                onPress={() => setShowEditModal(false)}
+                // activeOpacity={0.7}
+              >
+                <Text
+                  className={`text-center font-bold text-base ${isDark ? "text-white" : "text-gray-800"}`}
+                >
+                  Cancel
+                </Text>
+              </Pressable>
+              <Pressable
+                className={`flex-1 p-4 rounded-xl ${isDark ? "bg-lime-600" : "bg-lime-700"}`}
+                onPress={handleSaveDetails}
+                // activeOpacity={0.8}
+              >
+                <Text className="text-white text-center font-bold text-base">
+                  Save Changes
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       {/* Wallet Modal */}
       <Modal
@@ -615,7 +791,7 @@ export default function ProfileScreen() {
                 </View>
               </View>
 
-              <TouchableOpacity
+              <Pressable
                 className={`p-4 rounded-xl ${isDark ? "bg-lime-600" : "bg-lime-700"}`}
                 onPress={() => {
                   handleLimitUpdate();
@@ -625,7 +801,7 @@ export default function ProfileScreen() {
                 <Text className="text-white text-center font-bold">
                   Save & Close
                 </Text>
-              </TouchableOpacity>
+              </Pressable>
             </>
           ) : (
             <>
@@ -655,7 +831,7 @@ export default function ProfileScreen() {
               </View>
 
               <View className="flex-row gap-2">
-                <TouchableOpacity
+                <Pressable
                   className={`flex-1 p-4 rounded-xl backdrop-blur-xl ${
                     isDark
                       ? "bg-white/5 border border-white/10"
@@ -668,8 +844,8 @@ export default function ProfileScreen() {
                   >
                     Cancel
                   </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
+                </Pressable>
+                <Pressable
                   className={`flex-1 p-4 rounded-xl ${isDark ? "bg-orange-600" : "bg-orange-700"}`}
                   onPress={() => {
                     setShowWalletModal(false);
@@ -679,7 +855,7 @@ export default function ProfileScreen() {
                   <Text className="text-white text-center font-bold">
                     Setup Now
                   </Text>
-                </TouchableOpacity>
+                </Pressable>
               </View>
             </>
           )}
@@ -712,13 +888,13 @@ export default function ProfileScreen() {
             <View className="items-center mb-6">
               <View
                 className={`w-16 h-16 rounded-full items-center justify-center mb-4 ${
-                  isDark ? "bg-indigo-500/20" : "bg-indigo-100"
+                  isDark ? "bg-lime-500/20" : "bg-lime-100"
                 }`}
               >
                 <Ionicons
                   name="key"
                   size={32}
-                  color={isDark ? "#a78bfa" : "#7c3aed"}
+                  color={isDark ? "#84cc16" : "#65a30d"}
                 />
               </View>
               <Text
@@ -786,7 +962,7 @@ export default function ProfileScreen() {
             )}
 
             <View className="flex-row gap-2">
-              <TouchableOpacity
+              <Pressable
                 className={`flex-1 p-4 rounded-xl backdrop-blur-xl ${
                   isDark
                     ? "bg-white/5 border border-white/10"
@@ -805,15 +981,15 @@ export default function ProfileScreen() {
                 >
                   Cancel
                 </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                className={`flex-1 p-4 rounded-xl ${isDark ? "bg-indigo-600" : "bg-indigo-700"}`}
+              </Pressable>
+              <Pressable
+                className={`flex-1 p-4 rounded-xl ${isDark ? "bg-lime-600" : "bg-lime-700"}`}
                 onPress={handlePinChange}
               >
                 <Text className="text-white text-center font-bold">
                   {pinStep === "old" ? "Continue" : "Update PIN"}
                 </Text>
-              </TouchableOpacity>
+              </Pressable>
             </View>
           </View>
         </View>

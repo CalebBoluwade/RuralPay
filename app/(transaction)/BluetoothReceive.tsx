@@ -1,10 +1,10 @@
+import { useAuth } from "@/components/context/AuthProvider";
 import BalanceCard from "@/components/ui/BalanceCard";
 import AmountInput from "@/components/ui/Input/AmountInput";
 import ScreenHeader from "@/components/ui/ScreenHeader";
 import TransactionFailure from "@/components/ui/Transaction/TransactionFailure";
 import TransactionSuccess from "@/components/ui/Transaction/TransactionSuccess";
 import BLEService from "@/lib/services/BLEService";
-import MerchantService from "@/lib/services/MerchantService";
 import ToastService from "@/lib/services/ToastService";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
@@ -19,6 +19,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const BluetoothReceive = () => {
+  const { user } = useAuth();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const [amount, setAmount] = useState("");
@@ -66,13 +67,11 @@ const BluetoothReceive = () => {
         });
       }, 1000);
 
-      const merchantProfile = await MerchantService.GetMerchantProfile();
-
       // Start advertising and payment server
       const advertiseResult = await BLEService.startAdvertising({
         amount,
         currency: "NGN",
-        merchantName: merchantProfile?.businessName || "Merchant",
+        merchantName: user?.merchant?.businessName || "Merchant",
       });
 
       if (!advertiseResult.success) {

@@ -6,6 +6,15 @@ class AccountService {
     return response.data;
   }
 
+  async GetVirtualAccount(): Promise<{
+    status: boolean;
+    expiresAt: string;
+    virtualAccount: VirtualAccount;
+  }> {
+    const response = await axiosInstance.get(`/accounts/virtual-account`);
+    return response.data;
+  }
+
   async AccountBalance(): Promise<{
     accounts: BalanceEnquiry[];
     dailyLimit: number;

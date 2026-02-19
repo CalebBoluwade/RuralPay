@@ -6,7 +6,6 @@ export default function Layout() {
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="TransactionHistory" options={{ title: "History" }} />
       <Stack.Screen name="USSDPay" options={{ headerShown: false }} />
-      <Stack.Screen name="MerchantServices" options={{ headerShown: false }} />
 
       <Stack.Screen
         name="BankTransfers"
@@ -40,15 +39,6 @@ export default function Layout() {
       />
 
       <Stack.Screen
-        name="NFCPayments"
-        options={{
-          presentation: Platform.OS === "ios" ? "modal" : "card",
-          headerShown: false,
-          headerTransparent: Platform.OS === "ios",
-        }}
-      />
-
-      <Stack.Screen
         name="[txId]"
         options={{
           presentation: Platform.OS === "ios" ? "modal" : "card",
@@ -65,19 +55,6 @@ export default function Layout() {
         options={{
           presentation: Platform.OS === "ios" ? "modal" : "card",
           headerShown: false,
-          sheetGrabberVisible: true,
-          sheetAllowedDetents: [0.5, 1],
-          sheetInitialDetentIndex: 0,
-          headerTransparent: Platform.OS === "ios",
-        }}
-      />
-
-      <Stack.Screen
-        name="ProvisionCard"
-        options={{
-          title: "",
-          presentation: "formSheet",
-          headerShown: true,
           sheetGrabberVisible: true,
           sheetAllowedDetents: [0.5, 1],
           sheetInitialDetentIndex: 0,

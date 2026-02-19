@@ -9,7 +9,7 @@ class MerchantService {
       const response = await axiosInstance.post("/merchant/onboard", data);
 
       return response.data;
-    } catch (error) {
+    } catch {
       return { success: false, message: "Failed to Register Merchant" };
     }
   }

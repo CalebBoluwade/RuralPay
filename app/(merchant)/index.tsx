@@ -1,6 +1,7 @@
 import { useAuth } from "@/components/context/AuthProvider";
 import MerchantQRModal from "@/components/Merchant/MerchantQRScan";
 import NFCPayments from "@/components/Merchant/NFCPayments";
+import VirtualAccounts from "@/components/Merchant/VirtualAccounts";
 import ScreenHeader from "@/components/ui/ScreenHeader";
 import MerchantService from "@/lib/services/MerchantService";
 import { Ionicons } from "@expo/vector-icons";
@@ -26,6 +27,7 @@ export default function MerchantDashboard() {
 
   const [showMerchantPayModal, setShowMerchantPayModal] = useState(false);
   const [showMerchantQRModal, setShowMerchantQRModal] = useState(false);
+  const [showVAModal, setShowVAModal] = useState(false);
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -117,80 +119,86 @@ export default function MerchantDashboard() {
         >
           <ScreenHeader
             goBack={false}
-            title={"Merchant Dashboard"}
-            subtitle={
-              user?.merchant?.businessName || "Your Business at a Glance"
-            }
+            title={user?.merchant?.businessName || "Your Business at a Glance"}
+            subtitle={"Merchant Dashboard"}
           />
 
           {/* Stats Cards */}
-          <View className="px-6 mt-6 flex-row gap-3">
+          <View className="px-6 mt-3 flex-row gap-3">
             <View
               className={`flex-1 p-4 rounded-2xl ${isDark ? "bg-white/10 border border-white/20" : "bg-gray-50 border border-gray-200"}`}
             >
-              <Ionicons
-                name="cash-outline"
-                size={24}
-                color={isDark ? "#10b981" : "#059669"}
-              />
+              <View className="flex-row justify-between items-center">
+                <Ionicons
+                  name="cash-outline"
+                  size={21}
+                  color={isDark ? "#10b981" : "#059669"}
+                />
+                <Text
+                  className={`text-base font-semibold ${isDark ? "text-gray-400" : "text-gray-600"}`}
+                >
+                  Today&apos;s Revenue
+                </Text>
+              </View>
+
               <Text
-                className={`text-2xl font-bold mt-2 ${isDark ? "text-white" : "text-gray-900"}`}
+                className={`text-2xl text-right font-bold mt-2 ${isDark ? "text-white" : "text-gray-900"}`}
               >
                 ₦{stats.revenue.toLocaleString()}
               </Text>
-              <Text
-                className={`text-xs ${isDark ? "text-gray-400" : "text-gray-600"}`}
-              >
-                Today&apos;s Revenue
-              </Text>
             </View>
+
             <View
               className={`flex-1 p-4 rounded-2xl ${isDark ? "bg-white/10 border border-white/20" : "bg-gray-50 border border-gray-200"}`}
             >
-              <Ionicons
-                name="swap-horizontal-outline"
-                size={24}
-                color={isDark ? "#3b82f6" : "#2563eb"}
-              />
+              <View className="flex-row justify-between items-center">
+                <Ionicons
+                  name="swap-horizontal-outline"
+                  size={24}
+                  color={isDark ? "#3b82f6" : "#2563eb"}
+                />
+
+                <Text
+                  className={`text-base font-semibold ${isDark ? "text-gray-400" : "text-gray-600"}`}
+                >
+                  Transactions
+                </Text>
+              </View>
+
               <Text
-                className={`text-2xl font-bold mt-2 ${isDark ? "text-white" : "text-gray-900"}`}
+                className={`text-2xl text-right font-bold mt-2 ${isDark ? "text-white" : "text-gray-900"}`}
               >
                 {stats.transactions}
-              </Text>
-              <Text
-                className={`text-xs ${isDark ? "text-gray-400" : "text-gray-600"}`}
-              >
-                Transactions
               </Text>
             </View>
           </View>
 
           {/* Quick Actions */}
-          <View className="px-6 mt-8">
+          <View className="px-6 mt-5">
             <Text
-              className={`text-2xl font-bold mb-4 ${isDark ? "text-white" : "text-gray-900"}`}
+              className={`text-xl font-bold mb-4 ${isDark ? "text-white" : "text-gray-900"}`}
             >
               Quick Actions
             </Text>
 
             <Pressable
-              className={`px-6 py-7 rounded-2xl mb-4 ${isDark ? "bg-white/10 border border-white/20" : "bg-gray-50 border border-gray-200"}`}
+              className={`px-6 py-4 rounded-2xl mb-4 ${isDark ? "bg-white/10 border border-white/20" : "bg-gray-50 border border-gray-200"}`}
               onPress={() => router.push("/(merchant)/BankUptime")}
             >
               <View className="flex-row items-center gap-4">
                 <Ionicons
                   name="pulse"
-                  size={32}
+                  size={24}
                   color={isDark ? "#34d399" : "#059669"}
                 />
                 <View className="flex-1">
                   <Text
-                    className={`text-xl font-bold ${isDark ? "text-white" : "text-gray-900"}`}
+                    className={`text-lg font-bold ${isDark ? "text-white" : "text-gray-900"}`}
                   >
                     Bank Uptime
                   </Text>
                   <Text
-                    className={`text-lg mt-1 ${isDark ? "text-gray-400" : "text-gray-600"}`}
+                    className={`text-base mt-1 ${isDark ? "text-gray-400" : "text-gray-600"}`}
                   >
                     Quick Industry Status Check
                   </Text>
@@ -199,23 +207,23 @@ export default function MerchantDashboard() {
             </Pressable>
 
             <Pressable
-              className={`px-6 py-7 rounded-2xl mb-4 ${isDark ? "bg-white/10 border border-white/20" : "bg-gray-50 border border-gray-200"}`}
+              className={`px-6 py-4 rounded-2xl mb-4 ${isDark ? "bg-white/10 border border-white/20" : "bg-gray-50 border border-gray-200"}`}
               onPress={() => setShowMerchantPayModal(true)}
             >
               <View className="flex-row items-center gap-4">
                 <Ionicons
                   name="card"
-                  size={32}
+                  size={24}
                   color={isDark ? "#34d399" : "#059669"}
                 />
                 <View className="flex-1">
                   <Text
-                    className={`text-xl font-bold ${isDark ? "text-white" : "text-gray-900"}`}
+                    className={`text-lg font-bold ${isDark ? "text-white" : "text-gray-900"}`}
                   >
                     Accept NFC Payments
                   </Text>
                   <Text
-                    className={`text-lg mt-1 ${isDark ? "text-gray-400" : "text-gray-600"}`}
+                    className={`text-base mt-1 ${isDark ? "text-gray-400" : "text-gray-600"}`}
                   >
                     Tap Customer Card To Receive Payment
                   </Text>
@@ -224,23 +232,23 @@ export default function MerchantDashboard() {
             </Pressable>
 
             <Pressable
-              className={`px-6 py-7 rounded-2xl mb-4 ${isDark ? "bg-white/10 border border-white/20" : "bg-gray-50 border border-gray-200"}`}
+              className={`px-6 py-4 rounded-2xl mb-4 ${isDark ? "bg-white/10 border border-white/20" : "bg-gray-50 border border-gray-200"}`}
               onPress={() => router.push("/(merchant)/MerchantServices")}
             >
               <View className="flex-row items-center gap-4">
                 <Ionicons
                   name="compass"
-                  size={32}
+                  size={24}
                   color={isDark ? "#34d399" : "#059669"}
                 />
                 <View className="flex-1">
                   <Text
-                    className={`text-xl font-bold ${isDark ? "text-white" : "text-gray-900"}`}
+                    className={`text-lg font-bold ${isDark ? "text-white" : "text-gray-900"}`}
                   >
                     Services
                   </Text>
                   <Text
-                    className={`text-lg mt-1 ${isDark ? "text-gray-400" : "text-gray-600"}`}
+                    className={`text-base mt-1 ${isDark ? "text-gray-400" : "text-gray-600"}`}
                   >
                     Card management & More
                   </Text>
@@ -249,8 +257,8 @@ export default function MerchantDashboard() {
             </Pressable>
           </View>
 
-          <View className="flex-row flex-wrap gap-4 mt-5">
-            <Pressable
+          <View className="flex-row flex-wrap items-center gap-3 mt-5 px-5">
+            {/* <Pressable
               className={`flex-1 py-5 rounded-2xl items-center backdrop-blur-xl ${
                 isDark
                   ? "bg-white/10 border border-white/20"
@@ -275,40 +283,13 @@ export default function MerchantDashboard() {
               >
                 QR Generator
               </Text>
-            </Pressable>
-
-            <Pressable
-              className={`flex-1 py-5 rounded-2xl items-center backdrop-blur-xl ${
-                isDark
-                  ? "bg-white/10 border border-white/20"
-                  : "bg-gray-50 border border-gray-200 shadow-sm"
-              }`}
-              onPress={() => router.push("/(merchant)/VirtualAccounts")}
-              style={{
-                shadowColor: isDark ? "#fff" : "#000",
-                shadowOpacity: 0.05,
-                shadowRadius: 10,
-              }}
-            >
-              <Ionicons
-                name="bar-chart-outline"
-                size={32}
-                color={isDark ? "#3b82f6" : "#2563eb"}
-              />
-              <Text
-                className={`text-sm mt-3 font-semibold text-center ${
-                  isDark ? "text-gray-200" : "text-gray-700"
-                }`}
-              >
-                Virtual Accounts
-              </Text>
-            </Pressable>
+            </Pressable> */}
 
             {quickActions.map((action) => (
               <Pressable
                 key={action.id}
                 onPress={() => action.route && router.push(action.route as any)}
-                className={`w-[48%] p-4 rounded-2xl items-center ${isDark ? "bg-white/10 border border-white/20" : "bg-gray-50 border border-gray-200"}`}
+                className={`p-4 rounded-2xl items-center ${isDark ? "bg-white/10 border border-white/20" : "bg-gray-50 border border-gray-200"}`}
               >
                 <Ionicons
                   name={action.icon as any}
@@ -329,6 +310,11 @@ export default function MerchantDashboard() {
       <NFCPayments
         showMerchantPayModal={showMerchantPayModal}
         setShowMerchantPayModal={setShowMerchantPayModal}
+      />
+
+      <VirtualAccounts
+        showVAModal={showVAModal}
+        setShowVAModal={setShowVAModal}
       />
 
       <MerchantQRModal

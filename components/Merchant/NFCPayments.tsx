@@ -5,7 +5,6 @@ import NFCService from "@/lib/services/NFCService";
 import PaymentService from "@/lib/services/PaymentService";
 import ToastService from "@/lib/services/ToastService";
 import * as Haptics from "expo-haptics";
-import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -54,8 +53,11 @@ const NFCPayments: React.FC<NFCPaymentsProps> = ({
   const [paymentResult, setPaymentResult] = useState<APIResponse>();
   const [error, setError] = useState<string>("");
   const [cardPin, setCardPin] = useState("");
-  const [cardTransaction, setCardTransaction] = useState<PaymentResult>();
+  const [cardTransaction, setCardTransaction] = useState<CardDetailsResult>();
   const [binData, setBinData] = useState<any>(null);
+
+  const [openSuccessModal, setOpenSuccessModal] = useState(false);
+  const [openFailureModal, setOpenFailureModal] = useState(false);
 
   const networkInfo = useNetInfo();
 
@@ -142,15 +144,18 @@ const NFCPayments: React.FC<NFCPaymentsProps> = ({
     try {
       setLoading(true);
 
-      const cardResult = await NFCService.MakeNFCCardPayment({
+      const cardResult = await NFCService.RetrieveNFCCardDetails({
         merchantId: merchant.id,
         amount: Number.parseFloat(amount),
         cardPIN: cardPin,
       });
 
+      console.log(cardResult);
+
       if (!cardResult.success) {
-        ToastService.error("Card Payment Failed. Please Try Again.");
+        setError(cardResult.message || "Card Payment Failed");
         setStep("FAILURE");
+        setOpenFailureModal(true);
         return;
       }
 
@@ -163,7 +168,14 @@ const NFCPayments: React.FC<NFCPaymentsProps> = ({
 
       setStep("ENTER_PIN");
     } catch (error) {
+      setError(
+        error instanceof Error ? error.message : "An unknown error occurred",
+      );
+      setStep("FAILURE");
+      setOpenFailureModal(true);
       console.log(error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -204,6 +216,7 @@ const NFCPayments: React.FC<NFCPaymentsProps> = ({
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
           setStep("FAILURE");
+          setOpenFailureModal(true);
         }
       } else {
         ToastService.warning("Offline Mode: Payment saved locally");
@@ -212,6 +225,7 @@ const NFCPayments: React.FC<NFCPaymentsProps> = ({
       ToastService.error("Payment processing failed");
       setError((error as Error).message);
       setStep("FAILURE");
+      setOpenFailureModal(true);
     } finally {
       setLoading(false);
     }
@@ -228,12 +242,8 @@ const NFCPayments: React.FC<NFCPaymentsProps> = ({
 
   const handleRetry = () => {
     setStep("TAP_CARD");
-
+    setOpenFailureModal(false);
     setError("");
-  };
-
-  const handleClose = () => {
-    router.back();
   };
 
   const renderCardSchemeLogo = () => {
@@ -591,7 +601,7 @@ const NFCPayments: React.FC<NFCPaymentsProps> = ({
       {step === "CONFIRM" && renderConfirm()}
       {step === "SUCCESS" && (
         <TransactionSuccess
-          visible
+          visible={openSuccessModal}
           data={{
             amount: amount,
             recipient: merchant?.id!,
@@ -599,16 +609,19 @@ const NFCPayments: React.FC<NFCPaymentsProps> = ({
             date: new Date().toLocaleDateString(),
             type: "NFC Merchant Payment",
           }}
-          onClose={handleClose}
+          onClose={() => setOpenSuccessModal(false)}
           onDownloadReceipt={() => {}}
         />
       )}
       {step === "FAILURE" && (
         <TransactionFailure
-          visible
+          visible={openFailureModal}
           error={error}
           onRetry={handleRetry}
-          onClose={handleClose}
+          onClose={() => {
+            setOpenFailureModal(false);
+            setStep("ENTER_AMOUNT");
+          }}
         />
       )}
     </Modal>

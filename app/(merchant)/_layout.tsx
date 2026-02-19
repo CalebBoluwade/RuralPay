@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
 import { useColorScheme } from "react-native";
 
@@ -32,8 +32,40 @@ export default function MerchantLayout() {
         name="transactions"
         options={{
           title: "Transactions",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="list-outline" size={size} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              size={focused ? 28 : 26}
+              name={focused ? "list" : "list-outline"}
+              color={color}
+            />
+          ),
+        }}
+      />
+
+      <Tabs.Screen
+        name="BankUptime"
+        options={{
+          title: "Bank Uptime",
+          tabBarIcon: ({ color, focused }) => (
+            <MaterialCommunityIcons
+              size={focused ? 28 : 26}
+              name={focused ? "pulse" : "heart-pulse"}
+              color={color}
+            />
+          ),
+        }}
+      />
+
+      <Tabs.Screen
+        name="Profile"
+        options={{
+          title: "Profile",
+          tabBarIcon: ({ color, focused }) => (
+            <MaterialCommunityIcons
+              size={focused ? 28 : 26}
+              name={focused ? "account" : "account-outline"}
+              color={color}
+            />
           ),
         }}
       />

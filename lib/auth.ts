@@ -1,17 +1,22 @@
 import * as SecureStore from "expo-secure-store";
 import { axiosInstance } from "./api";
+import { DeviceService } from "./services/Device";
+import ToastService from "./services/ToastService";
 import { ErrorHandler } from "./utils/ErrorHandler";
 
 const AUTH_TOKEN_KEY = "auth_token";
 const USER_DATA_KEY = "user_data";
-const USER_ROLE_KEY = "user_role";
 
 class AuthService {
   async login(identifier: string, password: string): Promise<AuthResponse> {
     try {
+      const deviceInfo = await DeviceService.getDeviceInfo();
+
+      console.log(deviceInfo);
       const response = await axiosInstance.post("/auth/login", {
         identifier: identifier,
         password: password,
+        deviceInfo: deviceInfo,
       });
 
       const authResponse: AuthResponse = response.data;
@@ -40,14 +45,7 @@ class AuthService {
     }
   }
 
-  async register(data: {
-    firstName: string;
-    lastName: string;
-    email: string;
-    password: string;
-    phoneNumber: string;
-    bvn: string;
-  }): Promise<AuthResponse> {
+  async register(data: RegisterData): Promise<AuthResponse | null> {
     try {
       const payload = {
         FirstName: String(data.firstName).trim(),
@@ -56,6 +54,7 @@ class AuthService {
         Password: String(data.password),
         PhoneNumber: String(data.phoneNumber).trim(),
         BVN: String(data.bvn).trim(),
+        pushToken: data.pushToken, // Placeholder for push token, to be set after registration
       };
 
       const response = await axiosInstance.post("/auth/register", payload);
@@ -87,7 +86,9 @@ class AuthService {
         message = "Network error. Please check your connection";
       }
 
-      throw new Error(message);
+      ToastService.warning(message);
+
+      return null;
     }
   }
 

@@ -76,13 +76,12 @@ export default function Payments() {
     <SafeAreaView
       className={isDark ? "flex-1 bg-[#0a0a0f]" : "flex-1 bg-[#f5f5fa]"}
     >
-      <View className="flex-1 flex gap-3 justify-center px-6 space-y-8">
-        <ScreenHeader
-          title={t("payments.title")}
-          subtitle="Enter payment details to get started"
-          onBack={() => router.back()}
-        />
-
+      <ScreenHeader
+        title={t("payments.title")}
+        subtitle="Enter payment details to get started"
+        onBack={() => router.back()}
+      />
+      <View className="flex-1 flex gap-3 justify-center px-6">
         <View className="mb-3">
           <Text
             className={`text-lg font-bold mb-4 ${
@@ -175,49 +174,6 @@ export default function Payments() {
             </TouchableOpacity> */}
           </View>
         </View>
-
-        <Pressable
-          className={`px-6 py-5 rounded-2xl backdrop-blur-xl ${
-            isDark
-              ? "bg-white/10 border border-white/20"
-              : "bg-gray-50 border border-gray-200 shadow-sm"
-          }`}
-          onPress={() => router.push("/(transaction)/SpendingTracker")}
-          style={{
-            shadowColor: isDark ? "#fff" : "#000",
-            shadowOpacity: 0.05,
-            shadowRadius: 10,
-          }}
-        >
-          <View className="flex-row items-center gap-4">
-            <Ionicons
-              name="analytics-outline"
-              size={28}
-              color={isDark ? "#f59e0b" : "#d97706"}
-            />
-            <View className="flex-1">
-              <Text
-                className={`text-lg font-bold ${
-                  isDark ? "text-white" : "text-gray-900"
-                }`}
-              >
-                Spending Tracker
-              </Text>
-              <Text
-                className={`text-sm mt-1 ${
-                  isDark ? "text-gray-400" : "text-gray-600"
-                }`}
-              >
-                Track your expenses and budgets
-              </Text>
-            </View>
-            <Ionicons
-              name="chevron-forward"
-              size={22}
-              color={isDark ? "#9ca3af" : "#6b7280"}
-            />
-          </View>
-        </Pressable>
 
         {methods.map((method) => (
           <Pressable

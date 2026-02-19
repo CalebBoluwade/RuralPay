@@ -57,7 +57,7 @@ const BankUptime = () => {
     return "bg-red-500";
   };
 
-  const filteredBanks = banks.filter((bank) =>
+  const filteredBanks = (banks || []).filter((bank) =>
     bank.name.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
@@ -123,7 +123,7 @@ const BankUptime = () => {
           }
         >
           <View className="flex-row flex-wrap justify-between pb-8">
-            {filteredBanks.map((bank) => {
+            {(filteredBanks || []).map((bank) => {
               const uptime = Math.round(bank.uptimePrediction || 0);
               return (
                 <View

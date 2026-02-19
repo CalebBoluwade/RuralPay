@@ -12,6 +12,7 @@ import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  FlatList,
   Modal,
   Pressable,
   RefreshControl,
@@ -58,6 +59,7 @@ export default function Index() {
         AccountService.AccountBalance(),
       ]);
 
+      console.log(transactions);
       setRecentTransactions(transactions);
       setAccountEnquiry(balance ?? [{} as BalanceEnquiry]);
     } catch (error) {
@@ -195,99 +197,78 @@ export default function Index() {
             </Pressable>
 
             <View
-              className={`flex-1 rounded-2xl backdrop-blur-xl p-4 border border-lime-600/30 ${
+              className={`rounded-2xl backdrop-blur-xl border border-lime-600/30 ${
                 isDark ? "bg-white/10" : "bg-gray-50 shadow-lg"
               }`}
             >
-              {(recentTransactions || []).length > 0 ? (
-                (recentTransactions ?? []).map((transaction, index) => (
-                  <>
-                    <Pressable
-                      key={transaction.transactionID + index}
-                      className={`flex-row justify-between py-4 ${
-                        isDark
-                          ? "border-b border-white/10"
-                          : "border-b border-gray-200/30"
-                      }`}
-                      onPress={() =>
-                        router.push(
-                          `/(common)/Transaction/${transaction.transactionID}`,
-                        )
-                      }
-                    >
-                      <View className="flex-1 flex-row items-center gap-3">
-                        <View className="bg-lime-600 rounded-full p-2">
-                          <Ionicons
-                            name="swap-vertical"
-                            size={28}
-                            color={"#fff"}
-                          />
-                        </View>
-
-                        <View>
-                          <Text
-                            className={`text-sm font-semibold ${
-                              isDark ? "text-white" : "text-gray-900"
-                            }`}
-                          >
-                            {transaction.paymentMode}
-                          </Text>
-                          <Text
-                            className={`text-sm font-semibold ${
-                              isDark ? "text-white" : "text-gray-900"
-                            }`}
-                          >
-                            {transaction.merchantId}
-                          </Text>
-
-                          <Text
-                            className={`text-base mt-1 ${
-                              isDark ? "text-gray-400" : "text-gray-500"
-                            }`}
-                          >
-                            {transaction.transactionID}
-                          </Text>
-                        </View>
-                      </View>
-                      <View className="items-end">
-                        <Text
-                          className={`text-base font-bold ${
-                            isDark ? "text-red-400" : "text-red-600"
-                          }`}
-                        >
-                          -₦{transaction.amount.toLocaleString()}
-                        </Text>
-                        <Text
-                          className={`text-xs mt-1 ${
-                            isDark ? "text-gray-400" : "text-gray-500"
-                          }`}
-                        >
-                          {new Date(
-                            transaction.transactionDate,
-                          ).toLocaleDateString()}
-                        </Text>
-                      </View>
-                    </Pressable>
-
-                    <View className="h-[2px] bg-gray-800 my-4" />
-                  </>
-                ))
-              ) : (
-                <View className="py-8 items-center">
-                  <Ionicons
-                    name="receipt-outline"
-                    size={48}
-                    color={isDark ? "#4b5563" : "#9ca3af"}
-                  />
-                  <Text
-                    className={`text-sm font-medium mt-3 ${
-                      isDark ? "text-gray-400" : "text-gray-500"
+              <FlatList
+                data={recentTransactions}
+                keyExtractor={(item) =>
+                  item.transactionID + item.transactionDate
+                }
+                renderItem={({ item }) => (
+                  <Pressable
+                    className={`flex-row justify-between p-4 ${
+                      isDark
+                        ? "border-b border-white/10"
+                        : "border-b border-gray-200/30"
                     }`}
+                    onPress={() =>
+                      router.push(`/(common)/Transaction/${item.transactionID}`)
+                    }
                   >
-                    No Recent Transactions
-                  </Text>
-                </View>
-              )}
+                    <View className="flex-1 flex-row items-center gap-3">
+                      <View className="bg-lime-600 rounded-full p-2">
+                        <Ionicons name="swap-vertical" size={28} color="#fff" />
+                      </View>
+                      <View>
+                        <Text
+                          className={`text-sm font-semibold ${isDark ? "text-white" : "text-gray-900"}`}
+                        >
+                          {item.paymentMode}
+                        </Text>
+                        <Text
+                          className={`text-sm font-semibold ${isDark ? "text-white" : "text-gray-900"}`}
+                        >
+                          {item.merchantId}
+                        </Text>
+                        <Text
+                          className={`text-base mt-1 ${isDark ? "text-gray-400" : "text-gray-500"}`}
+                        >
+                          {item.transactionID}
+                        </Text>
+                      </View>
+                    </View>
+                    <View className="items-end">
+                      <Text
+                        className={`text-base font-bold ${isDark ? "text-red-400" : "text-red-600"}`}
+                      >
+                        -₦{item.amount.toLocaleString()}
+                      </Text>
+                      <Text
+                        className={`text-xs mt-1 ${isDark ? "text-gray-400" : "text-gray-500"}`}
+                      >
+                        {new Date(item.transactionDate).toLocaleDateString()}
+                      </Text>
+                    </View>
+                  </Pressable>
+                )}
+                ListEmptyComponent={
+                  <View className="py-8 items-center">
+                    <Ionicons
+                      name="receipt-outline"
+                      size={48}
+                      color={isDark ? "#4b5563" : "#9ca3af"}
+                    />
+                    <Text
+                      className={`text-sm font-medium mt-3 ${isDark ? "text-gray-400" : "text-gray-500"}`}
+                    >
+                      No Recent Transactions
+                    </Text>
+                  </View>
+                }
+                scrollEnabled={false}
+              />
             </View>
           </View>
         </View>

@@ -33,7 +33,9 @@ class PaymentService {
     const response = await axiosInstance.get(
       `/transactions/recent?limit=${limit}`,
     );
-    return response.data;
+
+    console.log("Recent Transactions Response:", response.data);
+    return response.data || [];
   }
 
   async FetchTransactionById(txId: string): Promise<TransactionHistory> {
@@ -43,7 +45,7 @@ class PaymentService {
 
   async FetchAllTransactions(): Promise<TransactionHistory[]> {
     const response = await axiosInstance.get("/transactions/recent");
-    return response.data;
+    return response.data || [];
   }
 
   async FetchAllUSSDTransactions(): Promise<USSDTransaction[]> {

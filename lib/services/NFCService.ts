@@ -280,7 +280,7 @@ class NFCService {
     return this.bytesToHex(blockBytes);
   }
 
-  async MakeNFCCardPayment({
+  async RetrieveNFCCardDetails({
     merchantId,
     amount,
     cardPIN,
@@ -288,7 +288,7 @@ class NFCService {
     merchantId: string;
     amount: number;
     cardPIN: string;
-  }): Promise<PaymentResult> {
+  }): Promise<CardDetailsResult> {
     try {
       ToastService.info("Hold Card Near Device...");
 
@@ -298,7 +298,10 @@ class NFCService {
 
       const isSupported = await NfcManager.isSupported();
       if (!isSupported) {
-        throw new Error("NFC is Not Supported on this Device");
+        return {
+          success: false,
+          message: "NFC is Not Supported on this Device",
+        };
       }
 
       const isEnabled = await NfcManager.isEnabled();
@@ -350,6 +353,7 @@ class NFCService {
 
       return {
         success: true,
+        message: "Card Processed Successfully",
         transaction: transaction,
       };
     } catch (error) {
@@ -360,6 +364,8 @@ class NFCService {
 
       return {
         success: false,
+        message:
+          error instanceof Error ? error.message : "An unknown error occurred",
       };
     } finally {
       try {
@@ -676,7 +682,10 @@ class NFCService {
     return await this.sendAPDU(command);
   }
 
-  async readApplicationData(processingOptions: { afl?: string; aip?: string }) {
+  private async readApplicationData(processingOptions: {
+    afl?: string;
+    aip?: string;
+  }) {
     const records: number[][] = [];
 
     if (!processingOptions.afl) {
@@ -703,7 +712,7 @@ class NFCService {
     return records;
   }
 
-  parsePPSE(response: number[]): { aid: number[]; label: string }[] {
+  private parsePPSE(response: number[]): { aid: number[]; label: string }[] {
     // Parse PPSE response to extract AIDs
     const applications: { aid: number[]; label: string }[] = [];
 
@@ -742,7 +751,7 @@ class NFCService {
     return applications;
   }
 
-  parseCardData(records: number[][]): CardInfo {
+  private parseCardData(records: number[][]): CardInfo {
     try {
       // 1. UNWRAP THE RECORDS
       // We must strip the 0x70 (Template) tag and the Status Words (SW)
@@ -892,7 +901,7 @@ class NFCService {
     }
   }
 
-  parseGPO(response: number[]): { afl?: string; aip?: string } {
+  private parseGPO(response: number[]): { afl?: string; aip?: string } {
     try {
       // 1. Safety Check
       if (!response || response.length < 2) return {};
@@ -952,7 +961,7 @@ class NFCService {
     }
   }
 
-  parseTLV(data: number[]): Record<string, string> {
+  private parseTLV(data: number[]): Record<string, string> {
     const result: Record<string, string> = {};
     let i = 0;
 
@@ -997,7 +1006,7 @@ class NFCService {
     return result;
   }
 
-  findAllTags(data: number[], tag: string) {
+  private findAllTags(data: number[], tag: string) {
     // Find all occurrences of a tag in data
     const results = [];
     let i = 0;
@@ -1031,14 +1040,16 @@ class NFCService {
 
   // Helper: Parse the PAN (Tag 5A)
   // EMV stores PAN as "Packed BCD" (e.g., 0x12 0x34 -> "1234")
-  parsePAN(hexString: string): string {
+  private parsePAN(hexString: string): string {
     let pan = hexString.replace(/F/g, ""); // 'F' is padding in BCD
     return pan;
   }
 
   // Helper: Parse Track 2 Data (Tag 57)
   // Structure: [PAN] + [Separator 'D'] + [Expiry YYMM] + [Service Code]
-  parseTrack2(hexString: string): { pan: string; expiryDate: string } | null {
+  private parseTrack2(
+    hexString: string,
+  ): { pan: string; expiryDate: string } | null {
     try {
       // Clean the hex string
       const raw = hexString.toUpperCase().replace(/F/g, "");
@@ -1064,7 +1075,7 @@ class NFCService {
 
   // Helper: Parse Expiry Date (Tag 5F24) if Track 2 is missing
   // Format is usually YYMMDD in BCD
-  parseExpiryDate(hexString: string): string {
+  private parseExpiryDate(hexString: string): string {
     const raw = hexString.replace(/F/g, "");
     if (raw.length < 4) return raw;
 
@@ -1074,7 +1085,7 @@ class NFCService {
   }
 
   // Helper: Convert Hex String to Normal String (e.g. Cardholder Name)
-  hexToString(hexString: string): string {
+  private hexToString(hexString: string): string {
     let str = "";
     for (let i = 0; i < hexString.length; i += 2) {
       const code = Number.parseInt(hexString.substr(i, 2), 16);
@@ -1083,7 +1094,7 @@ class NFCService {
     return str;
   }
 
-  hexStringToBytes(hexString: string): number[] {
+  private hexStringToBytes(hexString: string): number[] {
     const bytes = [];
     for (let i = 0; i < hexString.length; i += 2) {
       bytes.push(Number.parseInt(hexString.substr(i, 2), 16));
@@ -1179,7 +1190,7 @@ class NFCService {
   /**
    * 3. EXECUTE: The "GENERATE AC" Command
    */
-  async performTransaction(
+  private async performTransaction(
     cdol1Raw: string,
     amount: number,
   ): Promise<EmvTransactionResult> {
