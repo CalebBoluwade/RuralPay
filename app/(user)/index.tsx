@@ -59,7 +59,6 @@ export default function Index() {
         AccountService.AccountBalance(),
       ]);
 
-      console.log(transactions);
       setRecentTransactions(transactions);
       setAccountEnquiry(balance ?? [{} as BalanceEnquiry]);
     } catch (error) {
@@ -111,11 +110,7 @@ export default function Index() {
           subtitle={user?.FirstName || "User Name"}
         />
 
-        <BalanceCard
-          showNFC
-          accountEnquiry={accountEnquiry!}
-          loading={loading}
-        />
+        <BalanceCard accountEnquiry={accountEnquiry!} loading={loading} />
 
         <View className="px-6 mt-2">
           {/* Merchant Section */}

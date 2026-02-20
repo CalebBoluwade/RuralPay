@@ -95,14 +95,14 @@ const NFCPayments: React.FC<NFCPaymentsProps> = ({
     const numericAmount = Number.parseFloat(amount);
 
     if (!amount || Number.isNaN(numericAmount) || numericAmount <= 0) {
-      setAmountError("Please enter a valid amount");
+      setAmountError("Please Enter A Valid Amount");
       // return;
     }
 
-    if (numericAmount > 1000000) {
-      setAmountError("Amount cannot exceed ₦1,000,000");
-      // return;
-    }
+    // if (numericAmount > 1000000) {
+    //   setAmountError("Amount cannot exceed ₦1,000,000");
+    //   // return;
+    // }
 
     setAmountError("");
 

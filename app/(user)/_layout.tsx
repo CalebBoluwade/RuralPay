@@ -9,6 +9,8 @@ import {
 import React from "react";
 
 export default function TabLayout() {
+  const icon = { iconColor: "#84cc16", backgroundColor: "#9ca3af" };
+
   return (
     <NativeTabs
     // screenOptions={{
@@ -38,7 +40,7 @@ export default function TabLayout() {
     //   },
     // }}
     >
-      <NativeTabs.Trigger name="index">
+      <NativeTabs.Trigger name="index" options={icon}>
         <Label>Home</Label>
         <Icon
           src={<VectorIcon family={MaterialCommunityIcons} name="home" />}
@@ -46,19 +48,24 @@ export default function TabLayout() {
         <Badge>3</Badge>
       </NativeTabs.Trigger>
 
-      <NativeTabs.Trigger name="Tracker">
+      <NativeTabs.Trigger name="Tracker" options={icon}>
         <Label>Tracker</Label>
         <Icon
           src={<VectorIcon family={MaterialCommunityIcons} name="chart-bar" />}
         />
       </NativeTabs.Trigger>
 
-      <NativeTabs.Trigger name="Payments">
+      <NativeTabs.Trigger name="Payments" options={icon}>
         <Label>Payments</Label>
         <Icon src={<VectorIcon family={Ionicons} name="cash-outline" />} />
       </NativeTabs.Trigger>
 
-      <NativeTabs.Trigger name="Profile">
+      <NativeTabs.Trigger name="Services" options={icon}>
+        <Label>Services</Label>
+        <Icon src={<VectorIcon family={Ionicons} name="cog-outline" />} />
+      </NativeTabs.Trigger>
+
+      <NativeTabs.Trigger name="Profile" options={icon}>
         <Label>Profile</Label>
         <Icon
           src={

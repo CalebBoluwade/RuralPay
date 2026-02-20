@@ -1,7 +1,7 @@
-import BalanceCard from "@/components/ui/BalanceCard";
 import AmountInput from "@/components/ui/Input/AmountInput";
 import OptimizedInput from "@/components/ui/Input/OptimizedInput";
 import BanksModal from "@/components/ui/Modals/BanksModal";
+import PaymentMethodModal from "@/components/ui/Modals/PaymentMethodModal";
 import ScreenHeader from "@/components/ui/ScreenHeader";
 import TransactionFailure from "@/components/ui/Transaction/TransactionFailure";
 import TransactionPin from "@/components/ui/Transaction/TransactionPinModal";
@@ -10,7 +10,6 @@ import AccountService from "@/lib/services/AccountService";
 import { LocationService } from "@/lib/services/LocationService";
 import PaymentService from "@/lib/services/PaymentService";
 import { ReceiptService } from "@/lib/services/ReceiptService";
-import ToastService from "@/lib/services/ToastService";
 import { formatAmount } from "@/lib/utils/formatAmount";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { router } from "expo-router";
@@ -38,8 +37,8 @@ const transferSchema = z.object({
   fromAccount: z.string(),
   amount: z.string().refine((val) => {
     const num = Number.parseFloat(val);
-    return !Number.isNaN(num) && num >= 100 && num <= 1000000;
-  }, "Amount must be between ₦100 and ₦1,000,000"),
+    return !Number.isNaN(num);
+  }, "Please Enter A Valid Amount"),
   narration: z.string().optional(),
 });
 
@@ -60,14 +59,11 @@ const BankTransfers = () => {
   const isDark = colorScheme === "dark";
   const [loading, setLoading] = useState(false);
   const [showBankModal, setShowBankModal] = useState(false);
+  const [showPaymentMethodModal, setShowPaymentMethodModal] = useState(false);
   const [showPinModal, setShowPinModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showFailureModal, setShowFailureModal] = useState(false);
 
-  const [accountEnquiry, setAccountEnquiry] = useState<AccountBalanceEnquiry>();
-  const [selectedAccount, setSelectedAccount] = useState<BalanceEnquiry | null>(
-    null,
-  );
   const [transferData, setTransferData] = useState<TransferFormData | null>(
     null,
   );
@@ -90,25 +86,13 @@ const BankTransfers = () => {
       accountNumber: "",
       amount: "",
       narration: "",
-      fromAccount: selectedAccount?.accountId ?? "",
+      fromAccount: "",
     },
     reValidateMode: "onChange",
   });
 
   const watchedValues = useWatch({ control });
   const { bankCode, accountNumber } = watchedValues;
-
-  const loadAccountData = async () => {
-    try {
-      const balance = await AccountService.AccountBalance();
-      setAccountEnquiry(balance);
-    } catch (error) {
-      console.warn(error);
-      ToastService.error("Failed to Load Account Data");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const performNameEnquiry = async () => {
     if (!bankCode || !accountNumber || accountNumber.length !== 10) {
@@ -135,7 +119,6 @@ const BankTransfers = () => {
   };
 
   useEffect(() => {
-    loadAccountData();
     const fetchBanks = async () => {
       const banks = await PaymentService.GetBanks();
       setBanks(banks);
@@ -144,17 +127,10 @@ const BankTransfers = () => {
   }, []);
 
   useEffect(() => {
-    if (selectedAccount?.accountId) {
-      setValue("fromAccount", selectedAccount.accountId);
-    }
-  }, [selectedAccount, setValue]);
-
-  useEffect(() => {
     performNameEnquiry();
   }, [bankCode, accountNumber]);
 
   const onSubmit = async (data: TransferFormData) => {
-    console.log(data);
     if (!isAccountNameValid(accountName)) {
       setErrorMessage(
         "Please Verify the Account Details. Name Enquiry Failed.",
@@ -164,7 +140,7 @@ const BankTransfers = () => {
     }
 
     setTransferData(data);
-    setShowPinModal(true);
+    setShowPaymentMethodModal(true);
   };
 
   const processTransfer = async (): Promise<ReceiptData | void> => {
@@ -173,15 +149,19 @@ const BankTransfers = () => {
     const selectedBank = banks.find(
       (bank) => bank.code === transferData.bankCode,
     );
+
+    if (!transferData.fromAccount) {
+      throw new Error("No Source Account Selected");
+    }
+
     const location = await LocationService.getCurrentLocation();
 
     const payload: TransferPayload = {
-      transactionID: PaymentService.generateTransactionId(),
+      transactionID: PaymentService.generateTransactionId("BANK_TRANSFER"),
       amount: Number.parseFloat(transferData.amount),
       currency: "NGN",
       txType: "DEBIT",
       fromAccount: transferData.fromAccount,
-      reference: `TXN${Date.now()}`,
       toAccount: transferData.accountNumber,
       toBankCode: selectedBank?.code || "",
       paymentMode: "BANK_TRANSFER" as PaymentMode,
@@ -254,13 +234,29 @@ const BankTransfers = () => {
 
   const handleRetry = () => {
     setShowFailureModal(false);
-    setShowPinModal(true);
+    setShowPaymentMethodModal(true);
   };
 
   const handleBankSelection = (bank: Bank) => {
     setValue("bankCode", bank.code);
     setSelectedBankName(bank.name);
     setShowBankModal(false);
+  };
+
+  const handlePaymentMethodSelected = (data: {
+    method: string;
+    accountNumber?: string;
+    accountName?: string;
+  }) => {
+    console.log("Payment Method Data", data);
+    if (data.accountNumber) {
+      setValue("fromAccount", data.accountNumber);
+      setTransferData((prev) =>
+        prev ? { ...prev, fromAccount: data.accountNumber! } : null,
+      );
+    }
+    setShowPaymentMethodModal(false);
+    setShowPinModal(true);
   };
 
   return (
@@ -272,15 +268,6 @@ const BankTransfers = () => {
           title="Bank Transfers"
           goBack
           onBack={() => router.back()}
-        />
-
-        <BalanceCard
-          showNFC
-          accountEnquiry={accountEnquiry}
-          loading={loading}
-          onAccountChange={(account) => {
-            setSelectedAccount(account);
-          }}
         />
 
         <View className="flex-1 mb-8 px-5">
@@ -409,6 +396,13 @@ const BankTransfers = () => {
           visible={showBankModal}
           onClose={() => setShowBankModal(false)}
           onBankSelected={handleBankSelection}
+        />
+
+        <PaymentMethodModal
+          visible={showPaymentMethodModal}
+          onClose={() => setShowPaymentMethodModal(false)}
+          amount={Number.parseFloat(transferData?.amount || "0") || 0}
+          onPaymentMethodSelected={handlePaymentMethodSelected}
         />
 
         <TransactionSuccess

@@ -5,9 +5,9 @@ import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Dimensions,
+  Pressable,
   ScrollView,
   Text,
-  TouchableOpacity,
   useColorScheme,
   View,
 } from "react-native";
@@ -15,7 +15,6 @@ import { SvgUri } from "react-native-svg";
 import { useAuth } from "../context/AuthProvider";
 
 interface BalanceCardProps {
-  showNFC?: boolean;
   accountEnquiry?: AccountBalanceEnquiry;
   loading?: boolean;
   onRefresh?: () => void;
@@ -23,12 +22,11 @@ interface BalanceCardProps {
 }
 
 const { width } = Dimensions.get("window");
-const CARD_PADDING = 16;
-const CARD_WIDTH = width - CARD_PADDING * 2;
-const CARD_MARGIN = 12;
+const CARD_PADDING = 4;
+const CARD_WIDTH = width - 50;
+const CARD_MARGIN = 8;
 
 const BalanceCard: React.FC<BalanceCardProps> = ({
-  showNFC = true,
   accountEnquiry,
   loading,
   onRefresh,
@@ -71,10 +69,13 @@ const BalanceCard: React.FC<BalanceCardProps> = ({
   };
 
   useEffect(() => {
-    if (!accountEnquiry) {
+    if (!accountEnquiry && !loading) {
       loadAccountData();
     }
-  }, [accountEnquiry]);
+    if (accountEnquiry) {
+      setInternalLoading(false);
+    }
+  }, [accountEnquiry, loading]);
 
   const handleScroll = (event: any) => {
     const offsetX = event.nativeEvent.contentOffset.x;
@@ -94,7 +95,7 @@ const BalanceCard: React.FC<BalanceCardProps> = ({
 
   if (loading || internalLoading) {
     return (
-      <View className="bg-green-800 shadow-lg border border-green-700 rounded-2xl p-6 mb-8 mx-3">
+      <View className="bg-lime-800/75 shadow-lg border border-lime-300 rounded-2xl p-6 mb-8 mx-3">
         <ActivityIndicator size="large" color="#fff" />
       </View>
     );
@@ -105,7 +106,7 @@ const BalanceCard: React.FC<BalanceCardProps> = ({
       <View
         className={`bg-lime-800/75 rounded-2xl shadow-lg border-2 border-dashed border-lime-300 ${
           isDark ? "bg-lime-600/20" : "bg-lime-50 shadow-lg"
-        } px-6 py-4 mx-4`}
+        } py-7 mx-4`}
       >
         <View className="flex-row justify-between items-center">
           <Text className="text-white text-xl font-medium">Balance</Text>
@@ -122,6 +123,26 @@ const BalanceCard: React.FC<BalanceCardProps> = ({
   return (
     <View className="mb-2">
       <View style={{ paddingLeft: CARD_PADDING }}>
+        {/* Daily Spending Progress Bar */}
+        <View
+          className={`px-4 py-5 my-3 mx-1 rounded-xl ${isDark ? "bg-white/10" : "bg-gray-50"}`}
+        >
+          <View className="flex-row justify-between items-center mb-1">
+            <Text className="text-white/80 text-xs">Daily Spending</Text>
+            <Text className="text-white/80 text-xs">
+              {visibleBalance
+                ? `₦${(allAccounts.dailySpent || 0).toLocaleString()} / ₦${(allAccounts.dailyLimit || 1000).toLocaleString()}`
+                : "•••• / ••••"}
+            </Text>
+          </View>
+          <View className="bg-white/20 h-2 rounded-full overflow-hidden">
+            <View
+              className={`h-full rounded-full ${getProgressColor(getSpendingProgress(allAccounts))}`}
+              style={{ width: `${getSpendingProgress(allAccounts)}%` }}
+            />
+          </View>
+        </View>
+
         <ScrollView
           ref={scrollViewRef}
           horizontal
@@ -139,7 +160,7 @@ const BalanceCard: React.FC<BalanceCardProps> = ({
                 isDark
                   ? "bg-lime-600/20 border-2 border-lime-500/40"
                   : "bg-lime-50 border-2 border-lime-300"
-              } px-6 py-4 ${account.accountId === allAccounts.accounts?.[currentIndex]?.accountId ? "border-2 border-dashed border-lime-300" : ""}`}
+              } px-3 py-2 ${account.accountId === allAccounts.accounts?.[currentIndex]?.accountId ? "border-2 border-dashed border-lime-300" : ""}`}
               style={{
                 width: CARD_WIDTH,
                 marginRight:
@@ -147,101 +168,69 @@ const BalanceCard: React.FC<BalanceCardProps> = ({
                     ? CARD_MARGIN
                     : 0,
               }}
+              aria-disabled={account.status !== "ACTIVE"}
             >
-              <View className="flex-row justify-between items-center">
-                <Text className="text-white text-lg font-medium">Balance</Text>
-                <Text className="text-white text-right text-lg font-bold">
-                  {account.accountId || "NA"}
+              <View className="flex-row items-center gap-4">
+                <View
+                  className={`p-1 rounded-2xl items-center ${
+                    isDark
+                      ? "bg-white/10 border border-white/20"
+                      : "bg-gray-50 border border-gray-200 shadow-sm"
+                  }`}
+                  style={{
+                    shadowColor: isDark ? "#fff" : "#000",
+                    shadowOpacity: 0.05,
+                    shadowRadius: 10,
+                  }}
+                >
+                  <SvgUri uri={account.bankLogo} width={25} height={25} />
+                </View>
+
+                <View>
+                  <Text className="text-white text-lg font-bold">
+                    {account.accountId || "NA"}
+                  </Text>
+
+                  <Text className="text-white text-sm font-semibold">
+                    {account.accountName || "NA"}
+                  </Text>
+                </View>
+              </View>
+
+              <View className="flex-row justify-end items-center gap-3">
+                <Pressable
+                  onPress={() => updateVisibleBalance(!visibleBalance)}
+                >
+                  <Ionicons
+                    name={visibleBalance ? "eye" : "eye-off"}
+                    size={20}
+                    color="white"
+                  />
+                </Pressable>
+
+                <Text className="text-white text-xl font-bold">
+                  {account.currency || "₦"}
+                  {visibleBalance
+                    ? account.availableBalance?.toLocaleString() || "0.00"
+                    : "••••••"}
                 </Text>
               </View>
 
-              <Text className="text-white text-2xl font-bold mb-2">
-                {account.currency || "₦"}
-                {visibleBalance
-                  ? account.availableBalance?.toLocaleString() || "0.00"
-                  : "••••••"}
-              </Text>
+              <View className="flex-row justify-between items-baseline"></View>
 
-              {account.isPrimary && (
+              {/* {account.isPrimary && (
                 <View className="bg-yellow-500 px-2 py-1 rounded-full mb-2 self-start">
                   <Text className="text-black text-xs font-bold">PRIMARY</Text>
                 </View>
-              )}
+              )} */}
 
-              {/* Daily Spending Progress Bar */}
-              <View className="mb-4">
-                <View className="flex-row justify-between items-center mb-1">
-                  <Text className="text-white/80 text-xs">Daily Spending</Text>
-                  <Text className="text-white/80 text-xs">
-                    {visibleBalance
-                      ? `₦${(allAccounts.dailySpent || 0).toLocaleString()} / ₦${(allAccounts.dailyLimit || 1000).toLocaleString()}`
-                      : "•••• / ••••"}
-                  </Text>
-                </View>
-                <View className="bg-white/20 h-2 rounded-full overflow-hidden">
-                  <View
-                    className={`h-full rounded-full ${getProgressColor(getSpendingProgress(allAccounts))}`}
-                    style={{ width: `${getSpendingProgress(allAccounts)}%` }}
-                  />
-                </View>
-              </View>
-
-              <View className="flex-col gap-3">
+              {/* <View className="flex-col gap-3">
                 <View className="flex-row items-center gap-2">
-                  <TouchableOpacity
-                    onPress={() => updateVisibleBalance(!visibleBalance)}
-                  >
-                    <Ionicons
-                      name={visibleBalance ? "eye" : "eye-off"}
-                      size={20}
-                      color="white"
-                    />
-                  </TouchableOpacity>
-                  <Text
-                    className="text-white/90 text-base flex-1"
-                    numberOfLines={1}
-                  >
-                    {visibleBalance ? account.cardId : "•••• •••• •••• ••••"}
-                  </Text>
-                </View>
-
-                <View className="flex-row items-center gap-2">
-                  <View className="bg-white/20 px-2 py-1 rounded">
-                    <Text
-                      className={`${
-                        account.status === "ACTIVE"
-                          ? "text-green-400"
-                          : "text-red-400"
-                      } text-xs font-bold`}
-                    >
-                      {account.status}
-                    </Text>
-                  </View>
-
-                  {showNFC && (
-                    <View className="bg-white/20 px-2 py-1 rounded">
-                      <Text className="text-white text-xs font-bold">NFC</Text>
-                    </View>
-                  )}
 
                   <View className="flex-1" />
 
-                  <View
-                    className={`p-1 rounded-2xl items-center ${
-                      isDark
-                        ? "bg-white/10 border border-white/20"
-                        : "bg-gray-50 border border-gray-200 shadow-sm"
-                    }`}
-                    style={{
-                      shadowColor: isDark ? "#fff" : "#000",
-                      shadowOpacity: 0.05,
-                      shadowRadius: 10,
-                    }}
-                  >
-                    <SvgUri uri={account.bankLogo} width={30} height={30} />
-                  </View>
                 </View>
-              </View>
+              </View> */}
             </View>
           ))}
         </ScrollView>
@@ -249,7 +238,7 @@ const BalanceCard: React.FC<BalanceCardProps> = ({
 
       {(allAccounts.accounts?.length || 0) > 1 && (
         <View
-          className="flex-row mt-3 gap-2"
+          className="flex-row mt-3 gap-2 px-4"
           style={{ paddingLeft: CARD_PADDING }}
         >
           {allAccounts.accounts?.map((_, index) => (

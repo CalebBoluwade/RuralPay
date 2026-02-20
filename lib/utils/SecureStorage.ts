@@ -30,22 +30,6 @@ export async function SetupHardwareSecurity(merchantId: string) {
   }
 }
 
-// Retrieve key for SQLCipher decryption
-export async function getDatabaseKey() {
-  try {
-    if (!Keychain || !Keychain.getGenericPassword) {
-      console.warn("Keychain not available");
-      return null;
-    }
-
-    const credentials = await Keychain.getGenericPassword();
-    return credentials ? credentials.password : null;
-  } catch (error) {
-    console.warn("Failed to get database key:", error);
-    return null;
-  }
-}
-
 export class BiometricService {
   private static readonly BIOMETRIC_LOGIN_SERVICE = "biometric_login";
 
@@ -185,8 +169,6 @@ export class PinService {
         Crypto.CryptoDigestAlgorithm.SHA256,
         pin + PinService.SALT,
       );
-
-      console.log(inputHash, credentials.password);
 
       return inputHash === credentials.password;
     } catch (error) {

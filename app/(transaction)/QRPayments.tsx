@@ -96,7 +96,8 @@ const QRPayments = () => {
         fromAccount: selectedAccount.accountId,
         toAccount: "0000000000",
         paymentMode: "QR",
-        reference: `QRPAY-${Date.now()}`,
+        transactionID: `QRPAY-${Date.now()}`,
+        txType: "DEBIT",
       });
 
       if (payment.success) {
@@ -241,7 +242,7 @@ const QRPayments = () => {
           data={{
             amount: paymentResult?.amount || amount,
             recipient: paymentResult?.recipient || "QR Payment",
-            reference: paymentResult?.reference || "QR" + Date.now(),
+            transactionID: paymentResult?.transactionID || "QR" + Date.now(),
             date: new Date().toLocaleDateString(),
             type: "QR Payment",
           }}

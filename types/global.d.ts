@@ -103,7 +103,6 @@ global {
     bankName: string;
     bankCode: string;
     bankLogo: string;
-    cardId: string;
     currency: string;
     status: string;
     accountName: string;
@@ -172,7 +171,6 @@ global {
     txType: TransactionType;
     currency: string;
     fromAccount: string;
-    reference: string;
     toAccount: string;
     toBankCode: string;
     location?: LocationData;

@@ -33,8 +33,6 @@ class PaymentService {
     const response = await axiosInstance.get(
       `/transactions/recent?limit=${limit}`,
     );
-
-    console.log("Recent Transactions Response:", response.data);
     return response.data || [];
   }
 
