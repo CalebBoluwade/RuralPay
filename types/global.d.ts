@@ -4,7 +4,34 @@ global {
   type TransferStatus = "PENDING_RECIPIENT" | "COMPLETED" | "FAILED";
   type TransactionType = "CREDIT" | "DEBIT" | "P2P_DEBIT" | "P2P_CREDIT";
 
-  type PaymentMode = "CARD" | "QR" | "BANK_TRANSFER" | "USSD" | "VOICE" | "BLE";
+  type PaymentMode =
+    | "CARD"
+    | "QR"
+    | "BANK_TRANSFER"
+    | "AIRTIME_DATA"
+    | "USSD"
+    | "VOICE"
+    | "BLE";
+
+  type PaymentMethod = "NFC_CARD" | "BALANCE" | "BLUETOOTH";
+
+  type VASType = "airtime" | "tickets" | "data" | "general";
+
+  interface Voucher {
+    id: string;
+    voucherCode: string;
+    voucherDescription: string;
+    voucherDiscountAmount: number;
+    voucherType: "FIXED" | "PERCENT";
+    voucherAllowedServices: VASType[];
+  }
+
+  interface APIResponse<T> {
+    success: boolean;
+    errorMessage?: string;
+    message: string;
+    details: T;
+  }
 
   interface ReceiptData {
     amount: string;
@@ -26,10 +53,23 @@ global {
     accuracy?: number;
   }
 
-  interface MerchantAnaltyics {
-    count: number;
-    total: number;
+  interface StatusStat {
+    status: string;
+    transactionCount: number;
+    totalAmount: number;
   }
+
+  interface MerchantDetails {
+    todayCompletedCount: number;
+    todayCompletedVolume: number;
+    todayProfit: number;
+    totalCompletedVolume: number;
+    totalProfit: number;
+    totalCompletedCount: number;
+    byStatus: StatusStat[];
+  }
+
+  type MerchantAnaltics = APIResponse<MerchantDetails>;
 
   interface MerchantProfile {
     id: string;
@@ -51,23 +91,28 @@ global {
     pushToken: string;
   }
 
+  type KYCStatus = "VERIFIED" | "PENDING" | "FAILED" | "UNVERIFIED";
+
   export interface User {
     id: string;
     email: string;
-    Username: string;
+    userName: string;
     phoneNumber: string;
     BVN: string;
-    FirstName: string;
-    LastName: string;
-    AccountId: string;
+    firstName: string;
+    lastName: string;
+    accountId: string;
     role: "consumer" | "merchant";
     merchant?: MerchantProfile;
+    kycStatus?: KYCStatus;
+    kycLevel?: number;
   }
 
-  export interface AuthResponse {
+  export type AuthResponse = APIResponse<{
     token: string;
+    refreshToken: string;
     user: User;
-  }
+  }>;
 
   export interface AuthError {
     message: string;
@@ -141,7 +186,8 @@ global {
   interface TransactionHistory {
     fee: number;
     transactionDate: string;
-    transactionID: string;
+    transactionId: string;
+    reference: string;
     currency: string;
     amount: number;
     merchantId?: string;
@@ -171,17 +217,30 @@ global {
     txType: TransactionType;
     currency: string;
     fromAccount: string;
-    toAccount: string;
-    toBankCode: string;
+    beneficiaryAccountNumber: string;
+    beneficiaryAccountName: string;
+    beneficiaryBankName: string;
+    beneficiaryBankCode: string;
+    narration: string;
+    OneTimeCode: string;
     location?: LocationData;
     paymentMode: PaymentMode;
+    saveBeneficiary: boolean;
     transactionID: string;
   }
 
-  interface APIResponse {
-    success: boolean;
-    errorMessage: string;
-    transactionId: string;
+  interface AirtimeDataPayload {
+    transactionID: string;
+    paymentMode: string;
+    service: string;
+    amount: number;
+    beneficiaryPhoneNumber: string;
+    network: string;
+    dataPlanId?: string;
+    narration: string;
+    debitAccount: string;
+    voucher: Voucher | undefined;
+    OneTimeCode?: string;
   }
 
   interface USSDCodePayload {
@@ -245,11 +304,25 @@ global {
     code: string;
   }
 
-  interface CardInfo {
-    success: boolean;
+  interface Beneficiary {
+    accountNumber: string;
+    accountName: string;
+    bankName: string;
+    bankCode: string;
+    useCount: number;
+    lastUsed: string;
+  }
+
+  interface PaymentCard {
     PAN: string;
-    PIN: string;
     expiryDate: string;
+    bin: string;
+    last4: string;
+  }
+
+  interface CardInfo extends PaymentCard {
+    success: boolean;
+    PIN: string;
     cryptogram: string;
     issuerAppData: string;
     currencyCode: string;

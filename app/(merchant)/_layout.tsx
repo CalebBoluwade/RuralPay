@@ -29,6 +29,16 @@ export default function MerchantLayout() {
       />
 
       <Tabs.Screen
+        name="sales-analytics"
+        options={{
+          title: "Sales Navigator",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="storefront" size={size} color={color} />
+          ),
+        }}
+      />
+
+      <Tabs.Screen
         name="transactions"
         options={{
           title: "Transactions",

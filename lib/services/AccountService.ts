@@ -11,25 +11,33 @@ class AccountService {
     expiresAt: string;
     virtualAccount: VirtualAccount;
   }> {
-    const response = await axiosInstance.get(`/accounts/virtual-account`);
-    return response.data;
+    const response = await axiosInstance.get(`/account/virtual-account`);
+    return response.details;
   }
 
-  async AccountBalance(): Promise<{
+  async AccountBalanceEnquiry(): Promise<{
     accounts: BalanceEnquiry[];
     dailyLimit: number;
     singleTransactionLimit: number;
     dailySpent: number;
   }> {
-    const response = await axiosInstance.get(`/accounts/balance-enquiry`);
+    const response = await axiosInstance.get<
+      APIResponse<{
+        dailyLimit: number;
+        singleTransactionLimit: number;
+        dailySpent: number;
+        accounts: BalanceEnquiry[];
+      }>
+    >(`/account/balance-enquiry`);
+
     return {
-      dailyLimit: response.data.dailyLimit || 0,
+      dailyLimit: response.details.dailyLimit || 0,
 
-      singleTransactionLimit: response.data.singleTransactionLimit || 0,
+      singleTransactionLimit: response.details.singleTransactionLimit || 0,
 
-      dailySpent: response.data.dailySpent || 0,
+      dailySpent: response.details.dailySpent || 0,
 
-      accounts: response.data.accounts || [],
+      accounts: response.details.accounts || [],
     };
   }
 
@@ -43,13 +51,13 @@ class AccountService {
     email: string;
   }): Promise<{ valid: boolean; message?: string }> {
     try {
-      const response = await axiosInstance.post("/accounts/validate-bvn", {
+      const response = await axiosInstance.post("/account/validate-bvn", {
         bvn: bvn,
         phoneNumber,
         email,
       });
 
-      const data = response.data;
+      const data = response.details;
 
       if (data.valid) {
         return { valid: true, message: data.message };
@@ -70,67 +78,96 @@ class AccountService {
     bankCode: string;
     accountNumber: string;
     IsPrimary: boolean;
-  }): Promise<{ valid: boolean; message?: string }> {
+  }): Promise<APIResponse<{}>> {
     try {
-      const response = await axiosInstance.post("/accounts/link", {
+      const response = await axiosInstance.post("/account/link", {
         bankCode,
         accountNumber,
         IsPrimary,
       });
 
-      const data = response.data;
-
-      if (data.valid) {
-        return { valid: true, message: data.message };
-      } else {
-        return { valid: false, message: data.message || "Invalid BVN" };
-      }
+      return response;
     } catch (error: any) {
       const message = error.response?.data?.message || "Failed to Validate BVN";
-      return { valid: false, message };
+      return { message, success: false, details: {} };
     }
   }
 
-  async ValidateOTP(
-    bvn: string,
-    otp: string,
-  ): Promise<{ valid: boolean; message?: string }> {
+  async UnlinkAccount({
+    bankCode,
+    accountNumber,
+  }: {
+    bankCode: string;
+    accountNumber: string;
+  }): Promise<APIResponse<{}>> {
     try {
-      const response = await axiosInstance.post("/accounts/verify-otp", {
-        bvn,
-        otp,
+      const response = await axiosInstance.post("/account/unlink", {
+        bankCode,
+        accountNumber,
       });
 
-      const data = response.data;
-      if (data.valid) {
-        return { valid: true };
-      } else {
-        return { valid: false, message: data.message || "Invalid OTP" };
-      }
+      return response;
     } catch (error: any) {
-      const message = error.response?.data?.message || "Failed to validate OTP";
-      return { valid: false, message };
+      const message =
+        error.response?.data?.message || "Failed to Unlink Account";
+      return { message, success: false, details: {} };
     }
   }
+
+  async SendUserOTP(action: string, channel: string): Promise<APIResponse<{}>> {
+    console.log(action, channel);
+    try {
+      const response = await axiosInstance.post<APIResponse<{}>>(
+        "/account/send-otp",
+        {
+          action,
+          channel,
+        },
+      );
+
+      return response;
+    } catch (error: any) {
+      const message = error.response?.data?.message || "Failed to Send OTP";
+      return { message, success: false, details: {} };
+    }
+  }
+
+  // async ValidateUserOTP(action: string, otp: string): Promise<APIResponse<{}>> {
+  //   try {
+  //     const response = await axiosInstance.post<APIResponse<{}>>(
+  //       "/account/verify-otp",
+  //       {
+  //         action,
+  //         otp,
+  //       },
+  //     );
+
+  //     return response;
+  //   } catch (error: any) {
+  //     const message = error.response?.data?.message || "Failed to validate OTP";
+  //     return { success: false, message, details: {} };
+  //   }
+  // }
 
   async ResolveAccountName(
     bankCode: string,
     accountNumber: string,
-  ): Promise<{ success: boolean; accountName?: string; error?: string }> {
+  ): Promise<APIResponse<{ accountName: string; accountId: string }>> {
     try {
-      const response = await axiosInstance.get(
-        `/accounts/name-enquiry?accountId=${accountNumber}&bankCode=${bankCode}`,
+      const response = await axiosInstance.get<
+        APIResponse<{ accountName: string; accountId: string }>
+      >(
+        `/account/name-enquiry?accountId=${accountNumber}&bankCode=${bankCode}`,
       );
 
-      return {
-        success: true,
-        accountName: response.data.accountName,
-      };
+      return response;
     } catch (error: any) {
       return {
         success: false,
-        error:
+        errorMessage: error.response?.data?.message,
+        message:
           error.response?.data?.message || "Failed to Resolve Account Name",
+        details: { accountName: "", accountId: "" },
       };
     }
   }

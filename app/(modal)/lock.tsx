@@ -3,9 +3,9 @@ import ToastService from "@/lib/services/ToastService";
 import { PinService } from "@/lib/utils/SecureStorage";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import { useRouter } from "expo-router";
+import { router } from "expo-router";
 import React, { useEffect } from "react";
-import { Text, TouchableOpacity, View, useColorScheme } from "react-native";
+import { Pressable, Text, View, useColorScheme } from "react-native";
 import Animated, {
   FadeIn,
   FadeInDown,
@@ -19,7 +19,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 const Lock = () => {
   const { user } = useAuth();
-  const navigation = useRouter();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const [code, setCode] = React.useState<number[]>([]);
@@ -64,8 +63,8 @@ const Lock = () => {
           setCode([]);
 
           try {
-            if (navigation.canGoBack()) {
-              navigation.back();
+            if (router.canGoBack()) {
+              router.back();
             }
           } catch (e) {
             console.log("Navigation error:", e);
@@ -165,7 +164,7 @@ const Lock = () => {
               ].map((row, rowIndex) => (
                 <View key={rowIndex + 1} className="flex-row justify-between">
                   {row.map((num) => (
-                    <TouchableOpacity
+                    <Pressable
                       key={num}
                       onPress={() => OnNumberPressDown(num)}
                       activeOpacity={0.7}
@@ -180,20 +179,20 @@ const Lock = () => {
                       >
                         {num}
                       </Text>
-                    </TouchableOpacity>
+                    </Pressable>
                   ))}
                 </View>
               ))}
 
               <View className="flex-row justify-between items-center">
-                <TouchableOpacity
+                <Pressable
                   className="w-[30%] aspect-square justify-center items-center"
                   onPress={onFingerPrintPress}
                   activeOpacity={0.7}
                 >
                   <View
                     className={`w-16 h-16 rounded-full items-center justify-center ${
-                      isDark ? "bg-purple-500/20" : "bg-purple-100"
+                      isDark ? "bg-lime-500/20" : "bg-lime-100"
                     }`}
                   >
                     <Ionicons
@@ -202,9 +201,9 @@ const Lock = () => {
                       color={isDark ? "#a78bfa" : "#7c3aed"}
                     />
                   </View>
-                </TouchableOpacity>
+                </Pressable>
 
-                <TouchableOpacity
+                <Pressable
                   onPress={() => OnNumberPressDown(0)}
                   activeOpacity={0.7}
                   className={`w-[30%] aspect-square justify-center items-center rounded-3xl ${
@@ -218,9 +217,9 @@ const Lock = () => {
                   >
                     0
                   </Text>
-                </TouchableOpacity>
+                </Pressable>
 
-                <TouchableOpacity
+                <Pressable
                   className="w-[30%] aspect-square justify-center items-center"
                   onPress={onBackspacePress}
                   activeOpacity={0.7}
@@ -239,7 +238,7 @@ const Lock = () => {
                       />
                     </View>
                   )}
-                </TouchableOpacity>
+                </Pressable>
               </View>
             </View>
           </Animated.View>

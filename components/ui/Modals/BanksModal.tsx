@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from "react";
 import {
-    Modal,
-    Pressable,
-    ScrollView,
-    Text,
-    TextInput,
-    useColorScheme,
-    View,
+  FlatList,
+  Modal,
+  Pressable,
+  Text,
+  TextInput,
+  useColorScheme,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { SvgUri } from "react-native-svg";
@@ -75,7 +75,7 @@ const BanksModal: React.FC<BankModalProps> = ({
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
 
-  const filteredBanks = banks.filter((bank) =>
+  const filteredBanks = (banks || []).filter((bank) =>
     bank.name.toLowerCase().includes(debouncedSearch.toLowerCase()),
   );
 
@@ -120,11 +120,22 @@ const BanksModal: React.FC<BankModalProps> = ({
               onChangeText={setSearchQuery}
             />
           </View>
-          <ScrollView className="flex-1">
-            {filteredBanks.map((bank) =>
-              renderBankItem(bank, isDark, onBankSelected),
-            )}
-          </ScrollView>
+          <FlatList
+            data={filteredBanks}
+            keyExtractor={(item) => item.code}
+            renderItem={({ item }) =>
+              renderBankItem(item, isDark, onBankSelected)
+            }
+            ListEmptyComponent={
+              <View className="flex-1 items-center justify-center py-16">
+                <Text
+                  className={`text-base ${isDark ? "text-gray-400" : "text-gray-500"}`}
+                >
+                  No Banks Found
+                </Text>
+              </View>
+            }
+          />
 
           <Pressable
             className={`p-4 m-5 rounded-2xl backdrop-blur-xl ${

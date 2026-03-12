@@ -1,8 +1,8 @@
 import BalanceCard from "@/components/ui/BalanceCard";
+import TransactionFailure from "@/components/ui/Modals/Transaction/TransactionFailure";
+import TransactionPin from "@/components/ui/Modals/Transaction/TransactionPinModal";
+import TransactionSuccess from "@/components/ui/Modals/Transaction/TransactionSuccess";
 import ScreenHeader from "@/components/ui/ScreenHeader";
-import TransactionFailure from "@/components/ui/Transaction/TransactionFailure";
-import TransactionPin from "@/components/ui/Transaction/TransactionPinModal";
-import TransactionSuccess from "@/components/ui/Transaction/TransactionSuccess";
 import PaymentService from "@/lib/services/PaymentService";
 import QRCodeService from "@/lib/services/QRCodeService";
 import ToastService from "@/lib/services/ToastService";
@@ -10,11 +10,11 @@ import { CameraView } from "expo-camera";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useState } from "react";
 import {
-  ActivityIndicator,
-  Text,
-  TouchableOpacity,
-  View,
-  useColorScheme,
+    ActivityIndicator,
+    Pressable,
+    Text,
+    View,
+    useColorScheme,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -65,11 +65,7 @@ const QRPayments = () => {
     setLoading(true);
 
     try {
-      const result = await QRCodeService.processScannedQR(data, {
-        type: "Visa",
-        lastFourDigits: "4242",
-        cardholderName: "Customer",
-      });
+      const result = await QRCodeService.processScannedQR(data);
 
       setScannedQRData(result);
       setStep("SELECT_ACCOUNT");
@@ -104,7 +100,7 @@ const QRPayments = () => {
         setPaymentResult({
           amount: scannedQRData.amount.toString(),
           recipient: scannedQRData.merchantName,
-          reference: payment.transactionId,
+          reference: payment.details.transactionId,
         });
         setStep("SUCCESS");
       } else {
@@ -133,11 +129,7 @@ const QRPayments = () => {
     <SafeAreaView
       className={`flex-1 ${isDark ? "bg-[#0a0a0f]" : "bg-[#f5f5fa]"}`}
     >
-      <ScreenHeader
-        title="Scan QR Code"
-        subtitle="Point Camera at QR Code to Pay"
-        onBack={() => setStep("SCAN")}
-      />
+      <ScreenHeader title="Scan QR Code" onBack={() => router.back()} />
 
       <View className="flex-1 justify-center items-center px-6">
         {loading ? (
@@ -170,7 +162,6 @@ const QRPayments = () => {
 
       <View className="px-6">
         <BalanceCard
-          showNFC={false}
           onAccountChange={(account) => setSelectedAccount(account)}
         />
 
@@ -206,7 +197,7 @@ const QRPayments = () => {
           </View>
         )}
 
-        <TouchableOpacity
+        <Pressable
           className={`p-4 rounded-2xl ${isDark ? "bg-emerald-600" : "bg-emerald-700"}`}
           onPress={handleAccountSelected}
           disabled={!selectedAccount || loading}
@@ -218,13 +209,15 @@ const QRPayments = () => {
               Confirm Payment
             </Text>
           )}
-        </TouchableOpacity>
+        </Pressable>
       </View>
     </SafeAreaView>
   );
 
   const renderEnterPin = () => (
     <TransactionPin
+      amount={scannedQRData?.amount.toString() || amount}
+      recipient="QR Payment"
       paymentMessage={`Confirm QR Payment of ${amount}`}
       showPinModal={true}
       onSuccess={handlePinSuccess}
@@ -239,10 +232,12 @@ const QRPayments = () => {
       {step === "ENTER_PIN" && renderEnterPin()}
       {step === "SUCCESS" && (
         <TransactionSuccess
+          visible={true}
           data={{
             amount: paymentResult?.amount || amount,
             recipient: paymentResult?.recipient || "QR Payment",
-            transactionID: paymentResult?.transactionID || "QR" + Date.now(),
+            reference: paymentResult?.reference || "QR" + Date.now(),
+            // transactionID: paymentResult?.transactionID || "QR" + Date.now(),
             date: new Date().toLocaleDateString(),
             type: "QR Payment",
           }}
@@ -252,6 +247,7 @@ const QRPayments = () => {
       )}
       {step === "FAILURE" && (
         <TransactionFailure
+          visible={true}
           error={error}
           onRetry={handleRetry}
           onClose={handleClose}

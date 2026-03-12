@@ -9,9 +9,9 @@ import {
 } from "react-hook-form";
 import {
   KeyboardTypeOptions,
+  Pressable,
   Text,
   TextInput,
-  TouchableOpacity,
   View,
   useColorScheme,
 } from "react-native";
@@ -57,11 +57,13 @@ const OptimizedInput = <T extends FieldValues>({
 
   return (
     <View className="mb-5">
-      <Text
-        className={`text-xl font-semibold mb-2 ${isDark ? "text-white" : "text-gray-900"}`}
-      >
-        {label}
-      </Text>
+      {!!label && (
+        <Text
+          className={`text-xl font-semibold mb-1 ${isDark ? "text-white" : "text-gray-900"}`}
+        >
+          {label}
+        </Text>
+      )}
       <Controller
         control={control}
         name={name}
@@ -70,14 +72,10 @@ const OptimizedInput = <T extends FieldValues>({
           fieldState: { error: validationError },
         }) => (
           <View>
-            <TouchableOpacity
-              onPress={onPress}
-              disabled={!onPress}
-              activeOpacity={onPress ? 0.7 : 1}
-            >
+            <Pressable onPress={onPress} disabled={!onPress}>
               <View className="relative">
                 <TextInput
-                  className={`h-16 rounded-2xl p-3 text-base backdrop-blur-xl ${
+                  className={`h-[60px] rounded-2xl px-5 py-2 text-base backdrop-blur-xl ${
                     showPasswordToggle ? "pr-12" : ""
                   } ${
                     error || validationError
@@ -85,8 +83,8 @@ const OptimizedInput = <T extends FieldValues>({
                         ? "border-2 border-red-500 bg-red-500/10 text-white"
                         : "border-2 border-red-500 bg-red-50 text-gray-900"
                       : isDark
-                        ? "border-2 border-emerald-500/40 text-white"
-                        : "border-2 border-emerald-400 text-gray-900"
+                        ? "border-2 border-lime-500/40 text-white"
+                        : "border-2 border-lime-400 text-gray-900"
                   }`}
                   placeholder={placeholder}
                   placeholderTextColor={isDark ? "#9CA3AF" : "#6B7280"}
@@ -102,7 +100,7 @@ const OptimizedInput = <T extends FieldValues>({
                   autoCapitalize={autoCapitalize}
                 />
                 {showPasswordToggle && (
-                  <TouchableOpacity
+                  <Pressable
                     onPress={togglePasswordVisibility}
                     className="absolute right-4 top-1/2 -translate-y-1/2"
                     style={{ transform: [{ translateY: -12 }] }}
@@ -112,10 +110,10 @@ const OptimizedInput = <T extends FieldValues>({
                       size={24}
                       color={isDark ? "#9CA3AF" : "#6B7280"}
                     />
-                  </TouchableOpacity>
+                  </Pressable>
                 )}
               </View>
-            </TouchableOpacity>
+            </Pressable>
 
             {(error?.message || validationError?.message) && (
               <Text className="text-red-500 text-sm mt-1">

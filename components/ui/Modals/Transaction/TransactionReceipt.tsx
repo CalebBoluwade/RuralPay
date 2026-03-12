@@ -16,7 +16,7 @@ const TransactionReceipt: React.FC<TransactionReceiptProps> = ({
       className={`rounded-2xl p-6 backdrop-blur-xl ${
         isDark
           ? "bg-white/10 border border-white/20"
-          : "bg-white/60 border border-gray-200/50 shadow-sm"
+          : "bg-white/80 border border-gray-200/50 shadow-sm"
       }`}
     >
       <Text
@@ -72,7 +72,7 @@ const TransactionReceipt: React.FC<TransactionReceiptProps> = ({
           <Text
             className={`text-lg font-semibold text-right flex-1 ml-4 ${isDark ? "text-white" : "text-gray-900"}`}
           >
-            {transaction.transactionID}
+            {transaction.transactionId}
           </Text>
         </View>
 

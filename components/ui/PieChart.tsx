@@ -1,7 +1,7 @@
 import * as Haptics from "expo-haptics";
-import { useEffect, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
-import Animated, { useSharedValue, withSpring } from "react-native-reanimated";
+import { useState } from "react";
+import { Pressable, Text, View } from "react-native";
+import Animated from "react-native-reanimated";
 import Svg, { G, Path } from "react-native-svg";
 
 const AnimatedPath = Animated.createAnimatedComponent(Path);
@@ -22,18 +22,13 @@ interface PieChartProps {
 
 export default function PieChart({
   data,
-  size = 200,
+  size = 250,
   showLabels = true,
   showTooltip = true,
   enableHaptics = true,
 }: Readonly<PieChartProps>) {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const total = data.reduce((sum, item) => sum + item.value, 0);
-  const mountProgress = useSharedValue(0);
-
-  useEffect(() => {
-    mountProgress.value = withSpring(1, { damping: 15 });
-  }, []);
 
   if (total === 0) return null;
 
@@ -62,21 +57,18 @@ export default function PieChart({
     const innerStart = polarToCartesian(center, center, innerRadius, endAngle);
     const innerEnd = polarToCartesian(center, center, innerRadius, startAngle);
     const largeArc = endAngle - startAngle <= 180 ? "0" : "1";
-
     return `M ${start.x} ${start.y} A ${r} ${r} 0 ${largeArc} 0 ${end.x} ${end.y} L ${innerEnd.x} ${innerEnd.y} A ${innerRadius} ${innerRadius} 0 ${largeArc} 1 ${innerStart.x} ${innerStart.y} Z`;
   };
 
   const handlePress = (index: number) => {
-    if (enableHaptics) {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    }
+    if (enableHaptics) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setSelectedIndex(selectedIndex === index ? null : index);
   };
 
   let currentAngle = -90;
 
   return (
-    <View style={styles.container}>
+    <View className="items-center gap-5 w-full">
       <View style={{ width: size, height: size }}>
         <Svg width={size} height={size}>
           <G>
@@ -89,7 +81,6 @@ export default function PieChart({
                 isSelected,
               );
               currentAngle += angle;
-
               return (
                 <G key={index + 1}>
                   <AnimatedPath
@@ -105,14 +96,17 @@ export default function PieChart({
         </Svg>
 
         {showTooltip && selectedIndex !== null && (
-          <View style={[styles.tooltip, { top: center - 30 }]}>
-            <Text style={styles.tooltipLabel}>
+          <View
+            className="absolute self-center bg-black/80 px-3 py-2 rounded-lg items-center min-w-[120px]"
+            style={{ top: center - 30 }}
+          >
+            <Text className="text-white text-xs font-semibold mb-1">
               {data[selectedIndex].label || `Item ${selectedIndex + 1}`}
             </Text>
-            <Text style={styles.tooltipValue}>
+            <Text className="text-white text-lg font-bold">
               N{data[selectedIndex].value.toFixed(2)}
             </Text>
-            <Text style={styles.tooltipPercent}>
+            <Text className="text-[#aaa] text-xs mt-0.5">
               {((data[selectedIndex].value / total) * 100).toFixed(1)}%
             </Text>
           </View>
@@ -120,28 +114,27 @@ export default function PieChart({
       </View>
 
       {showLabels && (
-        <View style={styles.legendContainer}>
+        <View className="w-full gap-2">
           {data.map((item, index) => {
             const percentage = ((item.value / total) * 100).toFixed(1);
             const isSelected = selectedIndex === index;
-
             return (
               <Pressable
                 key={index}
-                style={[
-                  styles.legendItem,
-                  isSelected && styles.legendItemSelected,
-                ]}
+                className={`flex-row items-center p-3 rounded-lg gap-3 ${
+                  isSelected ? "bg-neutral-200 scale-[1.02]" : "bg-neutral-100"
+                }`}
                 onPress={() => handlePress(index)}
               >
                 <View
-                  style={[styles.legendColor, { backgroundColor: item.color }]}
+                  className="w-4 h-4 rounded-[4px]"
+                  style={{ backgroundColor: item.color }}
                 />
-                <View style={styles.legendText}>
-                  <Text style={styles.legendLabel}>
+                <View className="flex-1">
+                  <Text className="text-sm font-semibold text-[#333] mb-0.5">
                     {item.label || `Item ${index + 1}`}
                   </Text>
-                  <Text style={styles.legendValue}>
+                  <Text className="text-xs text-[#666]">
                     ${item.value.toFixed(2)} ({percentage}%)
                   </Text>
                 </View>
@@ -153,70 +146,3 @@ export default function PieChart({
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    alignItems: "center",
-    gap: 20,
-    width: "100%",
-  },
-  tooltip: {
-    position: "absolute",
-    alignSelf: "center",
-    backgroundColor: "rgba(0,0,0,0.8)",
-    padding: 12,
-    borderRadius: 8,
-    alignItems: "center",
-    minWidth: 120,
-  },
-  tooltipLabel: {
-    color: "#fff",
-    fontSize: 12,
-    fontWeight: "600",
-    marginBottom: 4,
-  },
-  tooltipValue: {
-    color: "#fff",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-  tooltipPercent: {
-    color: "#aaa",
-    fontSize: 12,
-    marginTop: 2,
-  },
-  legendContainer: {
-    width: "100%",
-    gap: 8,
-  },
-  legendItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 12,
-    borderRadius: 8,
-    backgroundColor: "#f5f5f5",
-    gap: 12,
-  },
-  legendItemSelected: {
-    backgroundColor: "#e0e0e0",
-    transform: [{ scale: 1.02 }],
-  },
-  legendColor: {
-    width: 16,
-    height: 16,
-    borderRadius: 4,
-  },
-  legendText: {
-    flex: 1,
-  },
-  legendLabel: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#333",
-    marginBottom: 2,
-  },
-  legendValue: {
-    fontSize: 12,
-    color: "#666",
-  },
-});

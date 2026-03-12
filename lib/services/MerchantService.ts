@@ -14,10 +14,10 @@ class MerchantService {
     }
   }
 
-  static async GetMerchantAnalytics(): Promise<MerchantAnaltyics | null> {
+  static async GetMerchantAnalytics(): Promise<MerchantDetails | null> {
     try {
-      const response = await axiosInstance.get(`/merchants`);
-      return response.data;
+      const response = await axiosInstance.get<MerchantAnaltics>(`/merchant`);
+      return response.details;
     } catch (error) {
       console.log(error);
 

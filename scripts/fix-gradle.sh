@@ -18,7 +18,7 @@ rm -rf node_modules
 rm -rf .expo
 
 echo "Reinstalling dependencies..."
-bun install
+sudo bun install
 
 echo "Running prebuild..."
 bunx expo prebuild --clean

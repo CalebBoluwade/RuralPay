@@ -5,13 +5,14 @@ import ScreenHeader from "@/components/ui/ScreenHeader";
 import AccountService from "@/lib/services/AccountService";
 import PaymentService from "@/lib/services/PaymentService";
 import ToastService from "@/lib/services/ToastService";
-import { Ionicons } from "@expo/vector-icons";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { PinService } from "@/lib/utils/SecureStorage";
+import { ArrowUp, ArrowUpDown, ChevronRight, Clock, CreditCard, KeyRound, QrCode, Receipt, Store, Zap } from "lucide-react-native";
 import * as Location from "expo-location";
-import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { router } from "expo-router";
+import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Animated,
   FlatList,
   Modal,
   Pressable,
@@ -23,8 +24,38 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+const QUICK_ACTIONS: { id: string; label: string; icon: React.FC<{ size: number; color: string }>; route: string }[] = [
+  { id: "send", label: "Send", icon: ArrowUp, route: "/(common)/Transaction/BankTransfers" },
+  { id: "qr", label: "QR Pay", icon: QrCode, route: "/(transaction)/QRPayments" },
+  { id: "history", label: "History", icon: Clock, route: "/(common)/Transaction/TransactionHistory" },
+  { id: "card", label: "Cards", icon: CreditCard, route: "/(transaction)/TokenizedCards" },
+];
+
+function useFadeSlide(delay: number) {
+  const anim = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(18)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(anim, {
+        toValue: 1,
+        duration: 420,
+        delay,
+        useNativeDriver: true,
+      }),
+      Animated.timing(translateY, {
+        toValue: 0,
+        duration: 420,
+        delay,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
+
+  return { opacity: anim, transform: [{ translateY }] };
+}
+
 export default function Index() {
-  const router = useRouter();
   const { t } = useLanguage();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
@@ -35,8 +66,14 @@ export default function Index() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
-
+  const [hasPIN, setHasPIN] = useState(true);
   const { user } = useAuth();
+
+  const headerAnim = useFadeSlide(0);
+  const balanceAnim = useFadeSlide(80);
+  const actionsAnim = useFadeSlide(160);
+  const todosAnim = useFadeSlide(240);
+  const txAnim = useFadeSlide(320);
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -51,14 +88,14 @@ export default function Index() {
   }, []);
 
   const loadAccountData = async () => {
+    const pin = await PinService.hasPin();
+    setHasPIN(pin);
     try {
       await Location.getForegroundPermissionsAsync();
-
       const [transactions, balance] = await Promise.all([
         PaymentService.FetchRecentTransactions(3),
-        AccountService.AccountBalance(),
+        AccountService.AccountBalanceEnquiry(),
       ]);
-
       setRecentTransactions(transactions);
       setAccountEnquiry(balance ?? [{} as BalanceEnquiry]);
     } catch (error) {
@@ -78,226 +115,276 @@ export default function Index() {
 
   const checkFirstVisit = async () => {
     try {
-      const hasSeenWelcome =
-        (await AsyncStorage.getItem("hasSeenWelcome")) === "true";
-
-      if (!hasSeenWelcome) {
-        router.push("/(modal)/welcome-banner");
-      }
+      // const hasSeenWelcome =
+      // (await AsyncStorage.getItem("hasSeenWelcome")) === "true";
+      // if (!hasSeenWelcome) router.push("/(modal)/welcome-banner");
     } catch (error) {
       console.warn("Error checking first visit:", error);
     }
   };
 
+  const todos = [
+    {
+      key: "link",
+      show: true,
+      icon: <Store size={28} color={isDark ? "#a3e635" : "#65a30d"} />,
+      title: "Link Account",
+      subtitle: "Add accounts. Start transacting today!",
+      route: "/(common)/LinkBankAccount",
+    },
+    {
+      key: "pin",
+      show: !hasPIN,
+      icon: <KeyRound size={28} color={isDark ? "#a3e635" : "#65a30d"} />,
+      title: "Setup Your PIN",
+      subtitle: "Create a 6-digit PIN to protect your account.",
+      route: "/(common)/LinkBankAccount",
+    },
+    {
+      key: "transact",
+      show: !(recentTransactions || []).length,
+      icon: <Zap size={28} color={isDark ? "#a3e635" : "#65a30d"} />,
+      title: "Start Transacting Today",
+      subtitle: "Make your first payment.",
+      route: "/Payments",
+    },
+  ].filter((t) => t.show);
+
+  const cardClass = isDark
+    ? "bg-white/10 border border-white/20"
+    : "bg-white border border-slate-200 shadow-sm";
+
   return (
     <SafeAreaView
-      className={isDark ? "flex-1 bg-[#0a0a0f]" : "flex-1 bg-white"}
+      className={isDark ? "flex-1 bg-slate-950" : "flex-1 bg-slate-50"}
     >
       <ScrollView
         className="flex-1"
+        showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
             onRefresh={handleRefresh}
-            tintColor={isDark ? "#a78bfa" : "#7c3aed"}
-            colors={[isDark ? "#a78bfa" : "#7c3aed"]}
+            tintColor="#a3e635"
+            colors={["#a3e635"]}
           />
         }
       >
-        <ScreenHeader
-          goBack={false}
-          title={getGreeting()}
-          subtitle={user?.FirstName || "User Name"}
-        />
+        {/* Header */}
+        <Animated.View style={headerAnim}>
+          <ScreenHeader
+            goBack={false}
+            title={getGreeting()}
+            subtitle={user?.FirstName || "User"}
+          />
+        </Animated.View>
 
-        <BalanceCard accountEnquiry={accountEnquiry!} loading={loading} />
+        {/* Balance */}
+        <Animated.View style={balanceAnim}>
+          <BalanceCard accountEnquiry={accountEnquiry!} loading={loading} />
+        </Animated.View>
 
-        <View className="px-6 mt-2">
-          {/* Merchant Section */}
-          <View className="mb-8">
-            <Text
-              className={`text-xl font-bold mb-6 ${
-                isDark ? "text-white" : "text-gray-900"
-              }`}
-            >
-              My To-Do&apos;s ✨
-            </Text>
-
-            <Pressable
-              className={`px-6 py-5 rounded-2xl backdrop-blur-xl border ${
-                isDark
-                  ? "border-lime-600/30"
-                  : "border-lime-300 bg-gray-50 shadow-lg"
-              }`}
-              onPress={async () => router.push("/(common)/LinkBankAccount")}
-            >
-              <View className="flex-row items-center gap-4">
-                <View
-                  className={`p-3 rounded-xl ${
-                    isDark ? "bg-lime-500/30" : "bg-lime-300/50"
-                  }`}
+        <View className="px-5 mt-4">
+          {/* Quick Actions */}
+          <Animated.View style={actionsAnim} className="mb-6">
+            <View className="flex-row gap-3">
+              {QUICK_ACTIONS.map((action) => (
+                <Pressable
+                  key={action.id}
+                  className="flex-1 items-center"
+                  onPress={() => router.push(action.route as any)}
                 >
-                  <Ionicons
-                    name="storefront-outline"
-                    size={28}
-                    color={"#fff"}
-                  />
-                </View>
-                <View className="flex-1">
-                  <Text
-                    className={`text-lg font-bold ${
-                      isDark ? "text-white" : "text-gray-900"
+                  <View
+                    className={`w-16 h-16 rounded-2xl items-center justify-center mb-2 ${
+                      isDark
+                        ? "bg-white/10 border border-white/20"
+                        : "bg-white border border-slate-200 shadow-sm"
                     }`}
                   >
-                    Link Account
-                  </Text>
+                    <action.icon size={28} color={isDark ? "#a3e635" : "#65a30d"} />
+                  </View>
                   <Text
-                    className={`text-sm mt-1 ${
-                      isDark ? "text-gray-300" : "text-gray-600"
+                    className={`text-xs font-brand font-semibold ${
+                      isDark ? "text-slate-300" : "text-slate-600"
                     }`}
                   >
-                    Add Accounts. Start Transacting Today!
+                    {action.label}
                   </Text>
-                </View>
-                <Ionicons
-                  name="chevron-forward"
-                  size={22}
-                  // color={isDark ? "#a78bfa" : "#7c3aed"}
-                />
+                </Pressable>
+              ))}
+            </View>
+          </Animated.View>
+
+          {/* To-Dos */}
+          {todos.length > 0 && (
+            <Animated.View style={todosAnim} className="mb-6">
+              <Text
+                className={`text-base font-brand font-bold mb-3 ${
+                  isDark ? "text-white" : "text-slate-900"
+                }`}
+              >
+                My To-Do&apos;s ✨
+              </Text>
+              <View className={`rounded-2xl overflow-hidden ${cardClass}`}>
+                {todos.map((todo, index) => (
+                  <Pressable
+                    key={todo.key}
+                    className={`flex-row items-center px-4 py-4 gap-4 ${
+                      index < todos.length - 1
+                        ? isDark
+                          ? "border-b border-white/10"
+                          : "border-b border-slate-100"
+                        : ""
+                    }`}
+                    onPress={() => router.push(todo.route as any)}
+                  >
+                    <View
+                      className={`w-12 h-12 rounded-xl items-center justify-center ${
+                        isDark ? "bg-lime-500/20" : "bg-lime-50"
+                      }`}
+                    >
+                      {todo.icon}
+                    </View>
+                    <View className="flex-1">
+                      <Text
+                        className={`text-sm font-brand font-bold ${
+                          isDark ? "text-white" : "text-slate-900"
+                        }`}
+                      >
+                        {todo.title}
+                      </Text>
+                      <Text
+                        className={`text-xs mt-0.5 ${
+                          isDark ? "text-slate-400" : "text-slate-500"
+                        }`}
+                      >
+                        {todo.subtitle}
+                      </Text>
+                    </View>
+                    <ChevronRight size={18} color={isDark ? "#64748b" : "#94a3b8"} />
+                  </Pressable>
+                ))}
               </View>
-            </Pressable>
-          </View>
+            </Animated.View>
+          )}
 
           {/* Recent Transactions */}
-          <View className="mb-4">
+          <Animated.View style={txAnim} className="mb-6">
             <Pressable
-              className="flex-row justify-between items-center gap-3 mb-6"
+              className="flex-row justify-between items-center mb-3"
               onPress={() =>
                 router.push("/(common)/Transaction/TransactionHistory")
               }
             >
               <Text
-                className={`text-xl font-bold ${
-                  isDark ? "text-white" : "text-gray-900"
+                className={`text-base font-brand font-bold ${
+                  isDark ? "text-white" : "text-slate-900"
                 }`}
               >
                 Recent Transactions
               </Text>
-
-              <Ionicons
-                name="chevron-forward-outline"
-                size={21}
-                className={`${isDark ? "text-white" : "text-gray-50"}`}
-              />
+              <View className="flex-row items-center gap-1">
+                <Text
+                  className={`text-xs font-brand font-semibold ${isDark ? "text-lime-400" : "text-lime-600"}`}
+                >
+                  See all
+                </Text>
+                <ChevronRight size={14} color={isDark ? "#a3e635" : "#65a30d"} />
+              </View>
             </Pressable>
 
-            <View
-              className={`rounded-2xl backdrop-blur-xl border border-lime-600/30 ${
-                isDark ? "bg-white/10" : "bg-gray-50 shadow-lg"
-              }`}
-            >
+            <View className={`rounded-2xl overflow-hidden ${cardClass}`}>
               <FlatList
                 data={recentTransactions}
                 keyExtractor={(item) =>
-                  item.transactionID + item.transactionDate
+                  item.transactionId + item.transactionDate
                 }
-                renderItem={({ item }) => (
+                renderItem={({ item, index }) => (
                   <Pressable
-                    className={`flex-row justify-between p-4 ${
-                      isDark
-                        ? "border-b border-white/10"
-                        : "border-b border-gray-200/30"
+                    className={`flex-row items-center px-4 py-4 gap-3 ${
+                      index < recentTransactions.length - 1
+                        ? isDark
+                          ? "border-b border-white/10"
+                          : "border-b border-slate-100"
+                        : ""
                     }`}
                     onPress={() =>
-                      router.push(`/(common)/Transaction/${item.transactionID}`)
+                      router.push(`/(common)/Transaction/${item.transactionId}`)
                     }
                   >
-                    <View className="flex-1 flex-row items-center gap-3">
-                      <View className="bg-lime-600 rounded-full p-2">
-                        <Ionicons name="swap-vertical" size={28} color="#fff" />
-                      </View>
-                      <View>
-                        <Text
-                          className={`text-sm font-semibold ${isDark ? "text-white" : "text-gray-900"}`}
-                        >
-                          {item.paymentMode}
-                        </Text>
-                        <Text
-                          className={`text-sm font-semibold ${isDark ? "text-white" : "text-gray-900"}`}
-                        >
-                          {item.merchantId}
-                        </Text>
-                        <Text
-                          className={`text-base mt-1 ${isDark ? "text-gray-400" : "text-gray-500"}`}
-                        >
-                          {item.transactionID}
-                        </Text>
-                      </View>
+                    <View className="bg-lime-500/20 rounded-xl w-12 h-12 items-center justify-center">
+                      <ArrowUpDown size={26} color={isDark ? "#a3e635" : "#65a30d"} />
                     </View>
-                    <View className="items-end">
+                    <View className="flex-1">
                       <Text
-                        className={`text-base font-bold ${isDark ? "text-red-400" : "text-red-600"}`}
+                        className={`text-sm font-semibold ${
+                          isDark ? "text-white" : "text-slate-900"
+                        }`}
+                        numberOfLines={1}
                       >
-                        -₦{item.amount.toLocaleString()}
+                        {item.merchantId || item.paymentMode}
                       </Text>
                       <Text
-                        className={`text-xs mt-1 ${isDark ? "text-gray-400" : "text-gray-500"}`}
+                        className={`text-xs mt-0.5 ${
+                          isDark ? "text-slate-400" : "text-slate-500"
+                        }`}
                       >
                         {new Date(item.transactionDate).toLocaleDateString()}
                       </Text>
                     </View>
+                    <Text
+                      className={`text-sm font-bold ${
+                        isDark ? "text-red-400" : "text-red-500"
+                      }`}
+                    >
+                      -₦{item.amount.toLocaleString()}
+                    </Text>
                   </Pressable>
                 )}
                 ListEmptyComponent={
-                  <View className="py-8 items-center">
-                    <Ionicons
-                      name="receipt-outline"
-                      size={48}
-                      color={isDark ? "#4b5563" : "#9ca3af"}
-                    />
+                  <View className="py-10 items-center gap-2">
+                    <Receipt size={40} color={isDark ? "#334155" : "#cbd5e1"} />
                     <Text
-                      className={`text-sm font-medium mt-3 ${isDark ? "text-gray-400" : "text-gray-500"}`}
+                      className={`text-sm font-medium ${
+                        isDark ? "text-slate-500" : "text-slate-400"
+                      }`}
                     >
-                      No Recent Transactions
+                      No recent transactions
                     </Text>
                   </View>
                 }
                 scrollEnabled={false}
               />
             </View>
-          </View>
+          </Animated.View>
         </View>
 
-        <View className="h-20" />
+        <View className="h-24" />
       </ScrollView>
 
+      {/* Initial Load Modal */}
       <Modal
         visible={loading && isInitialLoad}
         transparent
         animationType="fade"
       >
         <View
-          className={`flex-1 justify-center items-center ${
-            isDark ? "bg-black/80" : "bg-black/50"
-          }`}
+          className={`flex-1 justify-center items-center ${isDark ? "bg-black/80" : "bg-black/40"}`}
         >
           <View
-            className={`rounded-3xl p-8 items-center backdrop-blur-xl ${
+            className={`rounded-3xl p-8 items-center ${
               isDark
-                ? "bg-white/10 border border-white/20"
-                : "bg-white border border-gray-200"
+                ? "bg-slate-900 border border-white/20"
+                : "bg-white border border-slate-200"
             }`}
           >
-            <ActivityIndicator
-              size="large"
-              color={isDark ? "#a78bfa" : "#7c3aed"}
-            />
+            <ActivityIndicator size="large" color="#a3e635" />
             <Text
-              className={`mt-4 text-base font-semibold ${
-                isDark ? "text-white" : "text-gray-900"
+              className={`mt-4 text-sm font-semibold ${
+                isDark ? "text-slate-300" : "text-slate-700"
               }`}
             >
-              Loading...
+              Loading your account...
             </Text>
           </View>
         </View>

@@ -1,18 +1,17 @@
-import { Ionicons } from "@expo/vector-icons";
-import React, { useState } from "react";
+import { router } from "expo-router";
 import {
-  Modal,
-  Pressable,
-  Text,
-  TouchableOpacity,
-  View,
-  useColorScheme,
-} from "react-native";
+  ArrowLeft,
+  Bell,
+  LucideIcon,
+  MoreHorizontal,
+} from "lucide-react-native";
+import React, { useState } from "react";
+import { Modal, Pressable, Text, View, useColorScheme } from "react-native";
 import SelectLanguageModal from "./Modals/SelectLanguageModal";
 
 export interface MenuItem {
   label: string;
-  icon?: keyof typeof Ionicons.glyphMap;
+  icon?: LucideIcon;
   onPress: () => void;
 }
 
@@ -59,18 +58,13 @@ const ScreenHeader: React.FC<ScreenHeaderProps> = ({
             }`}
             onPress={() => onBack?.()}
           >
-            <Ionicons
-              name="arrow-back-outline"
-              size={18}
-              className={`${isDark ? "text-white" : "text-gray-700"}`}
-              color={isDark ? "white" : "black"}
-            />
+            <ArrowLeft size={18} color={isDark ? "white" : "black"} />
           </Pressable>
         )}
 
         <View className="flex-1">
           <Text
-            className={`text-xl font-bold mb-1 ${
+            className={`${subtitle ? "text-lg" : "text-xl"} font-brand font-bold mb-1 ${
               isDark ? "text-white" : "text-gray-900"
             }`}
           >
@@ -93,14 +87,9 @@ const ScreenHeader: React.FC<ScreenHeaderProps> = ({
               ? "bg-white/10 border border-white/20"
               : "bg-white/60 border border-gray-200/50"
           }`}
-          onPress={() => {}}
+          onPress={() => router.push("/(common)/Notifications")}
         >
-          <Ionicons
-            name="notifications-outline"
-            size={16}
-            className={`${isDark ? "text-white" : "text-gray-700"}`}
-            color={isDark ? "white" : "black"}
-          />
+          <Bell size={16} color={isDark ? "white" : "black"} />
         </Pressable>
 
         {/* Language Selection */}
@@ -116,11 +105,7 @@ const ScreenHeader: React.FC<ScreenHeaderProps> = ({
               }`}
               onPress={() => setShowMenu(true)}
             >
-              <Ionicons
-                name="ellipsis-horizontal"
-                size={18}
-                color={isDark ? "white" : "black"}
-              />
+              <MoreHorizontal size={18} color={isDark ? "white" : "black"} />
             </Pressable>
 
             <Modal
@@ -139,7 +124,7 @@ const ScreenHeader: React.FC<ScreenHeaderProps> = ({
                     }`}
                   >
                     {menuItems.map((item, index) => (
-                      <TouchableOpacity
+                      <Pressable
                         key={index}
                         className={`flex-row items-center px-4 py-3 ${
                           index !== menuItems.length - 1
@@ -154,8 +139,7 @@ const ScreenHeader: React.FC<ScreenHeaderProps> = ({
                         }}
                       >
                         {item.icon && (
-                          <Ionicons
-                            name={item.icon}
+                          <item.icon
                             size={20}
                             color={isDark ? "white" : "black"}
                             style={{ marginRight: 12 }}
@@ -168,7 +152,7 @@ const ScreenHeader: React.FC<ScreenHeaderProps> = ({
                         >
                           {item.label}
                         </Text>
-                      </TouchableOpacity>
+                      </Pressable>
                     ))}
                   </View>
                 </View>

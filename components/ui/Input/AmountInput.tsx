@@ -26,21 +26,21 @@ const AmountInput = ({ onAmountChange, error }: AmountInputProps) => {
   };
 
   return (
-    <View className="mb-8">
-      <Text
-        className={`text-base font-medium mb-2 p-2 ${
-          isDark ? "text-gray-400" : "text-gray-600"
-        }`}
-      >
-        Amount
-      </Text>
+    <View className="mb-6">
       <View
-        className={`rounded-3xl p-6 ${
+        className={`rounded-3xl p-4 mx-1 ${
           isDark
             ? "bg-emerald-500/20 border-2 border-emerald-500/40"
             : "bg-emerald-50 border-2 border-emerald-400"
         }`}
       >
+        {/* <Text
+          className={`text-sm font-medium pb-2 ${
+            isDark ? "text-gray-400" : "text-gray-600"
+          }`}
+        >
+          Amount
+        </Text> */}
         <View className="flex-row items-center justify-center">
           <Text
             className={`text-4xl font-bold mr-2 ${
@@ -50,7 +50,7 @@ const AmountInput = ({ onAmountChange, error }: AmountInputProps) => {
             ₦
           </Text>
           <TextInput
-            className={`text-4xl font-bold flex-1 ${
+            className={`text-4xl font-brand font-bold flex-1 ${
               isDark ? "text-white" : "text-gray-900"
             }`}
             placeholder="0.00"
@@ -62,78 +62,25 @@ const AmountInput = ({ onAmountChange, error }: AmountInputProps) => {
           />
         </View>
 
-        <View className="mt-4 pt-4 border-t border-emerald-500/20">
+        <View className="pt-4 border-t border-emerald-500/20">
           <View className="flex-row flex-wrap gap-3 items-center">
-            <Pressable
-              onPress={() => handleAmountChange("1000")}
-              className={`px-4 py-2 rounded-full ${
-                isDark ? "bg-emerald-500/30" : "bg-emerald-100"
-              }`}
-            >
-              <Text
-                className={`font-semibold ${
-                  isDark ? "text-emerald-300" : "text-emerald-700"
+            {["500", "1000", "2000", "5000", "10000", "20000"].map((preset) => (
+              <Pressable
+                key={preset}
+                onPress={() => handleAmountChange(preset)}
+                className={`px-3 py-1 rounded-full ${
+                  isDark ? "bg-emerald-500/30" : "bg-emerald-100"
                 }`}
               >
-                ₦1,000
-              </Text>
-            </Pressable>
-            <Pressable
-              onPress={() => handleAmountChange("2000")}
-              className={`px-4 py-2 rounded-full ${
-                isDark ? "bg-emerald-500/30" : "bg-emerald-100"
-              }`}
-            >
-              <Text
-                className={`font-semibold ${
-                  isDark ? "text-emerald-300" : "text-emerald-700"
-                }`}
-              >
-                ₦2,000
-              </Text>
-            </Pressable>
-            <Pressable
-              onPress={() => handleAmountChange("5000")}
-              className={`px-4 py-2 rounded-full ${
-                isDark ? "bg-emerald-500/30" : "bg-emerald-100"
-              }`}
-            >
-              <Text
-                className={`font-semibold ${
-                  isDark ? "text-emerald-300" : "text-emerald-700"
-                }`}
-              >
-                ₦5,000
-              </Text>
-            </Pressable>
-            <Pressable
-              onPress={() => handleAmountChange("10000")}
-              className={`px-4 py-2 rounded-full ${
-                isDark ? "bg-emerald-500/30" : "bg-emerald-100"
-              }`}
-            >
-              <Text
-                className={`font-semibold ${
-                  isDark ? "text-emerald-300" : "text-emerald-700"
-                }`}
-              >
-                ₦10,000
-              </Text>
-            </Pressable>
-            <Pressable
-              onPress={() => handleAmountChange("20000")}
-              className={`px-4 py-2 rounded-full ${
-                isDark ? "bg-emerald-500/30" : "bg-emerald-100"
-              }`}
-            >
-              <Text
-                className={`font-semibold ${
-                  isDark ? "text-emerald-300" : "text-emerald-700"
-                }`}
-              >
-                ₦20,000
-              </Text>
-            </Pressable>
+                <Text
+                  className={`font-semibold ${
+                    isDark ? "text-emerald-300" : "text-emerald-700"
+                  }`}
+                >
+                  ₦{preset.replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
+                </Text>
+              </Pressable>
+            ))}
           </View>
         </View>
         {error && (

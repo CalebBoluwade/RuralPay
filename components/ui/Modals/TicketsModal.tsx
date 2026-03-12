@@ -1,16 +1,16 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import {
-  Modal,
-  ScrollView,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-  useColorScheme,
+    Modal,
+    Pressable,
+    ScrollView,
+    Text,
+    TextInput,
+    View,
+    useColorScheme,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import PaymentMethodModal from "./PaymentMethodModal";
+import PaymentMethodModal from "./Transaction/PaymentMethodModal";
 
 interface TicketsModalProps {
   visible: boolean;
@@ -98,7 +98,7 @@ const TicketsModal: React.FC<TicketsModalProps> = ({ visible, onClose }) => {
             >
               Event Tickets
             </Text>
-            <TouchableOpacity
+            <Pressable
               onPress={onClose}
               className={`w-10 h-10 items-center justify-center rounded-full ${isDark ? "bg-white/10" : "bg-gray-100"}`}
             >
@@ -107,7 +107,7 @@ const TicketsModal: React.FC<TicketsModalProps> = ({ visible, onClose }) => {
                 size={24}
                 color={isDark ? "#fff" : "#6B7280"}
               />
-            </TouchableOpacity>
+            </Pressable>
           </View>
         </View>
 
@@ -122,7 +122,7 @@ const TicketsModal: React.FC<TicketsModalProps> = ({ visible, onClose }) => {
           </Text>
           <View className="gap-3 mb-6">
             {events.map((event) => (
-              <TouchableOpacity
+              <Pressable
                 key={event.id}
                 onPress={() => setSelectedEvent(event.id)}
                 className={`p-4 rounded-xl ${
@@ -184,7 +184,7 @@ const TicketsModal: React.FC<TicketsModalProps> = ({ visible, onClose }) => {
                     </View>
                   </View>
                 </View>
-              </TouchableOpacity>
+              </Pressable>
             ))}
           </View>
 
@@ -196,7 +196,7 @@ const TicketsModal: React.FC<TicketsModalProps> = ({ visible, onClose }) => {
                 Number of Tickets
               </Text>
               <View className="flex-row items-center gap-3 mb-6">
-                <TouchableOpacity
+                <Pressable
                   onPress={() =>
                     setQuantity(
                       Math.max(1, parseInt(quantity || "1") - 1).toString(),
@@ -209,14 +209,14 @@ const TicketsModal: React.FC<TicketsModalProps> = ({ visible, onClose }) => {
                     size={24}
                     color={isDark ? "#fff" : "#000"}
                   />
-                </TouchableOpacity>
+                </Pressable>
                 <TextInput
                   value={quantity}
                   onChangeText={setQuantity}
                   keyboardType="numeric"
                   className={`flex-1 px-4 py-3 rounded-xl text-center text-lg font-bold ${isDark ? "bg-white/10 text-white border border-white/20" : "bg-gray-50 text-gray-900 border border-gray-200"}`}
                 />
-                <TouchableOpacity
+                <Pressable
                   onPress={() =>
                     setQuantity((parseInt(quantity || "1") + 1).toString())
                   }
@@ -227,7 +227,7 @@ const TicketsModal: React.FC<TicketsModalProps> = ({ visible, onClose }) => {
                     size={24}
                     color={isDark ? "#fff" : "#000"}
                   />
-                </TouchableOpacity>
+                </Pressable>
               </View>
 
               <Text
@@ -284,7 +284,7 @@ const TicketsModal: React.FC<TicketsModalProps> = ({ visible, onClose }) => {
             </>
           )}
 
-          <TouchableOpacity
+          <Pressable
             onPress={handlePurchase}
             disabled={!selectedEvent || !email}
             className={`py-4 rounded-xl mb-6 ${
@@ -300,13 +300,15 @@ const TicketsModal: React.FC<TicketsModalProps> = ({ visible, onClose }) => {
             >
               Purchase Tickets
             </Text>
-          </TouchableOpacity>
+          </Pressable>
         </ScrollView>
 
         <PaymentMethodModal
           visible={showPaymentModal}
           onClose={() => setShowPaymentModal(false)}
           amount={totalPrice}
+          useValuedAddedServices
+          vasType="tickets"
           onPaymentMethodSelected={handlePaymentMethodSelected}
         />
       </SafeAreaView>

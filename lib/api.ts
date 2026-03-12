@@ -6,9 +6,31 @@ import { ErrorHandler } from "./utils/ErrorHandler";
 
 const AUTH_TOKEN_KEY = "auth_token";
 
+declare module "axios" {
+  interface AxiosInstance {
+    post<T = any>(
+      url: string,
+      data?: any,
+      config?: AxiosRequestConfig,
+    ): Promise<T>;
+    get<T = any>(url: string, config?: AxiosRequestConfig): Promise<T>;
+    put<T = any>(
+      url: string,
+      data?: any,
+      config?: AxiosRequestConfig,
+    ): Promise<T>;
+    delete<T = any>(url: string, config?: AxiosRequestConfig): Promise<T>;
+    patch<T = any>(
+      url: string,
+      data?: any,
+      config?: AxiosRequestConfig,
+    ): Promise<T>;
+  }
+}
+
 export const axiosInstance = axios.create({
   baseURL: config.apiUrl,
-  timeout: 5000,
+  timeout: Number(process.env.EXPO_PUBLIC_API_TIMEOUT || 30000),
   headers: {
     "Content-Type": "application/json",
   },
@@ -48,7 +70,7 @@ axiosInstance.interceptors.request.use(
     await ErrorHandler.handle(
       axiosError,
       {
-        action: "request_interceptor_error",
+        action: "Request_Interceptor_Error",
         metadata: { url: axiosError.config?.url },
       },
       false,
@@ -64,7 +86,7 @@ axiosInstance.interceptors.request.use(
 
 // Response interceptor
 axiosInstance.interceptors.response.use(
-  (response) => response,
+  (response) => response.data,
   async (error) => {
     // Only log API errors, not network connectivity issues
     if (error.response?.status && error.response.status !== 0) {
@@ -88,10 +110,10 @@ axiosInstance.interceptors.response.use(
       router.replace("/(auth)/Login");
     }
 
-    return {
-      status: error.response?.status, // Extracts HTTP status from the error response.
-      message: error.message, // Extracts the error message.
-      data: error.response?.data, // Extracts response data from the error.
-    };
+    // if (error.response?.status === 403) {
+    //   router.replace("/(auth)/LockScreen");
+    // }
+
+    return Promise.reject(error);
   },
 );

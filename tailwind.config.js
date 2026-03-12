@@ -1,6 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-   content: [
+  content: [
     "./App.{js,jsx,ts,tsx}",
     "./src/**/*.{js,jsx,ts,tsx}",
     "./app/**/*.{js,jsx,ts,tsx}",
@@ -8,7 +8,13 @@ module.exports = {
   ],
   presets: [require("nativewind/preset")],
   theme: {
-    extend: {},
+    extend: {
+      fontFamily: {
+        brand: ["AutourOne-Regular"],
+        // "brand-bold": ["Brand-Bold"],
+        // "brand-italic":["Brand-Italic"],
+      },
+    },
   },
   plugins: [],
 };

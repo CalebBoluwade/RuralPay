@@ -6,11 +6,11 @@ import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   Alert,
+  Pressable,
   ScrollView,
   Text,
-  TouchableOpacity,
   View,
-  useColorScheme,
+  useColorScheme
 } from "react-native";
 import { SvgUri } from "react-native-svg";
 
@@ -22,7 +22,7 @@ export default function ManageLinkedAccounts() {
 
   const loadAccountData = async () => {
     try {
-      const balance = await AccountService.AccountBalance();
+      const balance = await AccountService.AccountBalanceEnquiry();
       setLinkedAccounts(
         (balance.accounts ?? [{} as BalanceEnquiry]).slice(0, 3),
       );
@@ -76,13 +76,13 @@ export default function ManageLinkedAccounts() {
           onBack={() => router.back()}
         />
 
-        <TouchableOpacity
+        <Pressable
           className={`px-6 py-5 rounded-2xl backdrop-blur-xl mb-6 ${
             isDark
               ? "bg-lime-500/20 border-2 border-lime-500"
               : "bg-lime-50 border-2 border-lime-500"
           }`}
-          onPress={() => router.push("/(transaction)/LinkBankAccount")}
+          onPress={() => router.push("/(common)/LinkBankAccount")}
         >
           <View className="flex-row items-center justify-center gap-3">
             <Ionicons name="add-circle" size={28} color={"#84cc16"} />
@@ -94,7 +94,7 @@ export default function ManageLinkedAccounts() {
               Link New Account
             </Text>
           </View>
-        </TouchableOpacity>
+        </Pressable>
 
         <Text
           className={`text-lg font-bold mb-4 ${
@@ -180,7 +180,7 @@ export default function ManageLinkedAccounts() {
 
               <View className="flex-row gap-2">
                 {!account.isPrimary && (
-                  <TouchableOpacity
+                  <Pressable
                     className={`flex-1 py-3 rounded-xl ${
                       isDark
                         ? "bg-lime-500/20 border border-lime-500"
@@ -195,9 +195,9 @@ export default function ManageLinkedAccounts() {
                     >
                       Set as Primary
                     </Text>
-                  </TouchableOpacity>
+                  </Pressable>
                 )}
-                <TouchableOpacity
+                <Pressable
                   className={`${
                     account.isPrimary ? "flex-1" : "flex-1"
                   } py-3 rounded-xl ${
@@ -214,7 +214,7 @@ export default function ManageLinkedAccounts() {
                   >
                     Remove
                   </Text>
-                </TouchableOpacity>
+                </Pressable>
               </View>
             </View>
           ))

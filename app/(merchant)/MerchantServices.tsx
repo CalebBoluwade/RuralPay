@@ -2,11 +2,11 @@ import ScreenHeader from "@/components/ui/ScreenHeader";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import {
-    ScrollView,
-    Text,
-    TouchableOpacity,
-    View,
-    useColorScheme,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+  useColorScheme,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -58,7 +58,7 @@ export default function MerchantServices() {
 
         <View className="space-y-4">
           {services.map((service, index) => (
-            <TouchableOpacity
+            <Pressable
               key={service.id}
               onPress={() => service.route && router.push(service.route as any)}
               className={`p-6 rounded-2xl backdrop-blur-xl ${
@@ -98,7 +98,7 @@ export default function MerchantServices() {
                   color={isDark ? "rgba(255,255,255,0.3)" : "rgba(0,0,0,0.3)"}
                 />
               </View>
-            </TouchableOpacity>
+            </Pressable>
           ))}
         </View>
 

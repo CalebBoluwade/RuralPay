@@ -1,7 +1,7 @@
-import React, { useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, Animated } from 'react-native';
+import React, { useEffect, useRef } from "react";
+import { Animated, Pressable, Text, View } from "react-native";
 
-export type ToastType = 'success' | 'error' | 'warning' | 'info';
+export type ToastType = "success" | "error" | "warning" | "info";
 
 export interface ToastProps {
   id: string;
@@ -63,16 +63,16 @@ export const Toast: React.FC<ToastProps> = ({
 
   const getTypeStyles = () => {
     switch (type) {
-      case 'success':
-        return 'bg-green-500';
-      case 'error':
-        return 'bg-red-500';
-      case 'warning':
-        return 'bg-yellow-500';
-      case 'info':
-        return 'bg-blue-500';
+      case "success":
+        return "bg-green-500";
+      case "error":
+        return "bg-red-500";
+      case "warning":
+        return "bg-yellow-500";
+      case "info":
+        return "bg-blue-500";
       default:
-        return 'bg-gray-500';
+        return "bg-gray-500";
     }
   };
 
@@ -86,9 +86,9 @@ export const Toast: React.FC<ToastProps> = ({
     >
       <View className="flex-row justify-between items-center">
         <Text className="text-white font-medium flex-1 mr-2">{message}</Text>
-        <TouchableOpacity onPress={dismiss} className="p-1">
+        <Pressable onPress={dismiss} className="p-1">
           <Text className="text-white font-bold text-lg">×</Text>
-        </TouchableOpacity>
+        </Pressable>
       </View>
     </Animated.View>
   );

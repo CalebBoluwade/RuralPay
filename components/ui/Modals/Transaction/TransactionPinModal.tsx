@@ -1,15 +1,32 @@
+import AccountService from "@/lib/services/AccountService";
+import { ReceiptService } from "@/lib/services/ReceiptService";
 import ToastService from "@/lib/services/ToastService";
+import { maskEmail, maskPhone } from "@/lib/utils";
 import { formatAmount } from "@/lib/utils/formatAmount";
 import { PinService, biometricService } from "@/lib/utils/SecureStorage";
-import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import * as LocalAuthentication from "expo-local-authentication";
+import {
+  CheckCircle2,
+  ChevronRight,
+  Delete,
+  Fingerprint,
+  Grid2x2,
+  Lock,
+  Mail,
+  MessageSquare,
+  ScanFace,
+  ScanLine,
+  ShieldCheck,
+  X,
+  XCircle,
+} from "lucide-react-native";
 import React, { useEffect } from "react";
 import {
   Modal,
   Pressable,
+  Share,
   Text,
-  TextInput,
   View,
   useColorScheme,
 } from "react-native";
@@ -21,27 +38,33 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useAuth } from "../../context/AuthProvider";
-import PinSetupModal from "../Modals/PinSetupModal";
+import { useAuth } from "../../../context/AuthProvider";
+import OTPInput from "../../Input/OTPInput";
+import PinSetupModal from "../PinSetupModal";
 
 interface TransactionPinProps {
   paymentMessage: string;
   showPinModal: boolean;
-  onSuccess?: () => void;
+  // onSuccess?: () => void;
+  error: string;
+  initiateTransaction: (TwoFA_VerificationCode: string) => Promise<boolean>;
   onCancel?: () => void;
   amount: string;
   recipient: string;
+  transactionResult?: ReceiptData; // TransactionData
 }
 
-type AuthStep = "PIN" | "Select-2FA" | "Verify-2FA" | "Confirm";
+type AuthStep = "PIN" | "Select-2FA" | "Verify-2FA" | "Success" | "Failure";
 
 const TransactionPin: React.FC<TransactionPinProps> = ({
   paymentMessage,
   showPinModal,
-  onSuccess,
+  initiateTransaction,
   onCancel,
   amount,
   recipient,
+  error,
+  transactionResult,
 }) => {
   const { nativeAuthTransactions, user } = useAuth();
   const colorScheme = useColorScheme();
@@ -54,67 +77,88 @@ const TransactionPin: React.FC<TransactionPinProps> = ({
   const [showPinSetup, setShowPinSetup] = React.useState<boolean>(false);
   const [currentStep, setCurrentStep] = React.useState<AuthStep>("PIN");
   const [selected2FA, setSelected2FA] = React.useState<string>("");
-  const [verificationCode, setVerificationCode] = React.useState<string>("");
   const [isLoading, setIsLoading] = React.useState<boolean>(false);
   const codeLength = new Array(6).fill(0);
 
-  const maskPhone = (phone?: string) => {
-    if (!phone) return "+1 ••• ••• 1234";
-    const last4 = phone.slice(-4);
-    return `+1 ••• ••• ${last4}`;
+  const handleDownloadReceipt = async () => {
+    if (transactionResult) {
+      await ReceiptService.downloadReceipt(transactionResult);
+    }
   };
 
-  const maskEmail = (email?: string) => {
-    if (!email) return "u••••@example.com";
-    const [name, domain] = email.split("@");
-    return `${name[0]}••••@${domain}`;
+  const handleShare = async () => {
+    if (!transactionResult) return;
+
+    try {
+      await Share.share({
+        message: `Transaction Successful!\nAmount: ₦${transactionResult.amount}\nRecipient: ${transactionResult.recipient}\nReference: ${transactionResult.reference}`,
+      });
+    } catch (error) {
+      console.error("Error sharing:", error);
+    }
   };
 
-  const TFAOptions = [
+  const TFAOptions: {
+    id: string;
+    title: string;
+    sub: string;
+    icon: React.FC<{ size: number; color: string }>;
+  }[] = [
     {
       id: "sms",
       title: "SMS Verification",
       sub: `Code will be sent to ${maskPhone(user?.phoneNumber)}`,
-      icon: "chatbox-ellipses",
+      icon: MessageSquare,
     },
     {
       id: "email",
       title: "Email Verification",
       sub: `Code will be sent to ${maskEmail(user?.email)}`,
-      icon: "mail",
+      icon: Mail,
     },
   ];
 
   const send2FACode = async (method: string) => {
     setIsLoading(true);
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      ToastService.success(`Verification Code Sent via ${method}`);
-      setCurrentStep("Verify-2FA");
-    } catch (error) {
-      ToastService.error("Failed to send verification code");
+      const response = await AccountService.SendUserOTP(
+        "2FA-CODE",
+        method === "sms" ? "SMS" : "Email",
+      );
+
+      if (response.success) {
+        ToastService.success(
+          `Verification Code Sent via ${selected2FA === "sms" ? "SMS" : "Email"}`,
+        );
+        setCurrentStep("Verify-2FA");
+      } else {
+        ToastService.error("Failed to Send verification code");
+      }
+    } catch {
+      ToastService.error("Failed to Send verification code");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const verify2FACode = async () => {
-    if (verificationCode.length !== 6) return;
+  const Validate2FACode = async (TwoFA_VerificationCode: string) => {
+    console.log(TwoFA_VerificationCode);
 
     setIsLoading(true);
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      if (verificationCode === "123456") {
-        // Mock verification
-        setCurrentStep("Confirm");
+      // "2FA-CODE"
+      const transactionResult = await initiateTransaction(
+        TwoFA_VerificationCode,
+      );
+      if (transactionResult) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        setCurrentStep("Success");
       } else {
-        ToastService.error("Invalid verification code");
-        setVerificationCode("");
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        setCurrentStep("Failure");
       }
-    } catch (error) {
-      ToastService.error("Verification failed");
+    } catch {
+      setCurrentStep("Failure");
     } finally {
       setIsLoading(false);
     }
@@ -123,10 +167,12 @@ const TransactionPin: React.FC<TransactionPinProps> = ({
   // Check if device supports biometric authentication and if PIN exists
   useEffect(() => {
     if (!showPinModal) {
-      // Reset state when modal closes
-      setCurrentStep("PIN");
+      // Reset state when modal closes, but not on terminal steps
+      setCurrentStep((prev) => {
+        if (prev === "Success" || prev === "Failure") return prev;
+        return "PIN";
+      });
       setCode([]);
-      setVerificationCode("");
       setSelected2FA("");
       return;
     }
@@ -175,37 +221,6 @@ const TransactionPin: React.FC<TransactionPinProps> = ({
   const OFFSET = 20;
   const TIME = 80;
 
-  const onFingerPrintPress = async () => {
-    try {
-      console.log("Face ID button pressed");
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-
-      if (!isBiometricSupported) {
-        console.log("Biometric not supported");
-        return;
-      }
-
-      const result = await LocalAuthentication.authenticateAsync({
-        promptMessage: "Authenticate for transaction",
-        fallbackLabel: "Use PIN",
-        disableDeviceFallback: true,
-      });
-
-      console.log("Biometric result:", result);
-
-      if (result.success) {
-        console.log("Biometric authentication successful");
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        setCurrentStep("Select-2FA");
-      } else {
-        console.log("Biometric authentication failed:", result.error);
-      }
-    } catch (error) {
-      console.error("Biometric authentication error:", error);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-    }
-  };
-
   const OnNumberPressDown = (num: number) => {
     if (code.length < 6) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -238,26 +253,16 @@ const TransactionPin: React.FC<TransactionPinProps> = ({
     setCode((prev) => prev.slice(0, -1));
   };
 
-  useEffect(() => {
-    if (verificationCode.length === 6) {
-      verify2FACode();
-    }
-  }, [verificationCode]);
-
   const renderPinView = () => (
     <>
       <View className="items-center px-6 mb-12">
         <View
           className={`w-20 h-20 rounded-full items-center justify-center mb-6 ${isDark ? "bg-lime-500/20" : "bg-lime-100"}`}
         >
-          <Ionicons
-            name="lock-closed"
-            size={40}
-            color={isDark ? "#84cc16" : "#65a30d"}
-          />
+          <Lock size={40} color={isDark ? "#84cc16" : "#65a30d"} />
         </View>
         <Text
-          className={`text-3xl font-bold mb-3 ${isDark ? "text-white" : "text-gray-900"}`}
+          className={`text-3xl font-brand font-bold mb-3 ${isDark ? "text-white" : "text-gray-900"}`}
         >
           Enter PIN
         </Text>
@@ -305,19 +310,24 @@ const TransactionPin: React.FC<TransactionPinProps> = ({
           {isBiometricSupported && nativeAuthTransactions ? (
             <Pressable
               className="w-20 h-20 justify-center items-center"
-              onPress={onFingerPrintPress}
-            >
-              <MaterialCommunityIcons
-                name={
-                  biometricType === "facial"
-                    ? "face-recognition"
-                    : biometricType === "fingerprint"
-                      ? "fingerprint"
-                      : "passport-biometric"
+              onPress={async () => {
+                const result =
+                  await biometricService.onFingerPrintPress(
+                    isBiometricSupported,
+                  );
+
+                if (result) {
+                  setCurrentStep("Select-2FA");
                 }
-                size={32}
-                color={isDark ? "#a78bfa" : "#7c3aed"}
-              />
+              }}
+            >
+              {biometricType === "facial" ? (
+                <ScanFace size={32} color={isDark ? "#a78bfa" : "#7c3aed"} />
+              ) : biometricType === "fingerprint" ? (
+                <Fingerprint size={32} color={isDark ? "#a78bfa" : "#7c3aed"} />
+              ) : (
+                <ScanLine size={32} color={isDark ? "#a78bfa" : "#7c3aed"} />
+              )}
             </Pressable>
           ) : (
             <View className="w-20 h-20" />
@@ -341,19 +351,11 @@ const TransactionPin: React.FC<TransactionPinProps> = ({
           <View className="w-20 h-20 justify-center items-center">
             {code.length > 0 ? (
               <Pressable onPress={() => onBackspacePress()}>
-                <Ionicons
-                  name="backspace"
-                  size={28}
-                  color={isDark ? "#9ca3af" : "#6b7280"}
-                />
+                <Delete size={28} color={isDark ? "#9ca3af" : "#6b7280"} />
               </Pressable>
             ) : onCancel ? (
               <Pressable onPress={onCancel}>
-                <Ionicons
-                  name="close"
-                  size={28}
-                  color={isDark ? "#9ca3af" : "#6b7280"}
-                />
+                <X size={28} color={isDark ? "#9ca3af" : "#6b7280"} />
               </Pressable>
             ) : null}
           </View>
@@ -368,14 +370,10 @@ const TransactionPin: React.FC<TransactionPinProps> = ({
         <View
           className={`w-20 h-20 rounded-full items-center justify-center mb-6 ${isDark ? "bg-lime-500/20" : "bg-lime-100"}`}
         >
-          <Ionicons
-            name="shield-checkmark"
-            size={40}
-            color={isDark ? "#84cc16" : "#65a30d"}
-          />
+          <ShieldCheck size={40} color={isDark ? "#84cc16" : "#65a30d"} />
         </View>
         <Text
-          className={`text-3xl font-bold mb-3 ${isDark ? "text-white" : "text-gray-900"}`}
+          className={`text-3xl font-brand font-bold mb-3 ${isDark ? "text-white" : "text-gray-900"}`}
         >
           Verify It&apos;s You
         </Text>
@@ -393,7 +391,7 @@ const TransactionPin: React.FC<TransactionPinProps> = ({
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
               setSelected2FA(option.id);
-              send2FACode(option.title);
+              send2FACode(option.id);
             }}
             disabled={isLoading}
             className={`p-4 mb-4 rounded-2xl border-2 ${isDark ? "bg-white/5 border-white/10" : "bg-white border-gray-200"}`}
@@ -402,15 +400,11 @@ const TransactionPin: React.FC<TransactionPinProps> = ({
               <View
                 className={`w-12 h-12 rounded-full items-center justify-center mr-3 ${isDark ? "bg-lime-500/20" : "bg-lime-100"}`}
               >
-                <Ionicons
-                  name={option.icon as any}
-                  size={24}
-                  color={isDark ? "#84cc16" : "#65a30d"}
-                />
+                <option.icon size={24} color={isDark ? "#84cc16" : "#65a30d"} />
               </View>
               <View className="flex-1">
                 <Text
-                  className={`text-base font-bold ${isDark ? "text-white" : "text-gray-900"}`}
+                  className={`text-base font-brand font-bold ${isDark ? "text-white" : "text-gray-900"}`}
                 >
                   {option.title}
                 </Text>
@@ -420,11 +414,7 @@ const TransactionPin: React.FC<TransactionPinProps> = ({
                   {option.sub}
                 </Text>
               </View>
-              <Ionicons
-                name="chevron-forward"
-                size={20}
-                color={isDark ? "#84cc16" : "#65a30d"}
-              />
+              <ChevronRight size={20} color={isDark ? "#84cc16" : "#65a30d"} />
             </View>
           </Pressable>
         ))}
@@ -449,27 +439,27 @@ const TransactionPin: React.FC<TransactionPinProps> = ({
         <View
           className={`w-20 h-20 rounded-full items-center justify-center mb-6 ${isDark ? "bg-lime-500/20" : "bg-lime-100"}`}
         >
-          <Ionicons
-            name="keypad"
-            size={40}
-            color={isDark ? "#84cc16" : "#65a30d"}
-          />
+          <Grid2x2 size={40} color={isDark ? "#84cc16" : "#65a30d"} />
         </View>
         <Text
-          className={`text-3xl font-bold mb-3 ${isDark ? "text-white" : "text-gray-900"}`}
+          className={`text-3xl font-brand font-bold mb-3 ${isDark ? "text-white" : "text-gray-900"}`}
         >
           Enter Code
         </Text>
         <Text
           className={`text-base text-center px-8 ${isDark ? "text-gray-400" : "text-gray-600"}`}
         >
-          We&apos;ve sent a 6-digit code to your{" "}
+          We&apos;ve sent a 8-digit code to your{" "}
           {selected2FA === "sms" ? "phone" : "email"}
         </Text>
       </View>
 
       <View className="items-center mb-10">
-        <TextInput
+        <OTPInput
+          length={8}
+          onComplete={(verificationCode) => Validate2FACode(verificationCode)}
+        />
+        {/* <TextInput
           value={verificationCode}
           onChangeText={(text) => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -481,8 +471,18 @@ const TransactionPin: React.FC<TransactionPinProps> = ({
           className={`text-3xl font-mono tracking-widest text-center p-6 rounded-2xl border-2 w-64 ${isDark ? "bg-white/5 border-white/20 text-white" : "bg-white border-gray-300 text-gray-900"}`}
           placeholder="000000"
           placeholderTextColor={isDark ? "#4b5563" : "#9ca3af"}
-        />
+        /> */}
       </View>
+
+      {/* <Pressable
+        onPress={() => verify2FACode}
+        disabled={isLoading}
+        className={`p-5 rounded-2xl mb-4 ${isDark ? "bg-lime-600" : "bg-lime-500"} ${isLoading ? "opacity-50" : ""}`}
+      >
+        <Text className="text-white text-center text-xl font-bold">
+          {isLoading ? "⏳ Processing..." : "✓ Confirm & Pay"}
+        </Text>
+      </Pressable> */}
 
       <Pressable
         onPress={() => {
@@ -512,87 +512,134 @@ const TransactionPin: React.FC<TransactionPinProps> = ({
     </View>
   );
 
-  const renderConfirmation = () => (
+  const renderSuccess = () => (
     <View className="flex-1 w-full justify-center px-6">
       <View className="items-center mb-12">
         <View
           className={`w-24 h-24 rounded-full items-center justify-center mb-6 ${isDark ? "bg-lime-500/20" : "bg-lime-100"}`}
         >
-          <Ionicons
-            name="checkmark-circle"
-            size={56}
-            color={isDark ? "#84cc16" : "#65a30d"}
-          />
+          <CheckCircle2 size={56} color={isDark ? "#84cc16" : "#65a30d"} />
         </View>
         <Text
-          className={`text-3xl font-bold mb-3 ${isDark ? "text-white" : "text-gray-900"}`}
+          className={`text-3xl font-brand font-bold mb-3 ${isDark ? "text-white" : "text-gray-900"}`}
         >
-          Almost Done!
+          Payment Successful!
         </Text>
         <Text
           className={`text-base text-center px-4 ${isDark ? "text-gray-400" : "text-gray-600"}`}
         >
-          Review Your Transaction Details
+          Your transaction of{" "}
+          {formatAmount(Number.parseFloat(amount), "NGN", true, false)} was
+          completed successfully.
         </Text>
       </View>
 
       <View
         className={`p-6 rounded-2xl mb-8 border ${isDark ? "bg-white/5 border-white/10" : "bg-white border-gray-200"}`}
       >
-        <View
-          className="flex-row justify-between items-center mb-5 pb-3 border-b"
-          style={{
-            borderBottomWidth: 1,
-            borderBottomColor: isDark ? "#374151" : "#e5e7eb",
-          }}
-        >
+        <View className="flex-row justify-between items-center mb-4">
           <Text
             className={`text-base font-medium ${isDark ? "text-gray-400" : "text-gray-600"}`}
           >
-            Amount
-          </Text>
-          <Text
-            className={`text-2xl font-bold ${isDark ? "text-lime-400" : "text-lime-600"}`}
-          >
-            {formatAmount(Number.parseFloat(amount), "NGN", true, false)}
-          </Text>
-        </View>
-        <View className="flex-row justify-between items-center mb-3">
-          <Text
-            className={`text-base font-medium ${isDark ? "text-gray-400" : "text-gray-600"}`}
-          >
-            Recipient
+            Reference
           </Text>
           <Text
             className={`text-base font-semibold ${isDark ? "text-white" : "text-gray-900"}`}
           >
-            {recipient}
+            {transactionResult?.reference}
+          </Text>
+        </View>
+        <View className="flex-row justify-between items-center mb-4">
+          <Text
+            className={`text-base font-medium ${isDark ? "text-gray-400" : "text-gray-600"}`}
+          >
+            Narration
+          </Text>
+          <Text
+            className={`text-base font-semibold ${isDark ? "text-white" : "text-gray-900"}`}
+          >
+            {transactionResult?.narration}
+          </Text>
+        </View>
+        <View className="flex-row justify-between items-center">
+          <Text
+            className={`text-base font-medium ${isDark ? "text-gray-400" : "text-gray-600"}`}
+          >
+            Date
+          </Text>
+          <Text
+            className={`text-base font-semibold ${isDark ? "text-white" : "text-gray-900"}`}
+          >
+            {new Date().toLocaleDateString()}
           </Text>
         </View>
       </View>
 
-      <Pressable
-        onPress={() => {
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          onSuccess?.();
-        }}
-        disabled={isLoading}
-        className={`p-5 rounded-2xl mb-4 ${isDark ? "bg-lime-600" : "bg-lime-500"} ${isLoading ? "opacity-50" : ""}`}
-      >
-        <Text className="text-white text-center text-xl font-bold">
-          {isLoading ? "⏳ Processing..." : "✓ Confirm & Pay"}
-        </Text>
-      </Pressable>
+      <View className="flex-row space-x-2 gap-2 mb-4">
+        <Pressable
+          className={`flex-1 rounded-2xl py-5 px-1 items-center ${isDark ? "bg-lime-600" : "bg-lime-500"}`}
+          onPress={handleDownloadReceipt}
+        >
+          <Text className="text-white text-base font-semibold break-words text-wrap">
+            Download Receipt
+          </Text>
+        </Pressable>
+        <Pressable
+          className={`flex-1 rounded-2xl py-5 px-1 items-center backdrop-blur-xl ${
+            isDark
+              ? "bg-white/10 border border-white/20"
+              : "bg-gray-200 border border-gray-300"
+          }`}
+          onPress={handleShare}
+        >
+          <Text
+            className={`font-semibold ${isDark ? "text-white" : "text-gray-800"}`}
+          >
+            Share
+          </Text>
+        </Pressable>
+      </View>
 
       <Pressable
-        onPress={() => setCurrentStep("Verify-2FA")}
-        className="p-4 items-center"
+        onPress={() => {
+          onCancel?.();
+          setCurrentStep("PIN");
+        }}
+        className={`p-5 rounded-2xl ${isDark ? "bg-lime-600" : "bg-lime-500"}`}
       >
-        <Text
-          className={`text-base font-medium ${isDark ? "text-gray-400" : "text-gray-600"}`}
+        <Text className="text-white text-center text-xl font-bold">Close</Text>
+      </Pressable>
+    </View>
+  );
+
+  const renderFailure = () => (
+    <View className="flex-1 w-full justify-center px-6">
+      <View className="items-center mb-12">
+        <View
+          className={`w-24 h-24 rounded-full items-center justify-center mb-6 ${isDark ? "bg-red-500/20" : "bg-red-100"}`}
         >
-          ← Back
+          <XCircle size={56} color={isDark ? "#ef4444" : "#dc2626"} />
+        </View>
+        <Text
+          className={`text-center text-2xl font-brand font-bold mb-3 ${isDark ? "text-white" : "text-gray-900"}`}
+        >
+          Transaction Failed. We Couldn&apos;t Complete Your Transaction
         </Text>
+        <Text
+          className={`text-lg text-center px-4 ${isDark ? "text-gray-400" : "text-gray-600"}`}
+        >
+          {error}
+        </Text>
+      </View>
+
+      <Pressable
+        onPress={() => {
+          onCancel?.();
+          setCurrentStep("PIN");
+        }}
+        className={`p-5 rounded-2xl ${isDark ? "bg-red-600" : "bg-red-500"}`}
+      >
+        <Text className="text-white text-center text-xl font-bold">Close</Text>
       </Pressable>
     </View>
   );
@@ -646,14 +693,35 @@ const TransactionPin: React.FC<TransactionPinProps> = ({
         return render2FASelect();
       case "Verify-2FA":
         return render2FAVerify();
-      case "Confirm":
-        return renderConfirmation();
+      case "Success":
+        return renderSuccess();
+      case "Failure":
+        return renderFailure();
       default:
         return renderPinView();
     }
   };
   return (
     <>
+      <Modal
+        visible={
+          (showPinModal ||
+            currentStep === "Success" ||
+            currentStep === "Failure") &&
+          hasPin &&
+          !showPinSetup
+        }
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={onCancel}
+      >
+        <SafeAreaView
+          className={`flex-1 justify-center items-center ${isDark ? "bg-[#0a0a0f]" : "bg-[#e7efe7]"}`}
+        >
+          {getCurrentStepContent()}
+        </SafeAreaView>
+      </Modal>
+
       <PinSetupModal
         visible={showPinSetup}
         onComplete={() => {
@@ -665,19 +733,6 @@ const TransactionPin: React.FC<TransactionPinProps> = ({
           onCancel?.();
         }}
       />
-
-      <Modal
-        visible={showPinModal && hasPin && !showPinSetup}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={onCancel}
-      >
-        <SafeAreaView
-          className={`flex-1 justify-center items-center ${isDark ? "bg-[#0a0a0f]" : "bg-[#e7efe7]"}`}
-        >
-          {getCurrentStepContent()}
-        </SafeAreaView>
-      </Modal>
     </>
   );
 };

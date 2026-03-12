@@ -2,7 +2,7 @@ import { PinService } from "@/lib/utils/SecureStorage";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import React, { useEffect, useState } from "react";
-import { Alert, Modal, Text, TouchableOpacity, View } from "react-native";
+import { Alert, Modal, Pressable, Text, View } from "react-native";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -68,7 +68,7 @@ const PinSetupModal: React.FC<PinSetupModalProps> = ({
   };
 
   const RenderButton = (num: number) => (
-    <TouchableOpacity
+    <Pressable
       key={num}
       onPress={() => onNumberPress(num)}
       className="w-[72px] h-[72px] justify-center items-center bg-white border-2 border-gray-200 rounded-full active:bg-gray-50"
@@ -81,7 +81,7 @@ const PinSetupModal: React.FC<PinSetupModalProps> = ({
       }}
     >
       <Text className="text-gray-900 text-3xl font-light">{num}</Text>
-    </TouchableOpacity>
+    </Pressable>
   );
 
   useEffect(() => {
@@ -122,7 +122,7 @@ const PinSetupModal: React.FC<PinSetupModalProps> = ({
       animationType="slide"
       presentationStyle="pageSheet"
     >
-      <View className="flex-1 bg-gradient-to-b from-indigo-50 to-white">
+      <View className="flex-1 bg-gradient-to-b from-lime-50 to-white">
         <View className="px-6 pt-12 pb-6">
           <View className="flex-row items-center justify-between">
             <View className="flex-1">
@@ -135,12 +135,12 @@ const PinSetupModal: React.FC<PinSetupModalProps> = ({
                   : "Enter a 6-digit PIN to secure your account"}
               </Text>
             </View>
-            <TouchableOpacity
+            <Pressable
               onPress={onCancel}
               className="w-10 h-10 items-center justify-center rounded-full bg-gray-100"
             >
               <Ionicons name="close" size={24} color="#6B7280" />
-            </TouchableOpacity>
+            </Pressable>
           </View>
         </View>
 
@@ -153,7 +153,7 @@ const PinSetupModal: React.FC<PinSetupModalProps> = ({
               <View
                 key={index + 1}
                 className={`w-4 h-4 mx-3 rounded-full ${
-                  currentCode[index] ? "bg-indigo-600" : "bg-gray-300"
+                  currentCode[index] ? "bg-lime-600" : "bg-gray-300"
                 }`}
               />
             ))}
@@ -172,7 +172,7 @@ const PinSetupModal: React.FC<PinSetupModalProps> = ({
               </View>
               <View className="flex-row justify-center gap-6 items-center">
                 <View className="w-[72px] h-[72px]" />
-                <TouchableOpacity
+                <Pressable
                   onPress={() => onNumberPress(0)}
                   className="w-[72px] h-[72px] justify-center items-center bg-white border-2 border-gray-200 rounded-full active:bg-gray-50"
                   style={{
@@ -184,8 +184,8 @@ const PinSetupModal: React.FC<PinSetupModalProps> = ({
                   }}
                 >
                   <Text className="text-gray-900 text-3xl font-light">0</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
+                </Pressable>
+                <Pressable
                   onPress={onBackspacePress}
                   className="w-[72px] h-[72px] justify-center items-center"
                   disabled={currentCode.length === 0}
@@ -195,7 +195,7 @@ const PinSetupModal: React.FC<PinSetupModalProps> = ({
                     size={28}
                     color={currentCode.length > 0 ? "#4F46E5" : "#D1D5DB"}
                   />
-                </TouchableOpacity>
+                </Pressable>
               </View>
             </View>
           </View>

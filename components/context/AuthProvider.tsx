@@ -1,11 +1,16 @@
-import { authService } from "@/lib/auth";
+import { authService } from "@/lib/services/AuthService";
 import { complianceService } from "@/lib/services/ComplianceService";
 import { biometricService } from "@/lib/utils/SecureStorage";
 import { router } from "expo-router";
+import { jwtDecode } from "jwt-decode";
 import React, { createContext, useContext, useEffect, useState } from "react";
 
 interface AuthContextType {
   user: User | null;
+  token: string | null;
+  isLocked: boolean;
+  lock: () => void;
+  unlock: () => void;
   isLoading: boolean;
   isAuthenticated: boolean;
   nativeAuthLogin: boolean;
@@ -15,7 +20,7 @@ interface AuthContextType {
   hasRequiredConsents: boolean;
   login: (identifier: string, password: string) => Promise<void>;
   biometricLogin: () => Promise<void>;
-  register: (data: RegisterData) => Promise<User>;
+  register: (data: RegisterData) => Promise<string>;
   logout: () => Promise<void>;
   updateNativeAuthSettings: (
     login: boolean,
@@ -38,6 +43,16 @@ export function AuthProvider({
   const [hasBiometricCredentials, setHasBiometricCredentials] = useState(false);
   const [hasRequiredConsents, setHasRequiredConsents] = useState(false);
 
+  const [token, setToken] = useState<string | null>(null);
+  const [isLocked, setIsLocked] = useState(false);
+
+  const lock = () => setIsLocked(true);
+  const unlock = () => setIsLocked(false);
+
+  //   const timerRef = useRef<NodeJS.Timeout>();
+  // const interactionListenerRef = useRef<any>();
+  // const appStateRef = useRef<AppStateStatus>(appState);
+
   useEffect(() => {
     checkAuthState();
   }, []);
@@ -46,11 +61,12 @@ export function AuthProvider({
     try {
       const authData = await authService.getStoredAuthData();
       if (authData) {
-        setUser(authData.user);
+        setUser(authData.details.user);
       }
 
       const hasBiometric = await biometricService.hasBiometricCredentials();
       setHasBiometricCredentials(hasBiometric);
+      if (hasBiometric) setNativeAuthLogin(true);
 
       const hasConsents = await complianceService.hasRequiredConsents();
       setHasRequiredConsents(hasConsents);
@@ -61,29 +77,60 @@ export function AuthProvider({
     }
   };
 
+  // JWT Expiry Watcher
+  useEffect(() => {
+    if (!token) return;
+
+    const decoded: any = jwtDecode(token);
+    const expiry = decoded.exp * 1000;
+
+    console.log("Az Expired: " + expiry, expiry - Date.now());
+
+    const timeout = setTimeout(() => {
+      logout();
+    }, expiry - Date.now());
+
+    return () => clearTimeout(timeout);
+  }, [token]);
+
   const checkConsents = async () => {
     const hasConsents = await complianceService.hasRequiredConsents();
     setHasRequiredConsents(hasConsents);
   };
 
   const login = async (identifier: string, password: string) => {
-    const authResponse = await authService.login(identifier, password);
-    setUser(authResponse.user);
-
-    if (authResponse.user.role === "merchant") {
-      return router.push("/(merchant)");
-    } else if (authResponse.user.role === "consumer") {
-      return router.push("/(user)");
+    const consents = await complianceService.hasRequiredConsents();
+    if (!consents) {
+      router.push("/(auth)/PrivacyPolicyModal");
+      throw new Error(
+        "Please accept the privacy policy and terms of service to continue.",
+      );
     }
 
-    // Store credentials for biometric login if enabled
-    if (nativeAuthLogin) {
-      await biometricService.storeBiometricCredentials(identifier, password);
-      setHasBiometricCredentials(true);
+    const authResponse = await authService.login(identifier, password);
+    setToken(authResponse.details.token);
+    setUser(authResponse.details.user);
+
+    await biometricService.storeBiometricCredentials(identifier, password);
+    setHasBiometricCredentials(true);
+    setNativeAuthLogin(true);
+
+    if (authResponse.details.user.role === "merchant") {
+      return router.push("/(merchant)");
+    } else if (authResponse.details.user.role === "consumer") {
+      return router.push("/(user)");
     }
   };
 
   const biometricLogin = async () => {
+    const consents = await complianceService.hasRequiredConsents();
+    if (!consents) {
+      router.push("/(auth)/PrivacyPolicyModal");
+      throw new Error(
+        "Please accept the privacy policy and terms of service to continue.",
+      );
+    }
+
     const credentials = await biometricService.getBiometricCredentials();
     if (!credentials) {
       throw new Error("No biometric credentials found");
@@ -93,11 +140,13 @@ export function AuthProvider({
       credentials.identifier,
       credentials.password,
     );
-    setUser(authResponse.user);
 
-    if (authResponse.user.role === "merchant") {
+    setToken(authResponse.details.token);
+    setUser(authResponse.details.user);
+
+    if (authResponse.details.user.role === "merchant") {
       return router.push("/(merchant)");
-    } else if (authResponse.user.role === "consumer") {
+    } else if (authResponse.details.user.role === "consumer") {
       return router.push("/(user)");
     }
   };
@@ -111,20 +160,19 @@ export function AuthProvider({
     //   await complianceService.createConsumerConsents(authResponse.user.id);
     // }
 
-    router.push("/(auth)/Login");
-
-    if (!authResponse) {
+    if (!authResponse?.success) {
       throw new Error("Registration failed. Please try again.");
     }
 
-    return authResponse.user;
+    router.push("/(auth)/Login");
+    return authResponse.details.userId;
   };
 
   const logout = async () => {
     await authService.logout();
-    await biometricService.clearBiometricCredentials();
     setUser(null);
-    setHasBiometricCredentials(false);
+
+    router.replace("/(auth)/Login");
   };
 
   const updateNativeAuthSettings = async (
@@ -163,6 +211,10 @@ export function AuthProvider({
         updateNativeAuthSettings,
         updateVisibleBalance,
         checkConsents,
+        token,
+        isLocked,
+        lock,
+        unlock,
       }}
     >
       {children}

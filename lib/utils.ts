@@ -1,42 +1,36 @@
-import * as SQLite from "expo-sqlite";
-import { SQLiteDatabase } from "expo-sqlite";
-
-export const getDatabase = async (
-  db: SQLiteDatabase | null
-): Promise<SQLiteDatabase | null> => {
-  if (!db) {
-    try {
-      db = await SQLite.openDatabaseAsync("nfc_payments.db");
-
-      await db.execAsync("PRAGMA journal_mode = WAL");
-      await db.execAsync("PRAGMA foreign_keys = ON");
-      
-      // Initialize tables
-      await initializeTables(db);
-    } catch (error) {
-      console.warn("SQLite not available:", error);
-
-      return null;
-    }
-  }
-  return db;
+// utils/statusColors.ts
+export const statusColorMap: Record<string, string> = {
+  COMPLETED: "#16A34A",
+  CANCELLED: "#F59E0B",
+  FAILED_SETTLEMENT: "#DC2626",
 };
 
-const initializeTables = async (db: SQLiteDatabase) => {
-  await db.execAsync(
-        `CREATE TABLE IF NOT EXISTS transactions (
-              id INTEGER PRIMARY KEY AUTOINCREMENT,
-              tx_id TEXT UNIQUE NOT NULL,
-              txType TEXT NOT NULL,
-              card_id TEXT NOT NULL,
-              merchant_id TEXT NOT NULL,
-              amount INTEGER NOT NULL,
-              currency TEXT NOT NULL,
-              counter INTEGER NOT NULL,
-              timestamp INTEGER NOT NULL,
-              signature TEXT NOT NULL,
-              status TEXT DEFAULT 'PENDING',
-              synced INTEGER DEFAULT 0,
-              created_at INTEGER DEFAULT (strftime('%s', 'now'))
-            )`);
+export const formatNaira = (amount: number | undefined) => {
+  if (!amount) return "₦0.00";
+
+  return new Intl.NumberFormat("en-NG", {
+    style: "currency",
+    currency: "NGN",
+  }).format(amount);
+};
+
+export const isAccountNameValid = (accountName: string | null): boolean => {
+  return Boolean(
+    accountName &&
+    accountName !== "Account Not Found" &&
+    !accountName.includes("error") &&
+    !accountName.includes("Failed"),
+  );
+};
+
+export const maskPhone = (phone?: string) => {
+  if (!phone) return "+234 ••• ••• 1234";
+  const last4 = phone.slice(-4);
+  return `+234 ••• ••• ${last4}`;
+};
+
+export const maskEmail = (email?: string) => {
+  if (!email) return "u••••@example.com";
+  const [name, domain] = email.split("@");
+  return `${name[0]}••••@${domain}`;
 };

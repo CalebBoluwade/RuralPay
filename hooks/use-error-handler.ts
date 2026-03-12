@@ -1,5 +1,5 @@
-import { ErrorHandler } from "@/lib/ErrorHandler";
 import { ErrorContext } from "@/lib/services/AppLogger";
+import { ErrorHandler } from "@/lib/utils/ErrorHandler";
 import { useCallback } from "react";
 
 export const useErrorHandler = () => {

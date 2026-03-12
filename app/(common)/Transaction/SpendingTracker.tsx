@@ -2,7 +2,7 @@ import { useLanguage } from "@/components/context/LanguageContext";
 import PieChart from "@/components/ui/PieChart";
 import ScreenHeader from "@/components/ui/ScreenHeader";
 import PaymentService from "@/lib/services/PaymentService";
-import { getDatabase } from "@/lib/utils";
+import { categoryEmojis } from "@/lib/utils/narrationCategories";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { ScrollView, Text, View, useColorScheme } from "react-native";
@@ -17,18 +17,6 @@ const SpendingTracker = () => {
   const [categorySpending, setCategorySpending] = useState<
     Record<string, number>
   >({});
-
-  const categoryEmojis: Record<string, string> = {
-    Food: "🍔",
-    Restaurant: "🍽️",
-    Groceries: "🛒",
-    Shopping: "🛍️",
-    Transport: "🚗",
-    Entertainment: "🎬",
-    Bills: "💡",
-    Health: "💊",
-    Other: "💸",
-  };
 
   const getEmoji = (category: string) => {
     for (const key in categoryEmojis) {
@@ -45,9 +33,6 @@ const SpendingTracker = () => {
 
   const loadSpendingData = async () => {
     try {
-      const db = await getDatabase(null);
-      if (!db) return;
-
       const transactions = await PaymentService.FetchAllTransactions();
       const debits = transactions.filter((t) => t.txType?.includes("DEBIT"));
 
@@ -56,7 +41,7 @@ const SpendingTracker = () => {
 
       const categories: Record<string, number> = {};
       debits.forEach((t) => {
-        const cat = t.paymentMode || "Other";
+        const cat = t.narration || "Other";
         categories[cat] = (categories[cat] || 0) + t.amount;
       });
       setCategorySpending(categories);

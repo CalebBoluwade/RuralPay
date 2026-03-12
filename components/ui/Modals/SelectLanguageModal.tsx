@@ -14,18 +14,16 @@ const SelectLanguageModal = () => {
   return (
     <>
       {/* Language Button */}
-      <View>
-        <Pressable
-          onPress={() => setShowLanguageModal(true)}
-          className={`w-12 h-12 rounded-full items-center justify-center ${
-            isDark
-              ? "bg-white/10 border border-white/20"
-              : "bg-black/20 border border-gray-200/50"
-          } backdrop-blur`}
-        >
-          <Text className="text-xl">{languageNames[language].flag}</Text>
-        </Pressable>
-      </View>
+      <Pressable
+        onPress={() => setShowLanguageModal(true)}
+        className={`w-12 h-12 rounded-full items-center justify-center ${
+          isDark
+            ? "bg-white/10 border border-white/20"
+            : "bg-black/20 border border-gray-200/50"
+        } backdrop-blur`}
+      >
+        <Text className="text-xl">{languageNames[language].flag}</Text>
+      </Pressable>
 
       <Modal
         visible={showLanguageModal}

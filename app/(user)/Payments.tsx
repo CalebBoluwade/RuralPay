@@ -11,7 +11,7 @@ function onSelectMethod(id: string): void {
       router.push("/(transaction)/QRPayments");
       break;
     case "manual":
-      router.push("/(transaction)/BankTransfers");
+      router.push("/(common)/Transaction/BankTransfers");
       break;
     default:
       break;
@@ -46,7 +46,7 @@ export default function Payments() {
     >
       <ScreenHeader
         title={t("payments.title")}
-        subtitle="Enter payment details to get started"
+        subtitle="Get Started"
         goBack={false}
       />
       <View className="flex-1 flex gap-3 px-6">

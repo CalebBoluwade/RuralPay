@@ -2,7 +2,7 @@ import AppLogger, { LogLevel } from "@/lib/services/AppLogger";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React, { Component, ReactNode } from "react";
-import { Text, TouchableOpacity, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 
 interface Props {
   children: ReactNode;
@@ -48,7 +48,7 @@ export class ErrorBoundary extends Component<Props, State> {
       }
 
       return (
-        <View className="flex-1 justify-center items-center px-8 bg-gradient-to-b from-slate-50 to-slate-100">
+        <View className="flex-1 justify-center items-center px-8">
           <View className="bg-red-50 rounded-full p-6 mb-6">
             <Ionicons name="alert-circle" size={64} color="#ef4444" />
           </View>
@@ -60,19 +60,18 @@ export class ErrorBoundary extends Component<Props, State> {
           </Text>
 
           <Text className="text-slate-500 text-center mb-8 leading-6 max-w-sm">
-            We encountered an unexpected error. Don&apos;t worry, your data is
-            safe.
+            We Encountered An Unexpected Error. Don&apos;t Worry, Your Data Is
+            Safe.
           </Text>
 
-          <TouchableOpacity
+          <Pressable
             onPress={this.handleRestart}
             className="bg-slate-900 px-8 py-4 rounded-2xl shadow-lg active:scale-95"
-            activeOpacity={0.8}
           >
             <Text className="text-white font-semibold text-base">
               Restart App
             </Text>
-          </TouchableOpacity>
+          </Pressable>
 
           {__DEV__ && this.state.error && (
             <View className="mt-8 p-4 bg-red-50 rounded-xl border border-red-200 max-w-sm">

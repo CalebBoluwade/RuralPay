@@ -1,24 +1,25 @@
+import TransactionFailure from "@/components/ui/Modals/Transaction/TransactionFailure";
+import TransactionPin from "@/components/ui/Modals/Transaction/TransactionPinModal";
+import TransactionSuccess from "@/components/ui/Modals/Transaction/TransactionSuccess";
 import ScreenHeader from "@/components/ui/ScreenHeader";
-import TransactionFailure from "@/components/ui/Transaction/TransactionFailure";
-import TransactionPin from "@/components/ui/Transaction/TransactionPinModal";
-import TransactionSuccess from "@/components/ui/Transaction/TransactionSuccess";
+import AccountService from "@/lib/services/AccountService";
 import PaymentService from "@/lib/services/PaymentService";
 import ToastService from "@/lib/services/ToastService";
 import {
-  FontAwesome5,
-  Ionicons,
-  MaterialCommunityIcons,
+    FontAwesome5,
+    Ionicons,
+    MaterialCommunityIcons,
 } from "@expo/vector-icons";
 import { AudioModule, RecordingPresets, useAudioRecorder } from "expo-audio";
 import { router } from "expo-router";
 import * as Speech from "expo-speech";
 import React, { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  Text,
-  TouchableOpacity,
-  View,
-  useColorScheme,
+    ActivityIndicator,
+    Pressable,
+    Text,
+    View,
+    useColorScheme,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -46,11 +47,32 @@ const VoiceTransactionBanking = () => {
   const [paymentResult, setPaymentResult] = useState<any>(null);
   const [error, setError] = useState("");
 
+  const [loading, setLoading] = useState(false);
+  const [accountEnquiry, setAccountEnquiry] = useState<AccountBalanceEnquiry>();
+
+  const loadAccountData = async () => {
+    try {
+      const balance = await AccountService.AccountBalanceEnquiry();
+      setAccountEnquiry(balance);
+    } catch {
+      ToastService.error("Failed to Load Account Data");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    Speech.speak("Voice banking ready. Select a command to begin.", {
-      language: "en",
-    });
+    loadAccountData();
   }, []);
+
+  useEffect(() => {
+    Speech.speak(
+      `Voice Banking Ready. You Have ${accountEnquiry?.accounts.length || 2} Accounts With ${accountEnquiry?.accounts.reduce((sum, acc) => sum + (acc.availableBalance || 0), 0) || 50000} Naira In Total. Select An Account To Begin.`,
+      {
+        language: "en",
+      },
+    );
+  }, [accountEnquiry]);
 
   const handleVoiceCommand = (type: "balance" | "transfer" | "payment") => {
     setCommandType(type);
@@ -239,9 +261,9 @@ const VoiceTransactionBanking = () => {
             Voice Commands
           </Text>
 
-          <TouchableOpacity
+          <Pressable
             onPress={() => handleVoiceCommand("balance")}
-            className={`p-6 rounded-2xl mb-4 ${isDark ? "bg-indigo-600" : "bg-indigo-700"}`}
+            className={`p-6 rounded-2xl mb-4 ${isDark ? "bg-lime-600" : "bg-lime-700"}`}
           >
             <View className="flex-row items-center justify-between">
               <View className="flex-row items-center">
@@ -259,9 +281,9 @@ const VoiceTransactionBanking = () => {
               </View>
               <Ionicons name="mic" size={24} color="white" />
             </View>
-          </TouchableOpacity>
+          </Pressable>
 
-          <TouchableOpacity
+          <Pressable
             onPress={() => handleVoiceCommand("transfer")}
             className={`p-6 rounded-2xl mb-4 ${isDark ? "bg-emerald-600" : "bg-emerald-700"}`}
           >
@@ -285,11 +307,11 @@ const VoiceTransactionBanking = () => {
               </View>
               <Ionicons name="mic" size={24} color="white" />
             </View>
-          </TouchableOpacity>
+          </Pressable>
 
-          <TouchableOpacity
+          <Pressable
             onPress={() => handleVoiceCommand("payment")}
-            className={`p-6 rounded-2xl ${isDark ? "bg-purple-600" : "bg-purple-700"}`}
+            className={`p-6 rounded-2xl ${isDark ? "bg-lime-600" : "bg-lime-700"}`}
           >
             <View className="flex-row items-center justify-between">
               <View className="flex-row items-center">
@@ -304,14 +326,14 @@ const VoiceTransactionBanking = () => {
                   <Text className="text-white font-bold text-lg">
                     Voice Payment
                   </Text>
-                  <Text className="text-purple-100 text-sm">
+                  <Text className="text-lime-100 text-sm">
                     Pay bills by voice
                   </Text>
                 </View>
               </View>
               <Ionicons name="mic" size={24} color="white" />
             </View>
-          </TouchableOpacity>
+          </Pressable>
         </View>
       </View>
     </SafeAreaView>
@@ -335,7 +357,7 @@ const VoiceTransactionBanking = () => {
               : "bg-white/60 border border-gray-200/50 shadow-sm"
           }`}
         >
-          <TouchableOpacity
+          <Pressable
             className={`w-32 h-32 rounded-full items-center justify-center mb-6 ${
               isRecording ? "bg-red-500 animate-pulse" : "bg-blue-500"
             }`}
@@ -346,7 +368,7 @@ const VoiceTransactionBanking = () => {
               size={64}
               color="white"
             />
-          </TouchableOpacity>
+          </Pressable>
 
           <Text
             className={`text-2xl font-bold mb-2 ${isDark ? "text-white" : "text-gray-900"}`}
@@ -425,6 +447,8 @@ const VoiceTransactionBanking = () => {
 
   const renderEnterPin = () => (
     <TransactionPin
+      amount={""}
+      recipient=""
       paymentMessage={`Enter PIN to Authorize Voice Banking ${commandType} of ₦${amount} to ({accountName}) [{bankName}]`}
       showPinModal={true}
       onSuccess={handlePinSuccess}
@@ -440,6 +464,7 @@ const VoiceTransactionBanking = () => {
       {step === "ENTER_PIN" && renderEnterPin()}
       {step === "SUCCESS" && (
         <TransactionSuccess
+          visible
           data={{
             amount: paymentResult?.amount || amount,
             recipient: paymentResult?.recipient || recipient,
@@ -453,6 +478,7 @@ const VoiceTransactionBanking = () => {
       )}
       {step === "FAILURE" && (
         <TransactionFailure
+          visible
           error={error}
           onRetry={handleRetry}
           onClose={handleClose}

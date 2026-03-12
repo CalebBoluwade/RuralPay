@@ -5,37 +5,54 @@ import SelectLanguageModal from "@/components/ui/Modals/SelectLanguageModal";
 import { LoginFormData, loginSchema } from "@/lib/schema/validations";
 import ToastService from "@/lib/services/ToastService";
 import { biometricService } from "@/lib/utils/SecureStorage";
-import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as LocalAuthentication from "expo-local-authentication";
 import { Link, router } from "expo-router";
+import * as SecureStore from "expo-secure-store";
+import { CheckSquare, Fingerprint, ScanFace, ScanLine, Square } from "lucide-react-native";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import {
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  ScrollView,
   Text,
-  TouchableOpacity,
   useColorScheme,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { SvgUri } from "react-native-svg";
 
 export default function LoginScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
+  const { width } = useWindowDimensions();
 
-  const { login, biometricLogin, nativeAuthLogin, hasBiometricCredentials } =
-    useAuth();
+  const {
+    login,
+    biometricLogin,
+    hasBiometricCredentials,
+    hasRequiredConsents,
+    isLoading,
+  } = useAuth();
   const { t } = useLanguage();
-  const [isBiometricSupported, setIsBiometricSupported] =
-    useState<boolean>(false);
+  const [isBiometricSupported, setIsBiometricSupported] = useState(false);
   const [biometricType, setBiometricType] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
+
+  useEffect(() => {
+    if (!isLoading && !hasRequiredConsents) {
+      router.push("/(auth)/PrivacyPolicyModal");
+    }
+  }, [isLoading, hasRequiredConsents]);
 
   const {
     control,
     handleSubmit,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -45,37 +62,37 @@ export default function LoginScreen() {
     },
   });
 
-  // Check if device supports biometric authentication
   useEffect(() => {
     (async () => {
       const compatible = await biometricService.isBiometricAvailable();
       setIsBiometricSupported(compatible);
 
       if (compatible) {
-        const biometricTypes =
-          await LocalAuthentication.supportedAuthenticationTypesAsync();
-        // Check if device supports fingerprint or facial recognition
-        if (
-          biometricTypes.includes(
-            LocalAuthentication.AuthenticationType.FINGERPRINT,
-          )
-        ) {
-          setBiometricType("fingerprint");
-        } else if (
-          biometricTypes.includes(
-            LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION,
-          )
-        ) {
+        const types = await LocalAuthentication.supportedAuthenticationTypesAsync();
+        if (types.includes(LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION)) {
           setBiometricType("facial");
+        } else if (types.includes(LocalAuthentication.AuthenticationType.FINGERPRINT)) {
+          setBiometricType("fingerprint");
         } else {
           setBiometricType("biometric");
         }
+      }
+
+      const savedIdentifier = await SecureStore.getItemAsync("remembered_identifier");
+      if (savedIdentifier) {
+        setValue("identifier", savedIdentifier);
+        setRememberMe(true);
       }
     })();
   }, []);
 
   const onSubmit = async (data: LoginFormData) => {
     try {
+      if (rememberMe) {
+        await SecureStore.setItemAsync("remembered_identifier", data.identifier);
+      } else {
+        await SecureStore.deleteItemAsync("remembered_identifier");
+      }
       await login(data.identifier, data.password);
     } catch (error) {
       ToastService.error(
@@ -109,202 +126,198 @@ export default function LoginScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1">
+    <SafeAreaView
+      className={`flex-1 ${isDark ? "bg-slate-950" : "bg-slate-50"}`}
+    >
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         className="flex-1"
       >
-        <View className="flex-1 px-6 py-5">
-          {/* Header */}
-          <View className="flex-row items-center my-6">
-            <Text className="text-3xl font-bold text-white">
-              {t("auth.welcomeBack")}
-            </Text>
-
-            {/* Language Button */}
-            <SelectLanguageModal />
-          </View>
-
-          {/* Form Card */}
-          <View className="bg-white/10 backdrop-blur border border-white/20 rounded-3xl p-6 mb-4">
-            <Text className="text-2xl font-bold text-white mb-6 text-center">
-              {t("auth.login")}
-            </Text>
-
-            <OptimizedInput
-              control={control}
-              name="identifier"
-              label="Phone / Email / Username"
-              placeholder="Enter Phone, Email, or Username"
-              keyboardType="default"
-              autoCapitalize="none"
-              error={errors.identifier}
-            />
-
-            <OptimizedInput
-              control={control}
-              name="password"
-              label={t("auth.password")}
-              placeholder="Enter your Password"
-              secureTextEntry
-              showPasswordToggle
-              error={errors.password}
-            />
-
-            <Link href="/(auth)/ForgotPassword" asChild>
-              <Pressable className="self-end mb-8">
-                <Text className="text-white/90 text-base font-medium">
-                  {t("auth.forgotPassword")}
+        <ScrollView
+          className="flex-1"
+          showsVerticalScrollIndicator={false}
+          contentContainerClassName="flex-grow"
+        >
+          <View className="flex-1 justify-between px-6 pt-2 pb-1">
+            {/* Header with Language Selector */}
+            <View className="flex-row justify-between items-center mb-8">
+              <View>
+                <Text
+                  className={`text-sm ${isDark ? "text-slate-400" : "text-slate-600"} mb-1`}
+                >
+                  {t("auth.welcomeBack")}
                 </Text>
-              </Pressable>
-            </Link>
-
-            {/* Login Buttons */}
-            <View className="space-y-4 flex-row justify-center gap-3">
-              <Pressable
-                onPress={handleSubmit(onSubmit)}
-                disabled={isSubmitting}
-                className={`w-64 bg-indigo-700 rounded-2xl py-4 shadow-lg ${
-                  isSubmitting ? "opacity-50" : ""
-                }`}
-              >
-                <Text className="text-white text-lg font-bold text-center">
-                  {isSubmitting ? "Signing In..." : t("auth.login")}
+                <Text
+                  className={`text-3xl font-brand font-bold ${isDark ? "text-white" : "text-slate-900"}`}
+                >
+                  {t("auth.login")}
                 </Text>
-              </Pressable>
+              </View>
 
-              {isBiometricSupported &&
-                hasBiometricCredentials &&
-                nativeAuthLogin && (
-                  <Pressable
-                    onPress={onFingerPrintPress}
-                    className="w-16 bg-white/20 backdrop-blur border border-white/30 rounded-2xl px-2 py-4 flex-row items-center justify-center shadow-lg"
-                  >
-                    <MaterialCommunityIcons
-                      name={
-                        biometricType === "facial"
-                          ? "face-recognition"
-                          : biometricType === "fingerprint"
-                            ? "fingerprint"
-                            : "passport-biometric"
-                      }
-                      size={24}
-                      color="white"
-                    />
-                  </Pressable>
-                )}
+              <View className="flex-row gap-2">
+                <Pressable
+                  onPress={() => router.push("/(auth)/QuickLinks")}
+                  className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                    isDark
+                      ? "bg-white/10 border border-white/20"
+                      : "bg-black/20 border border-gray-200/50"
+                  } backdrop-blur`}
+                >
+                  <Text className="text-xl">✨</Text>
+                </Pressable>
+
+                <SelectLanguageModal />
+              </View>
             </View>
-          </View>
 
-          {/* Sign Up Link */}
-          <View className="bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-4 mb-4">
-            <View className="flex-row justify-center items-center">
-              <Text className="text-white/80 text-lg">
+            <View className="items-center">
+              <SvgUri
+                uri={
+                  Image.resolveAssetSource(
+                    require("@/assets/images/CreditCard.svg"),
+                  ).uri
+                }
+                width={width - 48}
+                height={(width - 48) * 0.8}
+              />
+            </View>
+
+            {/* Login Form */}
+            <View>
+              <OptimizedInput
+                control={control}
+                name="identifier"
+                label="Phone / Email / Username"
+                placeholder="Enter Phone, Email, or Username"
+                keyboardType="default"
+                autoCapitalize="none"
+                error={errors.identifier}
+              />
+
+              <OptimizedInput
+                control={control}
+                name="password"
+                label={t("auth.password")}
+                placeholder="Enter your Password"
+                secureTextEntry
+                showPasswordToggle
+                error={errors.password}
+              />
+
+              <View className="flex-row justify-between items-center mb-2">
+                <Pressable
+                  onPress={() => setRememberMe((v) => !v)}
+                  className="flex-row items-center gap-2"
+                >
+                  {rememberMe ? (
+                    <CheckSquare size={18} color={isDark ? "#a3e635" : "#65a30d"} />
+                  ) : (
+                    <Square size={18} color={isDark ? "#64748b" : "#94a3b8"} />
+                  )}
+                  <Text className={`text-sm ${isDark ? "text-slate-400" : "text-slate-600"}`}>
+                    Remember me
+                  </Text>
+                </Pressable>
+
+                <Link href="/(auth)/ForgotPassword" asChild>
+                  <Pressable>
+                    <Text className="text-lime-500 text-sm font-semibold">
+                      {t("auth.forgotPassword")}
+                    </Text>
+                  </Pressable>
+                </Link>
+              </View>
+            </View>
+
+            {/* Login Button */}
+            <Pressable
+              onPress={handleSubmit(onSubmit)}
+              disabled={isSubmitting}
+              className={`bg-lime-400 rounded-2xl py-4 shadow-lg mb-2 ${
+                isSubmitting ? "opacity-50" : ""
+              }`}
+            >
+              <Text className="text-black text-lg font-bold text-center">
+                {isSubmitting ? "Signing In..." : t("auth.login")}
+              </Text>
+            </Pressable>
+
+            {/* Biometric Login */}
+            {isBiometricSupported && (hasBiometricCredentials || rememberMe) && (
+                <Pressable
+                  onPress={onFingerPrintPress}
+                  className={`${isDark ? "bg-slate-900 border-slate-700" : "bg-white border-slate-200"} border rounded-2xl py-4 flex-row items-center justify-center gap-2 mb-6`}
+                >
+                  {biometricType === "facial" ? (
+                    <ScanFace
+                      size={24}
+                      color={isDark ? "#a3e635" : "#65a30d"}
+                    />
+                  ) : biometricType === "fingerprint" ? (
+                    <Fingerprint
+                      size={24}
+                      color={isDark ? "#a3e635" : "#65a30d"}
+                    />
+                  ) : (
+                    <ScanLine
+                      size={24}
+                      color={isDark ? "#a3e635" : "#65a30d"}
+                    />
+                  )}
+                  <Text
+                    className={`text-base font-semibold ${isDark ? "text-slate-300" : "text-slate-700"}`}
+                  >
+                    Use{" "}
+                    {biometricType === "facial"
+                      ? "Face ID"
+                      : biometricType === "fingerprint"
+                        ? "Fingerprint"
+                        : "Biometric"}
+                  </Text>
+                </Pressable>
+              )}
+
+            {/* Sign Up Link */}
+            <View className="flex-row justify-center items-center mt-2">
+              <Text
+                className={`text-base ${isDark ? "text-slate-400" : "text-slate-600"}`}
+              >
                 {t("auth.dontHaveAccount")}{" "}
               </Text>
               <Link href="/(auth)/Register" asChild>
-                <TouchableOpacity>
-                  <Text className="text-blue-300 text-lg font-bold">
+                <Pressable>
+                  <Text className="text-lime-500 text-base font-bold">
                     {t("auth.signUp")}
                   </Text>
-                </TouchableOpacity>
+                </Pressable>
               </Link>
             </View>
-          </View>
 
-          {/* Quick Links */}
-          <View className="mb-8">
-            <Text
-              className={`text-xl font-bold mb-3 ${
-                isDark ? "text-white" : "text-gray-900"
-              }`}
-            >
-              {t("home.quickLinks")}
-            </Text>
-            <View className="flex-row justify-between gap-2 mb-6">
-              <Pressable
-                className={`flex-1 py-3 rounded-2xl items-center backdrop-blur-xl ${
-                  isDark
-                    ? "bg-white/10 border border-white/20"
-                    : "bg-gray-50 border border-gray-200 shadow-sm"
-                }`}
-                onPress={() =>
-                  router.push("/(transaction)/VoiceTransactionBanking")
+            <View className="flex-row justify-center items-center gap-2 mt-2">
+              <SvgUri
+                uri={
+                  Image.resolveAssetSource(require("@/assets/images/CBN.svg"))
+                    .uri
                 }
-                style={{
-                  shadowColor: isDark ? "#fff" : "#000",
-                  shadowOpacity: 0.05,
-                  shadowRadius: 10,
-                }}
-              >
-                <Ionicons
-                  name="mic-outline"
-                  size={32}
-                  color={isDark ? "#84cc16" : "#65a30d"}
-                />
+                width={32}
+                height={32}
+              />
+
+              <View className="flex-row">
                 <Text
-                  className={`text-sm mt-3 font-semibold text-center ${
-                    isDark ? "text-gray-200" : "text-gray-700"
-                  }`}
+                  className={`text-sm ${isDark ? "text-slate-400" : "text-slate-600"}`}
                 >
-                  {t("payments.voice")}
+                  Licensed by the{" "}
                 </Text>
-              </Pressable>
-              <Pressable
-                className={`flex-1 py-3 rounded-2xl items-center backdrop-blur-xl ${
-                  isDark
-                    ? "bg-white/10 border border-white/20"
-                    : "bg-gray-50 border border-gray-200 shadow-sm"
-                }`}
-                onPress={() => router.push("/(transaction)/USSDPay")}
-                style={{
-                  shadowColor: isDark ? "#fff" : "#000",
-                  shadowOpacity: 0.05,
-                  shadowRadius: 10,
-                }}
-              >
-                <Ionicons
-                  name="phone-portrait-outline"
-                  size={32}
-                  color={isDark ? "#fb923c" : "#ea580c"}
-                />
                 <Text
-                  className={`text-sm mt-3 font-semibold text-center ${
-                    isDark ? "text-gray-200" : "text-gray-700"
-                  }`}
+                  className={`text-sm font-semibold ${isDark ? "text-slate-400" : "text-slate-600"}`}
                 >
-                  {t("payments.ussd")}
+                  CBN
                 </Text>
-              </Pressable>
-              <Pressable
-                className={`flex-1 py-3 rounded-2xl items-center backdrop-blur-xl ${
-                  isDark
-                    ? "bg-white/10 border border-white/20"
-                    : "bg-gray-50 border border-gray-200 shadow-sm"
-                }`}
-                onPress={() => {}}
-                style={{
-                  shadowColor: isDark ? "#fff" : "#000",
-                  shadowOpacity: 0.05,
-                  shadowRadius: 10,
-                }}
-              >
-                <Ionicons
-                  name="wallet-outline"
-                  size={32}
-                  color={isDark ? "#34d399" : "#059669"}
-                />
-                <Text
-                  className={`text-sm mt-3 font-semibold text-center ${
-                    isDark ? "text-gray-200" : "text-gray-700"
-                  }`}
-                >
-                  Quick Pay
-                </Text>
-              </Pressable>
+              </View>
             </View>
           </View>
-        </View>
+        </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

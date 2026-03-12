@@ -1,7 +1,7 @@
 import ScreenHeader from "@/components/ui/ScreenHeader";
 import PaymentService from "@/lib/services/PaymentService";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -16,7 +16,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { SvgUri } from "react-native-svg";
 
 const BankUptime = () => {
-  const router = useRouter();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const [banks, setBanks] = useState<Bank[]>([]);

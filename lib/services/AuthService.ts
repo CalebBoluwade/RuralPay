@@ -1,10 +1,11 @@
 import * as SecureStore from "expo-secure-store";
-import { axiosInstance } from "./api";
-import { DeviceService } from "./services/Device";
-import ToastService from "./services/ToastService";
-import { ErrorHandler } from "./utils/ErrorHandler";
+import { axiosInstance } from "../api";
+import { ErrorHandler } from "../utils/ErrorHandler";
+import { DeviceService } from "./Device";
+import ToastService from "./ToastService";
 
 const AUTH_TOKEN_KEY = "auth_token";
+const REFRESH_TOKEN_KEY = "refresh_token";
 const USER_DATA_KEY = "user_data";
 
 class AuthService {
@@ -12,29 +13,32 @@ class AuthService {
     try {
       const deviceInfo = await DeviceService.getDeviceInfo();
 
-      console.log(deviceInfo);
-      const response = await axiosInstance.post("/auth/login", {
+      const response = await axiosInstance.post<AuthResponse>("/auth/login", {
         identifier: identifier,
         password: password,
         deviceInfo: deviceInfo,
       });
 
-      const authResponse: AuthResponse = response.data;
-      await this.storeAuthData(authResponse);
+      ToastService.success(response.message);
 
-      return authResponse;
+      if (response.success) {
+        await this.storeAuthData(response.details);
+      }
+
+      return response;
     } catch (error: any) {
       await ErrorHandler.handle(
         error,
         {
           action: "Login",
+          screen: "Login",
           metadata: { identifier },
         },
         false,
       );
 
       const message =
-        (error.error ?? "").includes("credentials") ||
+        (error.error ?? "").includes("Credentials") ||
         error.response?.status === 401
           ? "Invalid Credentials"
           : error.response?.status === 429
@@ -45,7 +49,9 @@ class AuthService {
     }
   }
 
-  async register(data: RegisterData): Promise<AuthResponse | null> {
+  async register(
+    data: RegisterData,
+  ): Promise<APIResponse<{ userId: string }> | null> {
     try {
       const payload = {
         FirstName: String(data.firstName).trim(),
@@ -57,11 +63,11 @@ class AuthService {
         pushToken: data.pushToken, // Placeholder for push token, to be set after registration
       };
 
-      const response = await axiosInstance.post("/auth/register", payload);
+      const response = await axiosInstance.post<
+        APIResponse<{ userId: string }>
+      >("/auth/register", payload);
 
-      const authResponse: AuthResponse = response.data;
-      await this.storeAuthData(authResponse);
-      return authResponse;
+      return response;
     } catch (error: any) {
       await ErrorHandler.handle(
         error,
@@ -92,14 +98,60 @@ class AuthService {
     }
   }
 
+  async refreshToken(): Promise<string | null> {
+    try {
+      const refreshToken = await SecureStore.getItemAsync(REFRESH_TOKEN_KEY);
+      if (!refreshToken) return null;
+
+      const response = await axiosInstance.post("/auth/refresh", {
+        refreshToken,
+      });
+      const { token, refreshToken: newRefreshToken } = response as any;
+
+      await SecureStore.setItemAsync(AUTH_TOKEN_KEY, token);
+      await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, newRefreshToken);
+
+      return token;
+    } catch {
+      return null;
+    }
+  }
+
+  async forgotPassword(identifier: string): Promise<boolean> {
+    try {
+      const response = await axiosInstance.post<
+        APIResponse<{ success: boolean }>
+      >("/auth/forgot-password", { identifier });
+      return response.success;
+    } catch {
+      return false;
+    }
+  }
+
+  async resetPassword(data: {
+    token: string;
+    password: string;
+  }): Promise<boolean> {
+    try {
+      const response = await axiosInstance.post<
+        APIResponse<{ success: boolean }>
+      >("/auth/reset-password", data);
+      return response.success;
+    } catch {
+      return false;
+    }
+  }
+
   async logout(): Promise<{ success: boolean; message: string }> {
     try {
       await axiosInstance.post("/auth/logout");
       await SecureStore.deleteItemAsync(AUTH_TOKEN_KEY);
+      await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY);
       await SecureStore.deleteItemAsync(USER_DATA_KEY);
-      return { success: true, message: "Logged out successfully" };
+      return { success: true, message: "Logged Out successfully" };
     } catch {
       await SecureStore.deleteItemAsync(AUTH_TOKEN_KEY);
+      await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY);
       await SecureStore.deleteItemAsync(USER_DATA_KEY);
       return { success: true, message: "Logged out locally" };
     }
@@ -108,12 +160,18 @@ class AuthService {
   async getStoredAuthData(): Promise<AuthResponse | null> {
     try {
       const token = await SecureStore.getItemAsync(AUTH_TOKEN_KEY);
+      const refreshToken = await SecureStore.getItemAsync(REFRESH_TOKEN_KEY);
       const userData = await SecureStore.getItemAsync(USER_DATA_KEY);
 
       if (token && userData) {
         return {
-          token,
-          user: JSON.parse(userData),
+          message: "",
+          success: true,
+          details: {
+            token,
+            refreshToken: refreshToken ?? "",
+            user: JSON.parse(userData),
+          },
         };
       }
     } catch (error) {
@@ -129,12 +187,13 @@ class AuthService {
     return null;
   }
 
-  private async storeAuthData(authResponse: AuthResponse): Promise<void> {
+  private async storeAuthData(details: AuthResponse["details"]): Promise<void> {
     try {
-      await SecureStore.setItemAsync(AUTH_TOKEN_KEY, authResponse.token);
+      await SecureStore.setItemAsync(AUTH_TOKEN_KEY, details.token);
+      await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, details.refreshToken);
       await SecureStore.setItemAsync(
         USER_DATA_KEY,
-        JSON.stringify(authResponse.user),
+        JSON.stringify(details.user),
       );
     } catch (error) {
       await ErrorHandler.handle(error as Error, {

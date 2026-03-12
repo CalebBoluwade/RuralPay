@@ -1,12 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
-import {
-  Modal,
-  Text,
-  TouchableOpacity,
-  View,
-  useColorScheme,
-} from "react-native";
+import { Modal, Pressable, Text, View, useColorScheme } from "react-native";
 
 interface TransactionFailureProps {
   visible: boolean;
@@ -72,14 +66,14 @@ const TransactionFailure: React.FC<TransactionFailureProps> = ({
           </View>
 
           <View className="space-y-3">
-            <TouchableOpacity
+            <Pressable
               className={`rounded-2xl p-3 items-center mb-3 ${isDark ? "bg-red-600" : "bg-red-500"}`}
               onPress={onRetry}
             >
               <Text className="text-white font-semibold">Try Again</Text>
-            </TouchableOpacity>
+            </Pressable>
 
-            <TouchableOpacity
+            <Pressable
               className={`rounded-2xl p-3 items-center backdrop-blur-xl ${
                 isDark
                   ? "bg-white/5 border border-white/10"
@@ -92,7 +86,7 @@ const TransactionFailure: React.FC<TransactionFailureProps> = ({
               >
                 Cancel
               </Text>
-            </TouchableOpacity>
+            </Pressable>
           </View>
         </View>
       </View>

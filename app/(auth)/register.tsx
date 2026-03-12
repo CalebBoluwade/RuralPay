@@ -53,7 +53,8 @@ export default function RegisterScreen() {
   const [businessName, setBusinessName] = useState("");
   const [businessAddress, setBusinessAddress] = useState("");
   const [businessType, setBusinessType] = useState("");
-  const [showBusinessTypeDropdown, setShowBusinessTypeDropdown] = useState(false);
+  const [showBusinessTypeDropdown, setShowBusinessTypeDropdown] =
+    useState(false);
 
   const businessTypes = [
     "Restaurant",
@@ -158,7 +159,7 @@ export default function RegisterScreen() {
     try {
       const pushToken = await DeviceService.registerForPushNotificationsAsync();
       // Register user first
-      const UserResult = await register({
+      const userId = await register({
         firstName: registrationData.firstName,
         lastName: registrationData.lastName,
         email: registrationData.email.toLowerCase(),
@@ -174,7 +175,7 @@ export default function RegisterScreen() {
           businessName: registrationData.businessName,
           businessAddress: registrationData.businessAddress!,
           businessType: registrationData.businessType!,
-          userId: UserResult.id,
+          userId: userId,
         });
       }
 
@@ -484,7 +485,9 @@ export default function RegisterScreen() {
 
                   <View className="mb-4">
                     <Pressable
-                      onPress={() => setShowBusinessTypeDropdown(!showBusinessTypeDropdown)}
+                      onPress={() =>
+                        setShowBusinessTypeDropdown(!showBusinessTypeDropdown)
+                      }
                       className={`p-4 rounded-2xl backdrop-blur-xl flex-row justify-between items-center ${
                         isDark
                           ? "bg-white/10 border border-white/20"
@@ -505,7 +508,11 @@ export default function RegisterScreen() {
                         {businessType || "Select Business Type"}
                       </Text>
                       <Ionicons
-                        name={showBusinessTypeDropdown ? "chevron-up" : "chevron-down"}
+                        name={
+                          showBusinessTypeDropdown
+                            ? "chevron-up"
+                            : "chevron-down"
+                        }
                         size={20}
                         color={isDark ? "#9CA3AF" : "#6B7280"}
                       />

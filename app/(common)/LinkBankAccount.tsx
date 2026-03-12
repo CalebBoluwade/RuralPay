@@ -2,16 +2,16 @@ import BanksModal from "@/components/ui/Modals/BanksModal";
 import ScreenHeader from "@/components/ui/ScreenHeader";
 import AccountService from "@/lib/services/AccountService";
 import PaymentService from "@/lib/services/PaymentService";
-import { Ionicons } from "@expo/vector-icons";
+import { ChevronDown, ShieldCheck } from "lucide-react-native";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Modal,
+  Pressable,
   ScrollView,
   Text,
   TextInput,
-  TouchableOpacity,
   View,
   useColorScheme,
 } from "react-native";
@@ -58,8 +58,8 @@ export default function LinkBankAccount() {
     );
     setAccountName(
       result.success
-        ? result.accountName!
-        : result.error || "Account Not Found",
+        ? result.details.accountName!
+        : result.errorMessage || "Account Not Found",
     );
     setVerifying(false);
   };
@@ -96,7 +96,6 @@ export default function LinkBankAccount() {
           <View>
             <ScreenHeader
               title="Account Verification"
-              subtitle="Secure your account linking"
               onBack={() => router.back()}
             />
 
@@ -108,14 +107,10 @@ export default function LinkBankAccount() {
                     : "bg-lime-50 border-2 border-lime-500"
                 }`}
               >
-                <Ionicons
-                  name="shield-checkmark"
-                  size={42}
-                  color={isDark ? "#ffffff" : "#60a5fa"}
-                />
+                <ShieldCheck size={42} color={isDark ? "#ffffff" : "#60a5fa"} />
               </View>
               <Text
-                className={`text-3xl font-bold text-center mb-4 ${
+                className={`text-3xl font-brand font-bold text-center mb-4 ${
                   isDark ? "text-white" : "text-gray-900"
                 }`}
               >
@@ -249,7 +244,7 @@ export default function LinkBankAccount() {
           </View>
 
           <View>
-            <TouchableOpacity
+            <Pressable
               className={`py-5 rounded-2xl mt-3 mb-3 ${
                 processingDebit
                   ? "bg-gray-400"
@@ -267,9 +262,9 @@ export default function LinkBankAccount() {
                   Proceed to Verification
                 </Text>
               )}
-            </TouchableOpacity>
+            </Pressable>
 
-            <TouchableOpacity className="py-4" onPress={() => router.back()}>
+            <Pressable className="py-4" onPress={() => router.back()}>
               <Text
                 className={`text-center text-lg font-semibold ${
                   isDark ? "text-gray-400" : "text-gray-600"
@@ -277,7 +272,7 @@ export default function LinkBankAccount() {
               >
                 Cancel
               </Text>
-            </TouchableOpacity>
+            </Pressable>
           </View>
         </View>
       </View>
@@ -299,14 +294,14 @@ export default function LinkBankAccount() {
         {step === 1 && (
           <View>
             <Text
-              className={`text-lg font-bold mb-4 ${
+              className={`text-lg font-brand font-bold mb-4 ${
                 isDark ? "text-white" : "text-gray-900"
               }`}
             >
               Enter Account Details
             </Text>
 
-            <TouchableOpacity
+            <Pressable
               className={`px-6 py-4 rounded-2xl backdrop-blur-xl mb-4 ${
                 selectedBank
                   ? isDark
@@ -328,17 +323,13 @@ export default function LinkBankAccount() {
               {selectedBank ? (
                 <View className="flex-row justify-between items-center">
                   <Text
-                    className={`text-lg font-bold ${
+                    className={`text-lg font-brand font-bold ${
                       isDark ? "text-white" : "text-gray-900"
                     }`}
                   >
                     {selectedBank.name}
                   </Text>
-                  <Ionicons
-                    name="chevron-down"
-                    size={24}
-                    color={isDark ? "#a78bfa" : "#7c3aed"}
-                  />
+                  <ChevronDown size={24} color={isDark ? "#a78bfa" : "#7c3aed"} />
                 </View>
               ) : (
                 <Text
@@ -349,7 +340,7 @@ export default function LinkBankAccount() {
                   Choose a bank
                 </Text>
               )}
-            </TouchableOpacity>
+            </Pressable>
 
             <View className="mb-4">
               <Text
@@ -417,7 +408,7 @@ export default function LinkBankAccount() {
               </View>
             )}
 
-            <TouchableOpacity
+            <Pressable
               className={`py-4 rounded-2xl mt-6 ${
                 accountName && !verifying
                   ? isDark
@@ -431,7 +422,7 @@ export default function LinkBankAccount() {
               <Text className="text-white text-center text-lg font-bold">
                 Link Account
               </Text>
-            </TouchableOpacity>
+            </Pressable>
 
             <BanksModal
               banks={banks}

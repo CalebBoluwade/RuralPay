@@ -1,20 +1,20 @@
-import CardPIN from "@/components/ui/Transaction/CardPin";
-import TransactionFailure from "@/components/ui/Transaction/TransactionFailure";
-import TransactionSuccess from "@/components/ui/Transaction/TransactionSuccess";
+import CardPIN from "@/components/ui/Modals/Transaction/CardPin";
+import TransactionFailure from "@/components/ui/Modals/Transaction/TransactionFailure";
+import TransactionSuccess from "@/components/ui/Modals/Transaction/TransactionSuccess";
 import NFCService from "@/lib/services/NFCService";
 import PaymentService from "@/lib/services/PaymentService";
 import ToastService from "@/lib/services/ToastService";
 import * as Haptics from "expo-haptics";
 import React, { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  Image,
-  Modal,
-  Pressable,
-  Text,
-  View,
-  useColorScheme,
+    ActivityIndicator,
+    Alert,
+    Image,
+    Modal,
+    Pressable,
+    Text,
+    View,
+    useColorScheme,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { SvgUri } from "react-native-svg";
@@ -50,7 +50,8 @@ const NFCPayments: React.FC<NFCPaymentsProps> = ({
   const [amount, setAmount] = useState("");
   const [amountError, setAmountError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [paymentResult, setPaymentResult] = useState<APIResponse>();
+  const [paymentResult, setPaymentResult] =
+    useState<APIResponse<TransactionHistory>>();
   const [error, setError] = useState<string>("");
   const [cardPin, setCardPin] = useState("");
   const [cardTransaction, setCardTransaction] = useState<CardDetailsResult>();
@@ -507,7 +508,7 @@ const NFCPayments: React.FC<NFCPaymentsProps> = ({
               : "bg-white/60 border border-gray-200/50 shadow-sm"
           }`}
         >
-          <View className="w-32 h-32 rounded-full bg-indigo-500 items-center justify-center mb-6">
+          <View className="w-32 h-32 rounded-full bg-lime-500 items-center justify-center mb-6">
             <Text className="text-6xl">📱</Text>
           </View>
           <Text
@@ -605,7 +606,7 @@ const NFCPayments: React.FC<NFCPaymentsProps> = ({
           data={{
             amount: amount,
             recipient: merchant?.id!,
-            reference: paymentResult?.transactionId || "",
+            reference: paymentResult?.details.transactionId || "",
             date: new Date().toLocaleDateString(),
             type: "NFC Merchant Payment",
           }}

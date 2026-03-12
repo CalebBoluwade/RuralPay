@@ -1,35 +1,14 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { useAuth } from "../context/AuthProvider";
-import PrivacyPolicyModalEnhanced from "../ui/PrivacyPolicyModalEnhanced";
 
 interface ComplianceGuardProps {
   children?: React.ReactNode;
 }
 
-export default function ComplianceGuard({ children }: ComplianceGuardProps) {
-  const { hasRequiredConsents, checkConsents } = useAuth();
-  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
+export default function ComplianceGuard({ children }: Readonly<ComplianceGuardProps>) {
+  const { isLoading } = useAuth();
 
-  useEffect(() => {
-    if (!hasRequiredConsents) {
-      setShowPrivacyModal(true);
-    }
-  }, [hasRequiredConsents]);
-
-  const handlePrivacyAccept = async () => {
-    setShowPrivacyModal(false);
-    await checkConsents();
-  };
-
-  if (!hasRequiredConsents && showPrivacyModal) {
-    return (
-      <PrivacyPolicyModalEnhanced
-        visible={showPrivacyModal}
-        onClose={() => {}}
-        onAccept={handlePrivacyAccept}
-      />
-    );
-  }
+  if (isLoading) return null;
 
   return children ? <>{children}</> : null;
 }

@@ -1,6 +1,7 @@
 import * as Crypto from "expo-crypto";
+import { Platform } from "react-native";
 import * as Keychain from "react-native-keychain";
-import NfcManager, { NfcTech } from "react-native-nfc-manager";
+import NfcManager, { Ndef, NfcTech } from "react-native-nfc-manager";
 
 import { ErrorHandler } from "../utils/ErrorHandler";
 import EncryptionService from "./EncryptionService";
@@ -88,6 +89,78 @@ class NFCService {
       return false;
     }
   }
+
+  TapToPayShareAndroid = async (content: string) => {
+    if (Platform.OS !== "android") {
+      console.warn("HCE is Only Supported on Android");
+      return;
+    }
+    try {
+      const HCE = await import("react-native-hce");
+      const { NFCTagType4, NFCTagType4NDEFContentType, default: HCEDefault } = HCE;
+
+      const tag = new NFCTagType4({
+        type: NFCTagType4NDEFContentType.Text,
+        content,
+        writable: false,
+      });
+
+      const hceSession = new HCEDefault.HCESession();
+      hceSession.setApplication(tag);
+      hceSession.setEnabled(true);
+      console.log("HCE Session Active: Phone is now acting as a tag");
+    } catch (error) {
+      console.error("HCE Error:", error);
+    }
+  };
+
+  ReceiveSharedData = async () => {
+    try {
+      await NfcManager.requestTechnology(NfcTech.Ndef);
+      const tag = await NfcManager.getTag();
+
+      if (!tag) {
+        throw new Error("No NFC tag detected");
+      }
+      ToastService.info(`NFC Tag detected: ${tag.type}`);
+
+      if (tag.ndefMessage) {
+        const rawData = tag.ndefMessage[0].payload;
+        console.log(rawData);
+        const sessionUrl = this.decodeSharedDataPayload(rawData); // e.g., "my-app://transfer/12345"
+
+        // Extract ID and call your API
+        // const sessionId = sessionUrl.split('/').pop();
+        // await confirmTransferWithServer(sessionId);
+      }
+    } finally {
+      await NfcManager.cancelTechnologyRequest();
+      NfcManager.cancelTechnologyRequest();
+    }
+  };
+
+  // private decodeSharedDataPayload = (payload: any) => {
+  //   // NDEF Text records have a 'Status Byte' at index 0
+  //   // which holds the language code length.
+  //   const languageCodeLength = payload[0] & 0x3f;
+  //   const text = Ndef.util.decodeBytes(payload.slice(languageCodeLength + 1));
+  //   return text;
+  // };
+
+  private decodeSharedDataPayload = (payload: number[]): string => {
+    if (!payload || payload.length === 0) return "";
+
+    // NDEF Text Record: The first byte is the "status byte"
+    // Bit 7: 0 = UTF-8, 1 = UTF-16
+    // Bits 5-0: length of the language code (e.g., "en")
+    const languageCodeLength = payload[0] & 0x3f;
+
+    // Slice off the status byte and the language code to get the actual data
+    const actualData = payload.slice(1 + languageCodeLength);
+
+    // Use bytesToString which is available in the Ndef utility
+    return Ndef.util.bytesToString(actualData);
+  };
 
   // async readCardInfo(
   //   useIsoDep: boolean = false,

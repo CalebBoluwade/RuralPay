@@ -2,9 +2,9 @@ import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import {
   Modal,
+  Pressable,
   Share,
   Text,
-  TouchableOpacity,
   View,
   useColorScheme,
 } from "react-native";
@@ -139,15 +139,15 @@ const TransactionSuccess: React.FC<TransactionSuccessProps> = ({
           </View>
 
           <View className="flex-row space-x-2 gap-2 mb-4">
-            <TouchableOpacity
+            <Pressable
               className={`flex-1 rounded-2xl py-3 px-1 items-center ${isDark ? "bg-emerald-600" : "bg-emerald-700"}`}
               onPress={onDownloadReceipt}
             >
               <Text className="text-white text-base font-semibold break-words text-wrap">
                 Download Receipt
               </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
+            </Pressable>
+            <Pressable
               className={`flex-1 rounded-2xl py-3 px-1 items-center backdrop-blur-xl ${
                 isDark
                   ? "bg-white/10 border border-white/20"
@@ -160,10 +160,10 @@ const TransactionSuccess: React.FC<TransactionSuccessProps> = ({
               >
                 Share
               </Text>
-            </TouchableOpacity>
+            </Pressable>
           </View>
 
-          <TouchableOpacity
+          <Pressable
             className={`rounded-2xl p-3 items-center backdrop-blur-xl ${
               isDark
                 ? "bg-white/5 border border-white/10"
@@ -176,7 +176,7 @@ const TransactionSuccess: React.FC<TransactionSuccessProps> = ({
             >
               Done
             </Text>
-          </TouchableOpacity>
+          </Pressable>
         </View>
       </View>
     </Modal>

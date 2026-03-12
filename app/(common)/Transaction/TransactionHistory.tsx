@@ -1,16 +1,15 @@
 import ScreenHeader from "@/components/ui/ScreenHeader";
 import PaymentService from "@/lib/services/PaymentService";
-import { getDatabase } from "@/lib/utils";
 import { formatAmount } from "@/lib/utils/formatAmount";
-import { Ionicons } from "@expo/vector-icons";
 import DateTimePicker from "expo-datepicker";
 import { useRouter } from "expo-router";
+import { ArrowDown, ArrowUp, FileText, LucideIcon } from "lucide-react-native";
 import { useEffect, useState } from "react";
 import {
   FlatList,
+  Pressable,
   RefreshControl,
   Text,
-  TouchableOpacity,
   View,
   useColorScheme,
 } from "react-native";
@@ -37,9 +36,6 @@ const TransactionHistory = () => {
   const loadTransactions = async () => {
     try {
       setRefreshing(true);
-
-      const db = await getDatabase(null);
-      if (!db) return;
 
       const transactions = await PaymentService.FetchAllTransactions();
 
@@ -88,18 +84,20 @@ const TransactionHistory = () => {
     filterTransactions();
   }, [startDate, endDate, transactions]);
 
-  const getTransactionTypeLabel = (txType: TransactionType) => {
+  const getTransactionTypeLabel = (
+    txType: TransactionType,
+  ): { icon: LucideIcon; label: string } => {
     switch (txType) {
       case "P2P_DEBIT":
-        return { icon: "arrow-down-outline" as const, label: "Money Sent" };
+        return { icon: ArrowDown, label: "Money Sent" };
       case "P2P_CREDIT":
-        return { icon: "arrow-up-outline" as const, label: "Money Received" };
+        return { icon: ArrowUp, label: "Money Received" };
       case "DEBIT":
-        return { icon: "arrow-down-outline" as const, label: "Card Payment" };
+        return { icon: ArrowDown, label: "Card Payment" };
       case "CREDIT":
-        return { icon: "arrow-up-outline" as const, label: "Credit Added" };
+        return { icon: ArrowUp, label: "Credit Added" };
       default:
-        return { icon: "document-text-outline" as const, label: "Transaction" };
+        return { icon: FileText, label: "Transaction" };
     }
   };
 
@@ -125,27 +123,26 @@ const TransactionHistory = () => {
     const isCredit = item.txType.includes("CREDIT");
 
     return (
-      <TouchableOpacity
+      <Pressable
         className={`mx-4 mb-4 p-5 rounded-2xl backdrop-blur-xl ${
           isDark
             ? "bg-white/10 border border-white/20"
             : "bg-white/60 border border-gray-200/50 shadow-sm"
         }`}
         onPress={() =>
-          router.push(`/(common)/Transaction/${item.transactionID}`)
+          router.push(`/(common)/Transaction/${item.transactionId}`)
         }
       >
         <View className="flex-row items-center justify-between mb-4">
           <View className="flex-row items-center flex-1">
-            <Ionicons
-              name={typeInfo.icon}
+            <typeInfo.icon
               size={28}
               color={isCredit ? "#22c55e" : "#ef4444"}
               style={{ marginRight: 16 }}
             />
             <View className="flex-1">
               <Text
-                className={`text-lg font-bold ${isDark ? "text-white" : "text-gray-900"}`}
+                className={`text-lg font-brand font-bold ${isDark ? "text-white" : "text-gray-900"}`}
               >
                 {typeInfo.label}
               </Text>
@@ -164,7 +161,7 @@ const TransactionHistory = () => {
             </View>
           </View>
           <Text
-            className={`text-lg font-bold ${
+            className={`text-lg font-brand font-bold ${
               isCredit ? "text-green-500" : "text-red-500"
             }`}
           >
@@ -192,7 +189,7 @@ const TransactionHistory = () => {
             </Text>
           )}
         </View>
-      </TouchableOpacity>
+      </Pressable>
     );
   };
 
@@ -202,7 +199,7 @@ const TransactionHistory = () => {
     >
       <ScreenHeader
         title="Transaction History"
-        subtitle="View all your recent transactions"
+        // subtitle="View all your recent transactions"
         onBack={() => router.back()}
       />
 
@@ -211,13 +208,13 @@ const TransactionHistory = () => {
         className={`mx-4 mb-4 p-4 rounded-2xl ${isDark ? "bg-white/10 border border-white/20" : "bg-white/60 border border-gray-200/50"}`}
       >
         <Text
-          className={`text-lg font-semibold mb-3 ${isDark ? "text-white" : "text-gray-900"}`}
+          className={`text-lg font-brand font-semibold mb-3 ${isDark ? "text-white" : "text-gray-900"}`}
         >
           Filter by Date Range
         </Text>
 
         <View className="flex-row justify-between mb-3">
-          <TouchableOpacity
+          <Pressable
             className={`flex-1 mr-2 p-3 rounded-xl ${isDark ? "bg-white/10" : "bg-gray-100"}`}
             onPress={() => setShowStartDatePicker(true)}
           >
@@ -231,9 +228,9 @@ const TransactionHistory = () => {
             >
               {startDate ? startDate.toLocaleDateString() : "Select start date"}
             </Text>
-          </TouchableOpacity>
+          </Pressable>
 
-          <TouchableOpacity
+          <Pressable
             className={`flex-1 ml-2 p-3 rounded-xl ${isDark ? "bg-white/10" : "bg-gray-100"}`}
             onPress={() => setShowEndDatePicker(true)}
           >
@@ -247,25 +244,25 @@ const TransactionHistory = () => {
             >
               {endDate ? endDate.toLocaleDateString() : "Select end date"}
             </Text>
-          </TouchableOpacity>
+          </Pressable>
         </View>
 
         {(startDate || endDate) && (
-          <TouchableOpacity
+          <Pressable
             className="bg-red-500 p-2 rounded-lg"
             onPress={clearFilters}
           >
             <Text className="text-white text-center font-medium">
               Clear Filters
             </Text>
-          </TouchableOpacity>
+          </Pressable>
         )}
       </View>
 
       <FlatList
         data={filteredTransactions}
         renderItem={renderTransaction}
-        keyExtractor={(item) => item.transactionID}
+        keyExtractor={(item) => item.transactionId}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
@@ -284,7 +281,7 @@ const TransactionHistory = () => {
               <Text className="text-4xl">📊</Text>
             </View>
             <Text
-              className={`text-xl font-semibold mb-2 ${isDark ? "text-white" : "text-gray-700"}`}
+              className={`text-xl font-brand font-semibold mb-2 ${isDark ? "text-white" : "text-gray-700"}`}
             >
               No Transactions Yet
             </Text>

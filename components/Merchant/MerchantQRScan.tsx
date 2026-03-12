@@ -30,11 +30,18 @@ const MerchantQRModal = ({
   const isDark = colorScheme === "dark";
 
   const [qrData, setQRData] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const GetPaymentQR = async () => {
-    const QRresult = await QRCodeService.GeneratePaymentQR();
-
-    setQRData(QRresult);
+    setIsLoading(true);
+    try {
+      const QRresult = await QRCodeService.GeneratePaymentQR();
+      setQRData(QRresult);
+    } catch (error) {
+      console.error("Failed to generate QR code:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -158,7 +165,10 @@ const MerchantQRModal = ({
     <Modal
       visible={showMerchantQRModal}
       animationType="fade"
-      presentationStyle="pageSheet"
+      presentationStyle="formSheet"
+      // transparent
+      onRequestClose={() => setShowMerchantQRModal(false)}
+      // className="flex-1 justify-center items-center"
     >
       <SafeAreaView
         className={`flex-1 justify-center items-center p-3 ${isDark ? "bg-[#0a0a0f]" : "bg-[#f5f5fa]"}`}
@@ -170,107 +180,101 @@ const MerchantQRModal = ({
             padding: 24,
           }}
         >
-          <View className="items-center">
-            <View
-              className={`w-full max-w-sm rounded-3xl p-8 items-center shadow-xl ${
-                isDark
-                  ? "bg-white/10 border border-white/20"
-                  : "bg-white shadow-gray-200/50"
-              }`}
+          <View
+            className={`w-full max-w-sm rounded-3xl p-8 items-center shadow-xl ${
+              isDark
+                ? "bg-white/10 border border-white/20"
+                : "bg-white shadow-gray-200/50"
+            }`}
+          >
+            <Pressable
+              onPress={() => setShowMerchantQRModal(false)}
+              className="absolute top-4 right-4 z-10 p-1 rounded-full bg-white/10 backdrop-blur-sm"
             >
-              <Pressable
-                onPress={() => setShowMerchantQRModal(false)}
-                className="absolute top-4 right-4 z-10 p-1 rounded-full bg-white/10 backdrop-blur-sm"
-              >
-                <Ionicons
-                  name="close"
-                  size={24}
-                  color="red"
-                  className="text-red-500"
-                />
-              </Pressable>
-              <View className="items-center mb-8">
-                <View
-                  className={`w-16 h-16 rounded-full items-center justify-center mb-4 ${
-                    isDark ? "bg-lime-500/20" : "bg-lime-50"
-                  }`}
-                >
-                  <Ionicons
-                    name="storefront"
-                    size={32}
-                    color={isDark ? "#84cc16" : "#65a30d"}
-                  />
-                </View>
-                <Text
-                  className={`text-2xl font-bold text-center mb-1 ${
-                    isDark ? "text-white" : "text-gray-900"
-                  }`}
-                >
-                  {user?.merchant?.businessName || "Merchant Name"}
-                </Text>
-                <Text
-                  className={`text-sm ${
-                    isDark ? "text-gray-400" : "text-gray-500"
-                  }`}
-                >
-                  Scan to Pay
-                </Text>
-              </View>
-
-              <View className="bg-white p-2 rounded-2xl mb-6 shadow-sm">
-                {qrData ? (
-                  <Image
-                    source={{ uri: `data:image/png;base64,${qrData}` }}
-                    className="w-80 h-80"
-                    resizeMode="contain"
-                  />
-                ) : (
-                  <View className="w-64 h-64 items-center justify-center bg-gray-50 rounded-xl">
-                    <ActivityIndicator size="large" color="#84cc16" />
-                  </View>
-                )}
-              </View>
-
-              <Text
-                className={`text-center text-xs ${
-                  isDark ? "text-gray-500" : "text-gray-400"
+              <Ionicons
+                name="close"
+                size={24}
+                color="red"
+                className="text-red-500"
+              />
+            </Pressable>
+            <View className="items-center mb-8">
+              <View
+                className={`w-16 h-16 rounded-full items-center justify-center mb-4 ${
+                  isDark ? "bg-lime-500/20" : "bg-lime-50"
                 }`}
               >
-                ID: {user?.merchant?.id || "..."}
+                <Ionicons
+                  name="storefront"
+                  size={32}
+                  color={isDark ? "#84cc16" : "#65a30d"}
+                />
+              </View>
+              <Text
+                className={`text-2xl font-bold text-center mb-1 ${
+                  isDark ? "text-white" : "text-gray-900"
+                }`}
+              >
+                {user?.merchant?.businessName || "Merchant Name"}
+              </Text>
+              <Text
+                className={`text-sm ${
+                  isDark ? "text-gray-400" : "text-gray-500"
+                }`}
+              >
+                Scan to Pay
               </Text>
             </View>
 
-            <View className="flex-row gap-4 mt-8 w-full max-w-sm">
-              <Pressable
-                onPress={handleShare}
-                className={`flex-1 py-4 rounded-2xl flex-row items-center justify-center gap-2 ${
-                  isDark ? "bg-white/10" : "bg-gray-100"
-                }`}
-              >
-                <Ionicons
-                  name="share-outline"
-                  size={20}
-                  color={isDark ? "white" : "black"}
+            <View className="bg-white p-2 rounded-2xl mb-6 shadow-sm">
+              {isLoading ? (
+                <View className="w-64 h-64 items-center justify-center bg-gray-50 rounded-xl">
+                  <ActivityIndicator size="large" color="#84cc16" />
+                </View>
+              ) : qrData ? (
+                <Image
+                  source={{ uri: `data:image/png;base64,${qrData}` }}
+                  className="w-80 h-80"
+                  resizeMode="contain"
                 />
-                <Text
-                  className={`font-semibold ${
-                    isDark ? "text-white" : "text-gray-900"
-                  }`}
-                >
-                  Share
-                </Text>
-              </Pressable>
+              ) : (
+                <View className="w-64 h-64 items-center justify-center bg-gray-50 rounded-xl">
+                  <Text className="text-gray-400">Failed to load QR code</Text>
+                </View>
+              )}
+            </View>
+          </View>
 
-              <Pressable
-                onPress={handlePrint}
-                className={`flex-1 py-4 rounded-2xl flex-row items-center justify-center gap-2 ${
-                  isDark ? "bg-lime-600" : "bg-lime-800"
+          <View className="flex-row gap-4 mt-8 w-full max-w-sm">
+            <Pressable
+              onPress={handleShare}
+              className={`flex-1 py-4 rounded-2xl flex-row items-center justify-center gap-2 ${
+                isDark ? "bg-white/10" : "bg-gray-100"
+              }`}
+            >
+              <Ionicons
+                name="share-outline"
+                size={20}
+                color={isDark ? "white" : "black"}
+              />
+              <Text
+                className={`font-semibold ${
+                  isDark ? "text-white" : "text-gray-900"
                 }`}
               >
-                <Ionicons name="print-outline" size={20} color="white" />
-                <Text className="font-semibold text-white">Save PDF</Text>
-              </Pressable>
-            </View>
+                Share
+              </Text>
+            </Pressable>
+
+            <Pressable
+              onPress={handlePrint}
+              className={`flex-1 py-4 rounded-2xl flex-row items-center justify-center gap-2 ${
+                isDark ? "bg-lime-600" : "bg-lime-800"
+              }`}
+            >
+              <Ionicons name="print-outline" size={20} color="white" />
+              <Text className="font-semibold text-white">Save PDF</Text>
+            </Pressable>
           </View>
         </ScrollView>
 

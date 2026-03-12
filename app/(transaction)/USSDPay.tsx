@@ -6,10 +6,10 @@ import { AntDesign, Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
+  Pressable,
   ScrollView,
   Text,
   TextInput,
-  TouchableOpacity,
   View,
   useColorScheme,
 } from "react-native";
@@ -114,11 +114,11 @@ const USSDPay = () => {
               Select Payment Type
             </Text>
 
-            <TouchableOpacity
+            <Pressable
               onPress={() => setShowAmountInput(true)}
               disabled={isLoading}
               className={`p-6 rounded-2xl mb-4 ${isLoading ? "opacity-50" : ""} ${
-                isDark ? "bg-indigo-600" : "bg-indigo-700"
+                isDark ? "bg-lime-600" : "bg-lime-700"
               }`}
             >
               <View className="flex-row items-center justify-between">
@@ -135,7 +135,7 @@ const USSDPay = () => {
                 </View>
                 <Ionicons name="chevron-forward" size={24} color="white" />
               </View>
-            </TouchableOpacity>
+            </Pressable>
 
             {showAmountInput && (
               <View className="mb-4">
@@ -152,7 +152,7 @@ const USSDPay = () => {
                   placeholderTextColor={isDark ? "#9CA3AF" : "#6B7280"}
                   autoFocus
                 />
-                <TouchableOpacity
+                <Pressable
                   onPress={() =>
                     startPayment("Send", Number.parseFloat(amount) || 0)
                   }
@@ -164,11 +164,11 @@ const USSDPay = () => {
                   <Text className="text-white font-bold text-lg text-center">
                     Generate Code
                   </Text>
-                </TouchableOpacity>
+                </Pressable>
               </View>
             )}
 
-            <TouchableOpacity
+            <Pressable
               onPress={() => startPayment("Receive", 0)}
               disabled={isLoading}
               className={`p-6 rounded-2xl ${isLoading ? "opacity-50" : ""} ${
@@ -195,7 +195,7 @@ const USSDPay = () => {
                 </View>
                 <Ionicons name="chevron-forward" size={24} color="white" />
               </View>
-            </TouchableOpacity>
+            </Pressable>
           </View>
 
           <View
@@ -210,11 +210,11 @@ const USSDPay = () => {
             >
               Payment History
             </Text>
-            <TouchableOpacity
+            <Pressable
               onPress={() => router.push("/USSDHistory")}
               disabled={isLoading}
               className={`p-6 rounded-2xl mb-4 ${isLoading ? "opacity-50" : ""} ${
-                isDark ? "bg-indigo-600" : "bg-indigo-700"
+                isDark ? "bg-lime-600" : "bg-lime-700"
               }`}
             >
               <View className="flex-row items-center justify-between">
@@ -234,7 +234,7 @@ const USSDPay = () => {
 
                 <Ionicons name="chevron-forward" size={24} color="white" />
               </View>
-            </TouchableOpacity>
+            </Pressable>
           </View>
         </View>
       </SafeAreaView>
@@ -273,14 +273,14 @@ const USSDPay = () => {
             >
               The payment code has timed out. Generate a new code to continue.
             </Text>
-            <TouchableOpacity
+            <Pressable
               onPress={resetPayment}
-              className={`px-8 py-4 rounded-2xl ${isDark ? "bg-indigo-600" : "bg-indigo-700"}`}
+              className={`px-8 py-4 rounded-2xl ${isDark ? "bg-lime-600" : "bg-lime-700"}`}
             >
               <Text className="text-white font-bold text-lg">
                 Generate New Code
               </Text>
-            </TouchableOpacity>
+            </Pressable>
           </View>
         </View>
       </SafeAreaView>
@@ -428,7 +428,7 @@ const USSDPay = () => {
         </View>
 
         {/* Cancel Button */}
-        <TouchableOpacity
+        <Pressable
           onPress={resetPayment}
           className={`p-4 rounded-2xl backdrop-blur-xl ${
             isDark
@@ -442,7 +442,7 @@ const USSDPay = () => {
               Cancel Payment
             </Text>
           </View>
-        </TouchableOpacity>
+        </Pressable>
       </ScrollView>
     </SafeAreaView>
   );

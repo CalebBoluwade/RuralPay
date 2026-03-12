@@ -5,12 +5,12 @@ import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import {
-    Alert,
-    ScrollView,
-    Text,
-    TouchableOpacity,
-    View,
-    useColorScheme,
+  Alert,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+  useColorScheme,
 } from "react-native";
 import { z } from "zod";
 
@@ -185,7 +185,7 @@ const ProvisionCard = () => {
           </View>
 
           <View className="w-full space-y-4">
-            <TouchableOpacity
+            <Pressable
               className={`py-4 rounded-2xl ${
                 nfcWriting
                   ? "bg-gray-500"
@@ -199,9 +199,9 @@ const ProvisionCard = () => {
               <Text className="text-white text-lg font-bold text-center">
                 {nfcWriting ? "Writing to Card..." : "Start NFC Write"}
               </Text>
-            </TouchableOpacity>
+            </Pressable>
 
-            <TouchableOpacity
+            <Pressable
               className={`py-3 rounded-2xl backdrop-blur-xl ${
                 isDark
                   ? "bg-white/5 border border-white/10"
@@ -217,7 +217,7 @@ const ProvisionCard = () => {
               >
                 ← Back to Form
               </Text>
-            </TouchableOpacity>
+            </Pressable>
           </View>
         </View>
       </View>
@@ -293,7 +293,7 @@ const ProvisionCard = () => {
           </Text>
           <View className="flex-row gap-4">
             {(["debit", "credit"] as const).map((type) => (
-              <TouchableOpacity
+              <Pressable
                 key={type}
                 className={`flex-1 p-4 rounded-2xl items-center backdrop-blur-xl ${
                   watchedValues.cardType === type
@@ -322,12 +322,12 @@ const ProvisionCard = () => {
                 >
                   {type}
                 </Text>
-              </TouchableOpacity>
+              </Pressable>
             ))}
           </View>
         </View>
 
-        <TouchableOpacity
+        <Pressable
           className={`py-4 rounded-2xl ${
             isDark ? "bg-lime-600" : "bg-lime-700"
           }`}
@@ -336,7 +336,7 @@ const ProvisionCard = () => {
           <Text className="text-white text-lg font-bold text-center">
             Continue to NFC Writing →
           </Text>
-        </TouchableOpacity>
+        </Pressable>
       </View>
     </ScrollView>
   );

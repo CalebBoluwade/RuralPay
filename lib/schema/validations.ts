@@ -18,7 +18,10 @@ export const registerSchema = z
     username: z
       .string("Enter a Username")
       .min(3, "Username must be at least 3 characters")
-      .regex(/^[a-zA-Z0-9_]+$/, "Username can only contain letters, numbers, and underscores"),
+      .regex(
+        /^[a-zA-Z0-9_]+$/,
+        "Username can only contain letters, numbers, and underscores",
+      ),
     email: z.email("Invalid Email Address"),
     phoneNumber: z
       .string("Enter a Phone Number")
@@ -39,3 +42,36 @@ export const registerSchema = z
 
 export type LoginFormData = z.infer<typeof loginSchema>;
 export type RegisterFormData = z.infer<typeof registerSchema>;
+
+export const ContactSearchSchema = z.object({
+  phoneNumber: z.string().min(3, "Enter A Valid Phone Number"),
+});
+
+export type ContactSearch = z.infer<typeof ContactSearchSchema>;
+
+export const transferSchema = z.object({
+  bankCode: z.string().min(3, "Please select a bank"),
+  accountNumber: z
+    .string()
+    .min(10, "Account number must be 10 digits")
+    .max(10, "Account number must be 10 digits")
+    .regex(/^[0-9]+$/, "Account number must contain only digits"),
+  fromAccount: z.string(),
+  amount: z.string().refine((val) => {
+    const num = Number.parseFloat(val);
+    return !Number.isNaN(num);
+  }, "Please Enter A Valid Amount"),
+  narration: z.string(),
+});
+
+export type TransferFormData = z.infer<typeof transferSchema>;
+
+export const cardPaySchema = z.object({
+  cardId: z.string(),
+  amount: z.string().refine((val) => {
+    const num = Number.parseFloat(val);
+    return !Number.isNaN(num);
+  }, "Please Enter A Valid Amount"),
+});
+
+export type CardPaySchema = z.infer<typeof cardPaySchema>;

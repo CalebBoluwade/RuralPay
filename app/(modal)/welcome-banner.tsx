@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+// import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
-import { ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { Pressable, ScrollView, Text, View } from "react-native";
 
 interface GuideItem {
   title: string;
@@ -34,7 +34,7 @@ export default function WelcomeBanner() {
 
   const handleWelcomeClose = async () => {
     try {
-      await AsyncStorage.setItem("hasSeenWelcome", "true");
+      // await AsyncStorage.setItem("hasSeenWelcome", "true");
       router.back();
     } catch (error) {
       console.warn("Error saving welcome state:", error);
@@ -46,24 +46,24 @@ export default function WelcomeBanner() {
       <View className="bg-white rounded-3xl p-6 w-full shadow-2xl border-4 border-lime-300">
         <View className="flex-row justify-between items-start mb-4">
           <View>
-            <Text className="text-3xl font-black text-purple-600">
+            <Text className="text-3xl font-black text-lime-600">
               Hey Bestie! ✨
             </Text>
             <Text className="text-lg text-gray-700 mt-2 font-semibold">
               Let&apos;s get this money! 💸
             </Text>
           </View>
-          <TouchableOpacity
+          <Pressable
             onPress={handleWelcomeClose}
             className="bg-gray-100 rounded-full p-2 hover:bg-gray-200"
           >
             <Ionicons name="close" size={20} color="#6b7280" />
-          </TouchableOpacity>
+          </Pressable>
         </View>
 
         <ScrollView className="mt-2" showsVerticalScrollIndicator={false}>
           {guides.map((guide, index) => (
-            <TouchableOpacity
+            <Pressable
               key={index}
               onPress={guide.onPress}
               className={`${guide.bgColor} rounded-2xl p-4 mb-3 border-2 border-dashed border-gray-300 active:scale-95 transition-transform`}
@@ -88,18 +88,18 @@ export default function WelcomeBanner() {
                   />
                 </View>
               </View>
-            </TouchableOpacity>
+            </Pressable>
           ))}
         </ScrollView>
 
-        <TouchableOpacity
+        <Pressable
           onPress={handleWelcomeClose}
           className="bg-lime-500 rounded-2xl p-4 mt-4 shadow-lg border-2 border-lime-300 active:scale-95"
         >
           <Text className="text-white text-center font-black text-lg">
             Let&apos;s Gooo! 🔥🚀
           </Text>
-        </TouchableOpacity>
+        </Pressable>
       </View>
     </View>
   );

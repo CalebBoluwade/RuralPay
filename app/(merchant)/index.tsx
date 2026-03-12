@@ -3,14 +3,12 @@ import MerchantQRModal from "@/components/Merchant/MerchantQRScan";
 import NFCPayments from "@/components/Merchant/NFCPayments";
 import VirtualAccounts from "@/components/Merchant/VirtualAccounts";
 import ScreenHeader from "@/components/ui/ScreenHeader";
-import MerchantService from "@/lib/services/MerchantService";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
-  RefreshControl,
   ScrollView,
   Text,
   View,
@@ -23,13 +21,11 @@ export default function MerchantDashboard() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
 
-  const [merchant, setMerchant] = useState<MerchantAnaltyics>();
-
   const [showMerchantPayModal, setShowMerchantPayModal] = useState(false);
   const [showMerchantQRModal, setShowMerchantQRModal] = useState(false);
   const [showVAModal, setShowVAModal] = useState(false);
 
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [stats, setStats] = useState({
     revenue: 124500,
@@ -37,37 +33,14 @@ export default function MerchantDashboard() {
     customers: 247,
   });
 
-  useEffect(() => {
-    loadMerchantData();
-  }, []);
-
-  const loadMerchantData = async () => {
-    try {
-      const merchantProfile = await MerchantService.GetMerchantAnalytics();
-      if (merchantProfile) {
-        setMerchant(merchantProfile);
-      }
-    } catch (error) {
-      console.warn("Failed to load merchant data", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    await loadMerchantData();
-    setRefreshing(false);
-  };
-
   const quickActions = [
-    {
-      id: "qr",
-      icon: "qr-code-outline",
-      label: "QR Code",
-      color: isDark ? "#10b981" : "#059669",
-      route: "/(merchant)/qr-generator",
-    },
+    // {
+    //   id: "qr",
+    //   icon: "qr-code-outline",
+    //   label: "QR Code",
+    //   color: isDark ? "#10b981" : "#059669",
+    //   route: "/(merchant)/MerchantQRScan",
+    // },
     {
       id: "provision",
       icon: "card-outline",
@@ -109,13 +82,13 @@ export default function MerchantDashboard() {
       <View className={isDark ? "flex-1 bg-[#0a0a0f]" : "flex-1 bg-white"}>
         <ScrollView
           className="flex-1 pt-20"
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={handleRefresh}
-              tintColor={isDark ? "#a78bfa" : "#7c3aed"}
-            />
-          }
+          // refreshControl={
+          //   <RefreshControl
+          //     refreshing={refreshing}
+          //     onRefresh={handleRefresh}
+          //     tintColor={isDark ? "#a78bfa" : "#7c3aed"}
+          //   />
+          // }
         >
           <ScreenHeader
             goBack={false}
@@ -233,6 +206,31 @@ export default function MerchantDashboard() {
 
             <Pressable
               className={`px-6 py-4 rounded-2xl mb-4 ${isDark ? "bg-white/10 border border-white/20" : "bg-gray-50 border border-gray-200"}`}
+              onPress={() => setShowMerchantQRModal(true)}
+            >
+              <View className="flex-row items-center gap-4">
+                <Ionicons
+                  name="compass"
+                  size={24}
+                  color={isDark ? "#34d399" : "#059669"}
+                />
+                <View className="flex-1">
+                  <Text
+                    className={`text-lg font-bold ${isDark ? "text-white" : "text-gray-900"}`}
+                  >
+                    QR Generator
+                  </Text>
+                  <Text
+                    className={`text-base mt-1 ${isDark ? "text-gray-400" : "text-gray-600"}`}
+                  >
+                    Business
+                  </Text>
+                </View>
+              </View>
+            </Pressable>
+
+            <Pressable
+              className={`px-6 py-4 rounded-2xl mb-4 ${isDark ? "bg-white/10 border border-white/20" : "bg-gray-50 border border-gray-200"}`}
               onPress={() => router.push("/(merchant)/MerchantServices")}
             >
               <View className="flex-row items-center gap-4">
@@ -288,7 +286,7 @@ export default function MerchantDashboard() {
             {quickActions.map((action) => (
               <Pressable
                 key={action.id}
-                onPress={() => action.route && router.push(action.route as any)}
+                onPress={() => router.push(action.route as any)}
                 className={`p-4 rounded-2xl items-center ${isDark ? "bg-white/10 border border-white/20" : "bg-gray-50 border border-gray-200"}`}
               >
                 <Ionicons

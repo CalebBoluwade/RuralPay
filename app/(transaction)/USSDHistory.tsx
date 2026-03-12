@@ -3,13 +3,7 @@ import PaymentService from "@/lib/services/PaymentService";
 import { formatAmount } from "@/lib/utils/formatAmount";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
-import {
-  FlatList,
-  RefreshControl,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { FlatList, Pressable, RefreshControl, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const USSDHistory = () => {
@@ -39,9 +33,9 @@ const USSDHistory = () => {
     const isCredit = (item.txType || "DEBIT").includes("CREDIT");
 
     return (
-      <TouchableOpacity
+      <Pressable
         className="bg-white/80 backdrop-blur mx-4 mb-4 p-5 rounded-3xl border border-white/50 shadow-lg active:bg-white/90"
-        onPress={() => router.push(`/(transaction)/${item.code}`)}
+        onPress={() => router.push(`/(transaction)/USSD/${item.code}`)}
       >
         <View className="flex-row items-center justify-between mb-4">
           <View className="flex-row items-center">
@@ -92,7 +86,7 @@ const USSDHistory = () => {
             </Text>
           </View>
         </View>
-      </TouchableOpacity>
+      </Pressable>
     );
   };
 

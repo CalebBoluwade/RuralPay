@@ -6,9 +6,9 @@ import { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Pressable,
   ScrollView,
   Text,
-  TouchableOpacity,
   View,
   useColorScheme,
 } from "react-native";
@@ -167,7 +167,7 @@ export default function CardManagement() {
           onBack={() => router.back()}
         />
 
-        <TouchableOpacity
+        <Pressable
           className={`px-6 py-5 rounded-2xl backdrop-blur-xl mb-6 ${
             isDark
               ? "bg-lime-500/20 border-2 border-lime-500"
@@ -192,7 +192,7 @@ export default function CardManagement() {
               </>
             )}
           </View>
-        </TouchableOpacity>
+        </Pressable>
 
         <Text
           className={`text-lg font-bold mb-4 ${
@@ -281,7 +281,7 @@ export default function CardManagement() {
 
               <View className="flex-row gap-2">
                 {card.status === "active" ? (
-                  <TouchableOpacity
+                  <Pressable
                     className={`flex-1 py-3 rounded-xl ${
                       isDark
                         ? "bg-red-500/20 border border-red-500"
@@ -296,9 +296,9 @@ export default function CardManagement() {
                     >
                       Block Card
                     </Text>
-                  </TouchableOpacity>
+                  </Pressable>
                 ) : (
-                  <TouchableOpacity
+                  <Pressable
                     className={`flex-1 py-3 rounded-xl ${
                       isDark
                         ? "bg-lime-500/20 border border-lime-500"
@@ -313,7 +313,7 @@ export default function CardManagement() {
                     >
                       Activate Card
                     </Text>
-                  </TouchableOpacity>
+                  </Pressable>
                 )}
               </View>
             </View>

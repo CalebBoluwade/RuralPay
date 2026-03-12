@@ -1,6 +1,6 @@
 import AccountService from "@/lib/services/AccountService";
 import ToastService from "@/lib/services/ToastService";
-import { Ionicons } from "@expo/vector-icons";
+import { Eye, EyeOff } from "lucide-react-native";
 import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -43,7 +43,7 @@ const BalanceCard: React.FC<BalanceCardProps> = ({
 
   const loadAccountData = async () => {
     try {
-      const accounts = await AccountService.AccountBalance();
+      const accounts = await AccountService.AccountBalanceEnquiry();
       setInternalAccounts(accounts);
       setInternalLoading(false);
     } catch (error) {
@@ -104,38 +104,43 @@ const BalanceCard: React.FC<BalanceCardProps> = ({
   if (!allAccounts?.accounts?.length) {
     return (
       <View
-        className={`bg-lime-800/75 rounded-2xl shadow-lg border-2 border-dashed border-lime-300 ${
-          isDark ? "bg-lime-600/20" : "bg-lime-50 shadow-lg"
-        } py-7 mx-4`}
+        className={`bg-lime-800/75 rounded-2xl shadow-lg border-2 border-dashed ${
+          isDark
+            ? "bg-lime-600/20 border-lime-300"
+            : "bg-lime-50 border-lime-800 shadow-lg"
+        } py-5 px-4 mx-4`}
       >
         <View className="flex-row justify-between items-center">
-          <Text className="text-white text-xl font-medium">Balance</Text>
+          <Text className="text-white text-base font-medium">
+            No Accounts available
+          </Text>
           <Text className="text-white text-right text-xl font-bold">NA</Text>
         </View>
-        <Text className="text-white text-3xl font-bold mb-6">₦0.00</Text>
-        <Text className="text-white/70 text-center">
-          No Wallet / Accounts available
-        </Text>
+        <Text className="text-white text-3xl font-bold">₦0.00</Text>
       </View>
     );
   }
 
   return (
-    <View className="mb-2">
-      <View style={{ paddingLeft: CARD_PADDING }}>
+    <View className="mb-2" style={{ paddingLeft: CARD_PADDING }}>
+      <View>
         {/* Daily Spending Progress Bar */}
         <View
-          className={`px-4 py-5 my-3 mx-1 rounded-xl ${isDark ? "bg-white/10" : "bg-gray-50"}`}
+          className={`px-4 py-5 mb-3 mx-2 rounded-xl ${isDark ? "bg-white/10" : "bg-black/10"}`}
         >
           <View className="flex-row justify-between items-center mb-1">
-            <Text className="text-white/80 text-xs">Daily Spending</Text>
-            <Text className="text-white/80 text-xs">
+            <Text className={`${isDark ? "text-white/80" : ""} text-sm`}>
+              Daily Spending
+            </Text>
+            <Text className={`${isDark ? "text-white/80" : ""} text-sm`}>
               {visibleBalance
                 ? `₦${(allAccounts.dailySpent || 0).toLocaleString()} / ₦${(allAccounts.dailyLimit || 1000).toLocaleString()}`
                 : "•••• / ••••"}
             </Text>
           </View>
-          <View className="bg-white/20 h-2 rounded-full overflow-hidden">
+          <View
+            className={`${isDark ? "bg-white/10" : "bg-black/20"} h-2 rounded-full overflow-hidden`}
+          >
             <View
               className={`h-full rounded-full ${getProgressColor(getSpendingProgress(allAccounts))}`}
               style={{ width: `${getSpendingProgress(allAccounts)}%` }}
@@ -156,11 +161,11 @@ const BalanceCard: React.FC<BalanceCardProps> = ({
           {allAccounts.accounts.map((account, index) => (
             <View
               key={account.accountId}
-              className={`bg-lime-800/75 rounded-2xl border border-lime-600 ${
+              className={`bg-lime-700 rounded-2xl border border-lime-600 ${
                 isDark
                   ? "bg-lime-600/20 border-2 border-lime-500/40"
                   : "bg-lime-50 border-2 border-lime-300"
-              } px-3 py-2 ${account.accountId === allAccounts.accounts?.[currentIndex]?.accountId ? "border-2 border-dashed border-lime-300" : ""}`}
+              } px-3 py-2 mx-3 ${account.accountId === allAccounts.accounts?.[currentIndex]?.accountId ? "border-2 border-dashed border-lime-300" : ""}`}
               style={{
                 width: CARD_WIDTH,
                 marginRight:
@@ -187,11 +192,11 @@ const BalanceCard: React.FC<BalanceCardProps> = ({
                 </View>
 
                 <View>
-                  <Text className="text-white text-lg font-bold">
+                  <Text className="text-white text-lg font-brand font-bold">
                     {account.accountId || "NA"}
                   </Text>
 
-                  <Text className="text-white text-sm font-semibold">
+                  <Text className="text-white text-sm font-brand font-semibold">
                     {account.accountName || "NA"}
                   </Text>
                 </View>
@@ -201,14 +206,10 @@ const BalanceCard: React.FC<BalanceCardProps> = ({
                 <Pressable
                   onPress={() => updateVisibleBalance(!visibleBalance)}
                 >
-                  <Ionicons
-                    name={visibleBalance ? "eye" : "eye-off"}
-                    size={20}
-                    color="white"
-                  />
+                  {visibleBalance ? <Eye size={20} color="white" /> : <EyeOff size={20} color="white" />}
                 </Pressable>
 
-                <Text className="text-white text-xl font-bold">
+                <Text className="text-white text-xl font-brand font-bold">
                   {account.currency || "₦"}
                   {visibleBalance
                     ? account.availableBalance?.toLocaleString() || "0.00"
@@ -238,7 +239,7 @@ const BalanceCard: React.FC<BalanceCardProps> = ({
 
       {(allAccounts.accounts?.length || 0) > 1 && (
         <View
-          className="flex-row mt-3 gap-2 px-4"
+          className="flex-row mt-3 gap-2 px-4 mx-3"
           style={{ paddingLeft: CARD_PADDING }}
         >
           {allAccounts.accounts?.map((_, index) => (

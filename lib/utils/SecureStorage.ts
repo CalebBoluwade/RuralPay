@@ -1,4 +1,5 @@
 import * as Crypto from "expo-crypto";
+import * as Haptics from "expo-haptics";
 import * as LocalAuthentication from "expo-local-authentication";
 import * as Keychain from "react-native-keychain";
 import ToastService from "../services/ToastService";
@@ -32,6 +33,44 @@ export async function SetupHardwareSecurity(merchantId: string) {
 
 export class BiometricService {
   private static readonly BIOMETRIC_LOGIN_SERVICE = "biometric_login";
+
+  onFingerPrintPress = async (
+    isBiometricSupported: boolean,
+  ): Promise<boolean> => {
+    try {
+      console.log("Face ID button pressed");
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
+      if (!isBiometricSupported) {
+        ToastService.warning("Biometric not supported");
+        return false;
+      }
+
+      const result = await LocalAuthentication.authenticateAsync({
+        promptMessage: "Authenticate for transaction",
+        fallbackLabel: "Use PIN",
+        disableDeviceFallback: true,
+      });
+
+      console.log("Biometric result:", result);
+
+      if (result.success) {
+        ToastService.success("Biometric Authentication Successful");
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+
+        return true;
+      } else {
+        console.log("Biometric Authentication Failed:", result.error);
+
+        return false;
+      }
+    } catch (error) {
+      console.error("Biometric Authentication Error:", error);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+
+      return false;
+    }
+  };
 
   async storeBiometricCredentials(
     identifier: string,
@@ -91,14 +130,13 @@ export class BiometricService {
 
   async hasBiometricCredentials(): Promise<boolean> {
     try {
-      if (!Keychain || !Keychain.getGenericPassword) {
+      if (!Keychain || !Keychain.hasGenericPassword) {
         return false;
       }
 
-      const credentials = await Keychain.getGenericPassword({
+      return await Keychain.hasGenericPassword({
         service: BiometricService.BIOMETRIC_LOGIN_SERVICE,
       });
-      return !!credentials;
     } catch {
       return false;
     }

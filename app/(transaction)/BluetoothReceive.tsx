@@ -1,20 +1,20 @@
 import { useAuth } from "@/components/context/AuthProvider";
 import BalanceCard from "@/components/ui/BalanceCard";
 import AmountInput from "@/components/ui/Input/AmountInput";
+import TransactionFailure from "@/components/ui/Modals/Transaction/TransactionFailure";
+import TransactionSuccess from "@/components/ui/Modals/Transaction/TransactionSuccess";
 import ScreenHeader from "@/components/ui/ScreenHeader";
-import TransactionFailure from "@/components/ui/Transaction/TransactionFailure";
-import TransactionSuccess from "@/components/ui/Transaction/TransactionSuccess";
 import BLEService from "@/lib/services/BLEService";
 import ToastService from "@/lib/services/ToastService";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
-  ActivityIndicator,
-  Text,
-  TouchableOpacity,
-  useColorScheme,
-  View,
+    ActivityIndicator,
+    Pressable,
+    Text,
+    useColorScheme,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -138,7 +138,7 @@ const BluetoothReceive = () => {
       <View className="flex-1 p-6">
         <AmountInput onAmountChange={setAmount} />
 
-        <TouchableOpacity
+        <Pressable
           className={`p-4 rounded-2xl mt-6 ${
             isDark ? "bg-emerald-600" : "bg-emerald-700"
           }`}
@@ -156,7 +156,7 @@ const BluetoothReceive = () => {
               Start Receiving
             </Text>
           </View>
-        </TouchableOpacity>
+        </Pressable>
 
         <View
           className={`mt-6 p-4 rounded-xl ${
@@ -252,14 +252,14 @@ const BluetoothReceive = () => {
           </View>
         </View>
 
-        <TouchableOpacity
+        <Pressable
           className={`p-4 rounded-2xl ${isDark ? "bg-red-600" : "bg-red-700"}`}
           onPress={handleStopReceiving}
         >
           <Text className="text-white text-lg font-bold text-center">
             Stop Receiving
           </Text>
-        </TouchableOpacity>
+        </Pressable>
       </View>
     </SafeAreaView>
   );

@@ -1,4 +1,4 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as SecureStore from "expo-secure-store";
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { getNestedTranslation, Language, translations } from "../../i18n";
 
@@ -8,7 +8,9 @@ interface LanguageContextType {
   t: (key: string) => string;
 }
 
-const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
+const LanguageContext = createContext<LanguageContextType | undefined>(
+  undefined,
+);
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [language, setLanguageState] = useState<Language>("en");
@@ -19,8 +21,11 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
 
   const loadLanguage = async () => {
     try {
-      const saved = await AsyncStorage.getItem("app_language");
-      if (saved && (saved === "en" || saved === "yo" || saved === "ig" || saved === "ha")) {
+      const saved = SecureStore.getItem("app_language");
+      if (
+        saved &&
+        (saved === "en" || saved === "yo" || saved === "ig" || saved === "ha")
+      ) {
         setLanguageState(saved as Language);
       }
     } catch (error) {
@@ -30,7 +35,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
 
   const setLanguage = async (lang: Language) => {
     try {
-      await AsyncStorage.setItem("app_language", lang);
+      SecureStore.setItem("app_language", lang);
       setLanguageState(lang);
     } catch (error) {
       console.error("Failed to save language:", error);

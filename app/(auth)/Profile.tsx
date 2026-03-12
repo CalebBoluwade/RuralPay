@@ -3,9 +3,24 @@ import { useLanguage } from "@/components/context/LanguageContext";
 import ScreenHeader from "@/components/ui/ScreenHeader";
 import ToastService from "@/lib/services/ToastService";
 import { biometricService, PinService } from "@/lib/utils/SecureStorage";
-import { Feather, Ionicons } from "@expo/vector-icons";
 import * as LocalAuthentication from "expo-local-authentication";
 import { router } from "expo-router";
+import {
+  AlertCircle,
+  ChevronRight,
+  CreditCard,
+  Key,
+  Link2,
+  Mail,
+  Pencil,
+  Phone,
+  Power,
+  ShieldCheck,
+  ShieldX,
+  Store,
+  User,
+  Wallet,
+} from "lucide-react-native";
 import { useState } from "react";
 import {
   Alert,
@@ -38,8 +53,8 @@ export default function ProfileScreen() {
   const [showPinModal, setShowPinModal] = useState(false);
   const [showWalletModal, setShowWalletModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
-  const [editedFirstName, setEditedFirstName] = useState(user?.FirstName || "");
-  const [editedLastName, setEditedLastName] = useState(user?.LastName || "");
+  const [editedFirstName, setEditedFirstName] = useState(user?.firstName || "");
+  const [editedLastName, setEditedLastName] = useState(user?.lastName || "");
 
   const [oldPin, setOldPin] = useState("");
   const [newPin, setNewPin] = useState("");
@@ -90,7 +105,7 @@ export default function ProfileScreen() {
     if (value) {
       const isAvailable = await biometricService.isBiometricAvailable();
       if (!isAvailable) {
-        ToastService.error("Biometric authentication is not available");
+        ToastService.error("Biometric Authentication Is Not Available");
         return;
       }
 
@@ -111,7 +126,7 @@ export default function ProfileScreen() {
     if (value) {
       const isAvailable = await biometricService.isBiometricAvailable();
       if (!isAvailable) {
-        ToastService.error("Biometric authentication is not available");
+        ToastService.error("Biometric Authentication Is Not Available");
         return;
       }
 
@@ -143,16 +158,16 @@ export default function ProfileScreen() {
   };
 
   const handleEdit = () => {
-    setEditedFirstName(user?.FirstName || "");
-    setEditedLastName(user?.LastName || "");
+    setEditedFirstName(user?.firstName || "");
+    setEditedLastName(user?.lastName || "");
     setShowEditModal(true);
   };
 
   const handleSaveDetails = () => {
     // TODO: Add API call to update user details
     if (user) {
-      user.FirstName = editedFirstName;
-      user.LastName = editedLastName;
+      user.firstName = editedFirstName;
+      user.lastName = editedLastName;
     }
     ToastService.success("Profile Updated Successfully!");
     setShowEditModal(false);
@@ -160,7 +175,7 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView
-      className={`flex-1 ${isDark ? "bg-[#0a0a0f]" : "bg-[#f5f5fa]"}`}
+      className={`flex-1 ${isDark ? "bg-slate-950" : "bg-slate-50"}`}
     >
       <ScreenHeader
         title="Profile"
@@ -176,43 +191,43 @@ export default function ProfileScreen() {
         <View className="px-6 pt-4">
           {/* Header Card */}
           <View
-            className={`rounded-2xl p-6 mb-4 backdrop-blur-xl ${
+            className={`rounded-2xl px-6 py-3 mb-4 ${
               isDark
-                ? "bg-white/10 border border-white/20"
-                : "bg-white/95 border border-gray-200/50 shadow-sm"
+                ? "bg-slate-900 border border-slate-700"
+                : "bg-white border border-slate-200"
             }`}
           >
             <View className="flex-row justify-between items-center">
-              <View className="w-16 h-16 rounded-full bg-lime-600 justify-center items-center mb-4">
+              <View className="w-16 h-16 rounded-full bg-lime-400 justify-center items-center mb-4">
                 <Text className="text-2xl text-white font-bold">
-                  {(user?.FirstName?.[0] || "U") + (user?.LastName?.[0] || "N")}
+                  {(user?.firstName?.[0] || "U") + (user?.lastName?.[0] || "N")}
                 </Text>
               </View>
 
               {/* Action Buttons */}
               <View className="flex-row justify-end gap-2 mb-4">
                 <Pressable
-                  className={`p-3 rounded-xl ${
-                    isDark ? "bg-white/10" : "bg-gray-100"
+                  className={`p-3 rounded-2xl ${
+                    isDark
+                      ? "bg-slate-800 border border-slate-700"
+                      : "bg-slate-100 border border-slate-200"
                   }`}
                   onPress={handleEdit}
                   // activeOpacity={0.7}
                 >
-                  <Feather
-                    name="edit-2"
-                    size={18}
-                    color={isDark ? "white" : "black"}
-                  />
+                  <Pencil size={13} color={isDark ? "white" : "black"} />
                 </Pressable>
 
                 <Pressable
-                  className={`p-3 rounded-xl ${
-                    isDark ? "bg-red-500/20" : "bg-red-100"
+                  className={`p-3 rounded-2xl ${
+                    isDark
+                      ? "bg-slate-800 border border-slate-700"
+                      : "bg-slate-100 border border-slate-200"
                   }`}
                   onPress={handleLogout}
                   // activeOpacity={0.7}
                 >
-                  <Ionicons name="power" size={20} color="#ef4444" />
+                  <Power size={16} color="#ef4444" />
                 </Pressable>
               </View>
             </View>
@@ -220,24 +235,16 @@ export default function ProfileScreen() {
             {/* Profile Info */}
 
             <View className="flex-row items-center gap-1 mb-2">
-              <Ionicons
-                name="person-outline"
-                size={18}
-                color={isDark ? "#9ca3af" : "#6b7280"}
-              />
+              <User size={18} color={isDark ? "#9ca3af" : "#6b7280"} />
               <Text
-                className={`text-xl font-bold mb-1 ${isDark ? "text-white" : "text-gray-900"}`}
+                className={`text-xl font-brand font-bold mb-1 ${isDark ? "text-white" : "text-gray-900"}`}
               >
-                {user?.FirstName + " " + user?.LastName}
+                {user?.firstName + " " + user?.lastName}
               </Text>
             </View>
 
             <View className="flex-row items-center gap-1 mb-2">
-              <Ionicons
-                name="mail"
-                size={18}
-                color={isDark ? "#9ca3af" : "#6b7280"}
-              />
+              <Mail size={18} color={isDark ? "#9ca3af" : "#6b7280"} />
               <Text
                 className={`text-lg ${isDark ? "text-gray-400" : "text-gray-600"}`}
               >
@@ -245,12 +252,17 @@ export default function ProfileScreen() {
               </Text>
             </View>
 
-            <View className="flex-row items-center gap-1 mb-4">
-              <Ionicons
-                name="call"
-                size={18}
-                color={isDark ? "#9ca3af" : "#6b7280"}
-              />
+            <View className="flex-row items-center gap-1 mb-2">
+              <ShieldCheck size={18} color={isDark ? "#9ca3af" : "#6b7280"} />
+              <Text
+                className={`text-lg ${isDark ? "text-gray-400" : "text-gray-600"}`}
+              >
+                {user?.BVN || "Not Provided"}
+              </Text>
+            </View>
+
+            <View className="flex-row items-center gap-1 mb-2">
+              <Phone size={18} color={isDark ? "#9ca3af" : "#6b7280"} />
               <Text
                 className={`text-lg ${isDark ? "text-gray-400" : "text-gray-600"}`}
               >
@@ -258,78 +270,86 @@ export default function ProfileScreen() {
               </Text>
             </View>
 
+            <View className="flex-row items-center gap-2 mb-4">
+              <View className="flex-row items-center gap-1 bg-lime-400/20 border border-lime-400/40 rounded-xl px-3 py-1">
+                {user?.kycStatus === "VERIFIED" ? (
+                  <ShieldCheck size={14} color="#84cc16" />
+                ) : (
+                  <ShieldX size={14} color="#84cc16" />
+                )}
+                <Text className={`text-lime-400 text-sm font-semibold`}>
+                  {user?.kycLevel ?? "NOT VERIFIED"}
+                </Text>
+              </View>
+              <View className="bg-slate-700/40 border border-slate-600/40 rounded-xl px-3 py-1">
+                <Text
+                  className={`text-sm font-semibold ${isDark ? "text-slate-300" : "text-slate-600"}`}
+                >
+                  KYC Level {user?.kycLevel ?? 1}
+                </Text>
+              </View>
+            </View>
+
             <Pressable
-              className={`px-6 py-3 rounded-xl ${isDark ? "bg-lime-600" : "bg-lime-700"}`}
+              className="bg-lime-400 rounded-2xl py-4"
               onPress={() => setShowWalletModal(true)}
               // activeOpacity={0.8}
             >
-              <Text className="text-white font-bold">
-                {user?.AccountId ? "View Wallet" : "Setup Wallet"}
+              <Text className="text-black text-center font-bold">
+                {user?.accountId ? "View Wallet" : "Setup Wallet"}
               </Text>
             </Pressable>
           </View>
 
           <Pressable
-            className={`px-6 py-5 mb-4 rounded-2xl backdrop-blur-xl ${
+            className={`px-6 py-3 mb-4 rounded-2xl ${
               isDark
-                ? "bg-white/10 border border-white/20"
-                : "bg-gray-50 border border-gray-200 shadow-sm"
+                ? "bg-slate-900 border border-slate-700"
+                : "bg-white border border-slate-200"
             }`}
             onPress={() => router.push("/(auth)/ManageLinkedAccounts")}
             // activeOpacity={0.7}
           >
             <View className="flex-row items-center gap-4">
-              <Ionicons
-                name="link"
-                size={26}
-                color={isDark ? "#60a5fa" : "#2563eb"}
-              />
+              <Link2 size={26} color={isDark ? "#a3e635" : "#65a30d"} />
               <View className="flex-1">
                 <Text
-                  className={`text-lg font-bold ${
-                    isDark ? "text-white" : "text-gray-900"
+                  className={`text-lg font-brand font-bold ${
+                    isDark ? "text-white" : "text-slate-900"
                   }`}
                 >
                   Manage Linked Accounts
                 </Text>
                 <Text
                   className={`text-sm mt-1 ${
-                    isDark ? "text-gray-400" : "text-gray-600"
+                    isDark ? "text-slate-400" : "text-slate-600"
                   }`}
                 >
                   Link & Manage your Bank Accounts
                 </Text>
               </View>
-              <Ionicons
-                name="chevron-forward"
-                size={22}
-                color={isDark ? "#9ca3af" : "#6b7280"}
-              />
+              <ChevronRight size={22} color={isDark ? "#a3e635" : "#65a30d"} />
             </View>
           </Pressable>
 
           {/* Security Settings */}
           <View
-            className={`rounded-2xl p-6 mb-6 backdrop-blur-xl ${
+            className={`rounded-2xl p-6 mb-6 ${
               isDark
-                ? "bg-white/10 border border-white/20"
-                : "bg-white/60 border border-gray-200/50 shadow-sm"
+                ? "bg-slate-900 border border-slate-700"
+                : "bg-white border border-slate-200"
             }`}
           >
             <View className="flex-row items-center mb-6">
               <View
                 className={`w-12 h-12 rounded-2xl items-center justify-center mr-4 ${
-                  isDark ? "bg-white/10" : "bg-gray-100"
+                  isDark ? "bg-slate-800" : "bg-slate-100"
                 }`}
               >
-                <Ionicons
-                  name="shield-checkmark-sharp"
-                  size={24}
-                  color={isDark ? "#84cc16" : "#65a30d"}
-                />
+                <ShieldCheck size={24} color={isDark ? "#84cc16" : "#65a30d"} />
               </View>
               <Text
-                className={`text-2xl font-bold ${isDark ? "text-white" : "text-gray-900"}`}
+                className={`text-xl font-brand font-bold ${isDark ? "text-white" : "text-gray-900"}`}
               >
                 {t("profile.security")}
               </Text>
@@ -338,21 +358,21 @@ export default function ProfileScreen() {
             {/* Native Auth Toggles */}
             <View className="mb-6">
               <View
-                className={`p-4 rounded-2xl mb-4 backdrop-blur-xl ${
+                className={`p-4 rounded-2xl mb-4 ${
                   isDark
-                    ? "bg-white/5 border border-white/10"
-                    : "bg-gray-50/80 border border-gray-200/30"
+                    ? "bg-slate-800 border border-slate-700"
+                    : "bg-slate-50 border border-slate-200"
                 }`}
               >
                 <View className="flex-row items-center justify-between">
                   <View className="flex-1">
                     <Text
-                      className={`text-lg font-semibold mb-1 ${isDark ? "text-white" : "text-gray-900"}`}
+                      className={`text-lg font-semibold mb-1 ${isDark ? "text-white" : "text-slate-900"}`}
                     >
                       {t("profile.biometricLogin")}
                     </Text>
                     <Text
-                      className={`text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}
+                      className={`text-sm ${isDark ? "text-slate-400" : "text-slate-600"}`}
                     >
                       Use fingerprint or face ID for secure login
                     </Text>
@@ -370,21 +390,21 @@ export default function ProfileScreen() {
               </View>
 
               <View
-                className={`p-4 rounded-2xl mb-4 backdrop-blur-xl ${
+                className={`p-4 rounded-2xl mb-4 ${
                   isDark
-                    ? "bg-white/5 border border-white/10"
-                    : "bg-gray-50/80 border border-gray-200/30"
+                    ? "bg-slate-800 border border-slate-700"
+                    : "bg-slate-50 border border-slate-200"
                 }`}
               >
                 <View className="flex-row items-center justify-between">
                   <View className="flex-1">
                     <Text
-                      className={`text-lg font-semibold mb-1 ${isDark ? "text-white" : "text-gray-900"}`}
+                      className={`text-lg font-semibold mb-1 ${isDark ? "text-white" : "text-slate-900"}`}
                     >
                       {t("profile.transactionSecurity")}
                     </Text>
                     <Text
-                      className={`text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}
+                      className={`text-sm ${isDark ? "text-slate-400" : "text-slate-600"}`}
                     >
                       Require biometric authentication for payments
                     </Text>
@@ -402,21 +422,21 @@ export default function ProfileScreen() {
               </View>
 
               <View
-                className={`p-4 rounded-2xl backdrop-blur-xl ${
+                className={`p-4 rounded-2xl ${
                   isDark
-                    ? "bg-white/5 border border-white/10"
-                    : "bg-gray-50/80 border border-gray-200/30"
+                    ? "bg-slate-800 border border-slate-700"
+                    : "bg-slate-50 border border-slate-200"
                 }`}
               >
                 <View className="flex-row items-center justify-between">
                   <View className="flex-1">
                     <Text
-                      className={`text-lg font-semibold mb-1 ${isDark ? "text-white" : "text-gray-900"}`}
+                      className={`text-lg font-semibold mb-1 ${isDark ? "text-white" : "text-slate-900"}`}
                     >
                       {t("profile.visibleBalance")}
                     </Text>
                     <Text
-                      className={`text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}
+                      className={`text-sm ${isDark ? "text-slate-400" : "text-slate-600"}`}
                     >
                       View or Hide Account Balance
                     </Text>
@@ -436,28 +456,23 @@ export default function ProfileScreen() {
 
             {/* PIN Management */}
             <Pressable
-              className={`p-4 rounded-2xl backdrop-blur-xl ${
+              className={`p-4 rounded-2xl ${
                 isDark
-                  ? "bg-lime-600/30 border border-lime-500/30"
-                  : "bg-lime-100 border border-lime-200"
+                  ? "bg-lime-400/10 border border-lime-400/30"
+                  : "bg-lime-50 border border-lime-200"
               }`}
               onPress={() => setShowPinModal(true)}
             >
               <View className="flex-row items-center justify-between">
                 <View className="flex-row items-center">
-                  <Ionicons
-                    name="key"
-                    size={20}
-                    color={isDark ? "#84cc16" : "#65a30d"}
-                  />
+                  <Key size={20} color={isDark ? "#84cc16" : "#65a30d"} />
                   <Text
                     className={`font-bold ml-3 text-lg ${isDark ? "text-white" : "text-gray-900"}`}
                   >
                     Change Security PIN
                   </Text>
                 </View>
-                <Ionicons
-                  name="chevron-forward"
+                <ChevronRight
                   size={20}
                   color={isDark ? "#84cc16" : "#65a30d"}
                 />
@@ -478,10 +493,10 @@ export default function ProfileScreen() {
           className={`flex-1 justify-center items-center px-5 ${isDark ? "bg-black/80" : "bg-black/40"}`}
         >
           <View
-            className={`rounded-2xl p-6 w-full backdrop-blur-xl ${
+            className={`rounded-2xl p-6 w-full ${
               isDark
-                ? "bg-gray-900 border border-white/20"
-                : "bg-white border border-gray-200/50"
+                ? "bg-slate-900 border border-slate-700"
+                : "bg-white border border-slate-200"
             }`}
           >
             <View className="items-center mb-6">
@@ -490,19 +505,15 @@ export default function ProfileScreen() {
                   isDark ? "bg-lime-500/20" : "bg-lime-100"
                 }`}
               >
-                <Feather
-                  name="edit-2"
-                  size={28}
-                  color={isDark ? "#84cc16" : "#65a30d"}
-                />
+                <Pencil size={28} color={isDark ? "#84cc16" : "#65a30d"} />
               </View>
               <Text
-                className={`text-2xl font-bold ${isDark ? "text-white" : "text-gray-900"}`}
+                className={`text-2xl font-brand font-bold ${isDark ? "text-white" : "text-gray-900"}`}
               >
                 Edit Profile
               </Text>
               <Text
-                className={`text-center mt-1 ${isDark ? "text-gray-400" : "text-gray-600"}`}
+                className={`text-center mt-1 ${isDark ? "text-slate-400" : "text-slate-600"}`}
               >
                 Update your personal information
               </Text>
@@ -510,18 +521,18 @@ export default function ProfileScreen() {
 
             <View className="mb-4">
               <Text
-                className={`text-sm font-semibold mb-2 ${isDark ? "text-gray-300" : "text-gray-700"}`}
+                className={`text-sm font-semibold mb-2 ${isDark ? "text-slate-300" : "text-slate-700"}`}
               >
                 First Name
               </Text>
               <TextInput
-                className={`p-4 rounded-xl text-lg ${
+                className={`p-4 rounded-2xl text-lg ${
                   isDark
-                    ? "bg-white/10 border border-white/20 text-white"
-                    : "bg-gray-50 border-2 border-gray-200 text-gray-900"
+                    ? "bg-slate-800 border border-slate-700 text-white"
+                    : "bg-slate-50 border border-slate-200 text-slate-900"
                 }`}
                 placeholder="Enter first name"
-                placeholderTextColor={isDark ? "#9CA3AF" : "#6B7280"}
+                placeholderTextColor={isDark ? "#94a3b8" : "#64748b"}
                 value={editedFirstName}
                 onChangeText={setEditedFirstName}
                 autoCapitalize="words"
@@ -530,18 +541,18 @@ export default function ProfileScreen() {
 
             <View className="mb-6">
               <Text
-                className={`text-sm font-semibold mb-2 ${isDark ? "text-gray-300" : "text-gray-700"}`}
+                className={`text-sm font-semibold mb-2 ${isDark ? "text-slate-300" : "text-slate-700"}`}
               >
                 Last Name
               </Text>
               <TextInput
-                className={`p-4 rounded-xl text-lg ${
+                className={`p-4 rounded-2xl text-lg ${
                   isDark
-                    ? "bg-white/10 border border-white/20 text-white"
-                    : "bg-gray-50 border-2 border-gray-200 text-gray-900"
+                    ? "bg-slate-800 border border-slate-700 text-white"
+                    : "bg-slate-50 border border-slate-200 text-slate-900"
                 }`}
                 placeholder="Enter last name"
-                placeholderTextColor={isDark ? "#9CA3AF" : "#6B7280"}
+                placeholderTextColor={isDark ? "#94a3b8" : "#64748b"}
                 value={editedLastName}
                 onChangeText={setEditedLastName}
                 autoCapitalize="words"
@@ -550,26 +561,24 @@ export default function ProfileScreen() {
 
             <View className="flex-row gap-3">
               <Pressable
-                className={`flex-1 p-4 rounded-xl ${
+                className={`flex-1 p-4 rounded-2xl ${
                   isDark
-                    ? "bg-white/5 border border-white/10"
-                    : "bg-gray-100 border border-gray-200"
+                    ? "bg-slate-800 border border-slate-700"
+                    : "bg-slate-100 border border-slate-200"
                 }`}
                 onPress={() => setShowEditModal(false)}
-                // activeOpacity={0.7}
               >
                 <Text
-                  className={`text-center font-bold text-base ${isDark ? "text-white" : "text-gray-800"}`}
+                  className={`text-center font-bold text-base ${isDark ? "text-white" : "text-slate-800"}`}
                 >
                   Cancel
                 </Text>
               </Pressable>
               <Pressable
-                className={`flex-1 p-4 rounded-xl ${isDark ? "bg-lime-600" : "bg-lime-700"}`}
+                className="flex-1 p-4 rounded-2xl bg-lime-400"
                 onPress={handleSaveDetails}
-                // activeOpacity={0.8}
               >
-                <Text className="text-white text-center font-bold text-base">
+                <Text className="text-black text-center font-bold text-base">
                   Save Changes
                 </Text>
               </Pressable>
@@ -586,7 +595,7 @@ export default function ProfileScreen() {
         onRequestClose={() => setShowWalletModal(false)}
       >
         <View
-          className={`flex-1 p-6 pt-20 ${isDark ? "bg-black/80" : "bg-black/40"}`}
+          className={`flex-1 p-6 pt-20 ${isDark ? "bg-slate-950" : "bg-slate-50"}`}
         >
           {/* <View
           className={`rounded-2xl p-6 w-full max-w-sm backdrop-blur-xl ${
@@ -595,60 +604,56 @@ export default function ProfileScreen() {
               : "bg-white/95 border border-gray-200/50"
           }`}
         > */}
-          {user?.AccountId ? (
+          {user?.accountId ? (
             <>
               <View className="items-center mb-6">
                 <View
                   className={`w-16 h-16 rounded-full items-center justify-center mb-4 ${
-                    isDark ? "bg-lime-500/20" : "bg-lime-100"
+                    isDark ? "bg-lime-400/20" : "bg-lime-100"
                   }`}
                 >
-                  <Ionicons
-                    name="wallet"
-                    size={32}
-                    color={isDark ? "#ffffff" : "#7c3aed"}
-                  />
+                  <Wallet size={32} color={isDark ? "#a3e635" : "#65a30d"} />
                 </View>
                 <Text
-                  className={`text-2xl font-bold mb-2 ${isDark ? "text-white" : "text-gray-900"}`}
+                  className={`text-2xl font-brand font-bold mb-2 ${isDark ? "text-white" : "text-gray-900"}`}
                 >
                   Wallet Details
                 </Text>
               </View>
 
               <View
-                className={`p-4 rounded-xl mb-4 backdrop-blur-xl ${
+                className={`p-4 rounded-2xl mb-4 ${
                   isDark
-                    ? "bg-white/5 border border-white/10"
-                    : "bg-gray-50/80 border border-gray-200/30"
+                    ? "bg-slate-900 border border-slate-700"
+                    : "bg-white border border-slate-200"
                 }`}
               >
                 <Text
-                  className={`text-sm mb-1 ${isDark ? "text-gray-400" : "text-gray-600"}`}
+                  className={`text-sm mb-1 ${isDark ? "text-slate-400" : "text-slate-600"}`}
                 >
                   Account ID
                 </Text>
                 <Text
-                  className={`text-lg font-semibold ${isDark ? "text-white" : "text-gray-900"}`}
+                  className={`text-lg font-semibold ${isDark ? "text-white" : "text-slate-900"}`}
                 >
-                  {user.AccountId}
+                  {user.accountId}
                 </Text>
               </View>
 
               <View
-                className={`p-4 rounded-xl mb-4 backdrop-blur-xl ${
+                className={`p-4 rounded-2xl mb-4 ${
                   isDark
-                    ? "bg-white/5 border border-white/10"
-                    : "bg-gray-50/80 border border-gray-200/30"
+                    ? "bg-slate-900 border border-slate-700"
+                    : "bg-white border border-slate-200"
                 }`}
               >
                 <Text
-                  className={`text-sm mb-1 ${isDark ? "text-gray-400" : "text-gray-600"}`}
+                  className={`text-sm mb-1 ${isDark ? "text-slate-400" : "text-slate-600"}`}
                 >
                   Balance
                 </Text>
                 <Text
-                  className={`text-2xl font-bold ${isDark ? "text-white" : "text-gray-900"}`}
+                  className={`text-2xl font-bold ${isDark ? "text-white" : "text-slate-900"}`}
                 >
                   ₦{"0.00"}
                 </Text>
@@ -656,20 +661,16 @@ export default function ProfileScreen() {
 
               {/* Merchant Information */}
               <View
-                className={`p-6 rounded-xl mb-6 backdrop-blur-xl ${
+                className={`p-6 rounded-2xl mb-6 ${
                   isDark
-                    ? "bg-blue-600/20 border border-blue-500/30"
-                    : "bg-blue-50/80 border border-blue-200/50"
+                    ? "bg-slate-900 border border-slate-700"
+                    : "bg-white border border-slate-200"
                 }`}
               >
                 <View className="flex-row items-center mb-6">
-                  <Ionicons
-                    name="storefront"
-                    size={24}
-                    color={isDark ? "#60a5fa" : "#2563eb"}
-                  />
+                  <Store size={24} color={isDark ? "#a3e635" : "#65a30d"} />
                   <Text
-                    className={`text-xl font-bold ml-3 ${isDark ? "text-white" : "text-gray-900"}`}
+                    className={`text-xl font-brand font-bold ml-3 ${isDark ? "text-white" : "text-slate-900"}`}
                   >
                     Merchant Info
                   </Text>
@@ -677,38 +678,38 @@ export default function ProfileScreen() {
                 <View className="space-y-4">
                   <View className="flex-row justify-between py-2">
                     <Text
-                      className={`text-base font-semibold ${isDark ? "text-gray-300" : "text-gray-700"}`}
+                      className={`text-base font-semibold ${isDark ? "text-slate-300" : "text-slate-700"}`}
                     >
                       Business Name
                     </Text>
                     <Text
-                      className={`text-base font-bold ${isDark ? "text-white" : "text-gray-900"}`}
+                      className={`text-base font-bold ${isDark ? "text-white" : "text-slate-900"}`}
                     >
-                      {user?.FirstName + " " + user?.LastName || "N/A"}
+                      {user?.firstName + " " + user?.lastName || "N/A"}
                     </Text>
                   </View>
                   <View className="flex-row justify-between py-2">
                     <Text
-                      className={`text-base font-semibold ${isDark ? "text-gray-300" : "text-gray-700"}`}
+                      className={`text-base font-semibold ${isDark ? "text-slate-300" : "text-slate-700"}`}
                     >
                       Merchant ID
                     </Text>
                     <Text
-                      className={`text-base font-bold ${isDark ? "text-white" : "text-gray-900"}`}
+                      className={`text-base font-bold ${isDark ? "text-white" : "text-slate-900"}`}
                     >
-                      {user?.AccountId?.slice(-8) || "N/A"}
+                      {user?.accountId?.slice(-8) || "N/A"}
                     </Text>
                   </View>
                   <View className="flex-row justify-between py-2">
                     <Text
-                      className={`text-base font-semibold ${isDark ? "text-gray-300" : "text-gray-700"}`}
+                      className={`text-base font-semibold ${isDark ? "text-slate-300" : "text-slate-700"}`}
                     >
                       Status
                     </Text>
                     <View className="flex-row items-center">
-                      <View className="w-3 h-3 bg-green-500 rounded-full mr-3" />
+                      <View className="w-3 h-3 bg-lime-400 rounded-full mr-3" />
                       <Text
-                        className={`text-base font-bold ${isDark ? "text-green-400" : "text-green-600"}`}
+                        className={`text-base font-bold ${isDark ? "text-lime-400" : "text-lime-600"}`}
                       >
                         Active
                       </Text>
@@ -719,20 +720,19 @@ export default function ProfileScreen() {
 
               {/* Transaction Limits */}
               <View
-                className={`p-6 rounded-xl mb-6 backdrop-blur-xl ${
+                className={`p-6 rounded-2xl mb-6 ${
                   isDark
-                    ? "bg-emerald-600/20 border border-emerald-500/30"
-                    : "bg-emerald-50/80 border border-emerald-200/50"
+                    ? "bg-slate-900 border border-slate-700"
+                    : "bg-white border border-slate-200"
                 }`}
               >
                 <View className="flex-row items-center mb-6">
-                  <Ionicons
-                    name="card"
+                  <CreditCard
                     size={24}
-                    color={isDark ? "#34d399" : "#059669"}
+                    color={isDark ? "#a3e635" : "#65a30d"}
                   />
                   <Text
-                    className={`text-xl font-bold ml-3 ${isDark ? "text-white" : "text-gray-900"}`}
+                    className={`text-xl font-brand font-bold ml-3 ${isDark ? "text-white" : "text-slate-900"}`}
                   >
                     Transaction Limits
                   </Text>
@@ -740,51 +740,51 @@ export default function ProfileScreen() {
                 <View className="space-y-4">
                   <View className="py-2">
                     <Text
-                      className={`text-base font-semibold mb-2 ${isDark ? "text-gray-300" : "text-gray-700"}`}
+                      className={`text-base font-semibold mb-2 ${isDark ? "text-slate-300" : "text-slate-700"}`}
                     >
                       Daily Limit
                     </Text>
                     <View
-                      className={`flex-row items-center rounded-xl ${
+                      className={`flex-row items-center rounded-2xl ${
                         isDark
-                          ? "bg-white/10 border border-white/20"
-                          : "bg-gray-50/80 border border-gray-200"
+                          ? "bg-slate-800 border border-slate-700"
+                          : "bg-slate-50 border border-slate-200"
                       }`}
                     >
-                      <View className="bg-emerald-600 px-3 py-3 rounded-l-xl">
-                        <Text className="text-white font-bold text-lg">₦</Text>
+                      <View className="bg-lime-400 px-3 py-3 rounded-l-2xl">
+                        <Text className="text-black font-bold text-lg">₦</Text>
                       </View>
                       <TextInput
-                        className={`flex-1 p-3 text-lg font-semibold ${isDark ? "text-white" : "text-gray-900"}`}
+                        className={`flex-1 p-3 text-lg font-semibold ${isDark ? "text-white" : "text-slate-900"}`}
                         value={dailyLimit}
                         onChangeText={setDailyLimit}
                         keyboardType="numeric"
-                        placeholderTextColor={isDark ? "#9CA3AF" : "#6B7280"}
+                        placeholderTextColor={isDark ? "#94a3b8" : "#64748b"}
                       />
                     </View>
                   </View>
                   <View className="py-2">
                     <Text
-                      className={`text-base font-semibold mb-2 ${isDark ? "text-gray-300" : "text-gray-700"}`}
+                      className={`text-base font-semibold mb-2 ${isDark ? "text-slate-300" : "text-slate-700"}`}
                     >
                       Monthly Limit
                     </Text>
                     <View
-                      className={`flex-row items-center rounded-xl ${
+                      className={`flex-row items-center rounded-2xl ${
                         isDark
-                          ? "bg-white/10 border border-white/20"
-                          : "bg-gray-50/80 border border-gray-200"
+                          ? "bg-slate-800 border border-slate-700"
+                          : "bg-slate-50 border border-slate-200"
                       }`}
                     >
-                      <View className="bg-emerald-600 px-3 py-3 rounded-l-xl">
-                        <Text className="text-white font-bold text-lg">₦</Text>
+                      <View className="bg-lime-400 px-3 py-3 rounded-l-2xl">
+                        <Text className="text-black font-bold text-lg">₦</Text>
                       </View>
                       <TextInput
-                        className={`flex-1 p-3 text-lg font-semibold ${isDark ? "text-white" : "text-gray-900"}`}
+                        className={`flex-1 p-3 text-lg font-semibold ${isDark ? "text-white" : "text-slate-900"}`}
                         value={monthlyLimit}
                         onChangeText={setMonthlyLimit}
                         keyboardType="numeric"
-                        placeholderTextColor={isDark ? "#9CA3AF" : "#6B7280"}
+                        placeholderTextColor={isDark ? "#94a3b8" : "#64748b"}
                       />
                     </View>
                   </View>
@@ -792,13 +792,13 @@ export default function ProfileScreen() {
               </View>
 
               <Pressable
-                className={`p-4 rounded-xl ${isDark ? "bg-lime-600" : "bg-lime-700"}`}
+                className="bg-lime-400 rounded-2xl py-4"
                 onPress={() => {
                   handleLimitUpdate();
                   setShowWalletModal(false);
                 }}
               >
-                <Text className="text-white text-center font-bold">
+                <Text className="text-black text-center font-bold">
                   Save & Close
                 </Text>
               </Pressable>
@@ -808,22 +808,21 @@ export default function ProfileScreen() {
               <View className="items-center mb-6">
                 <View
                   className={`w-16 h-16 rounded-full items-center justify-center mb-4 ${
-                    isDark ? "bg-orange-500/20" : "bg-orange-100"
+                    isDark ? "bg-lime-400/20" : "bg-lime-100"
                   }`}
                 >
-                  <Ionicons
-                    name="alert-circle"
+                  <AlertCircle
                     size={32}
-                    color={isDark ? "#fb923c" : "#ea580c"}
+                    color={isDark ? "#a3e635" : "#65a30d"}
                   />
                 </View>
                 <Text
-                  className={`text-2xl font-bold mb-2 ${isDark ? "text-white" : "text-gray-900"}`}
+                  className={`text-2xl font-brand font-bold mb-2 ${isDark ? "text-white" : "text-slate-900"}`}
                 >
                   Setup Wallet
                 </Text>
                 <Text
-                  className={`text-center ${isDark ? "text-gray-400" : "text-gray-600"}`}
+                  className={`text-center ${isDark ? "text-slate-400" : "text-slate-600"}`}
                 >
                   You need to setup your wallet account to start using payment
                   features
@@ -832,27 +831,26 @@ export default function ProfileScreen() {
 
               <View className="flex-row gap-2">
                 <Pressable
-                  className={`flex-1 p-4 rounded-xl backdrop-blur-xl ${
+                  className={`flex-1 p-4 rounded-2xl ${
                     isDark
-                      ? "bg-white/5 border border-white/10"
-                      : "bg-gray-100 border border-gray-200"
+                      ? "bg-slate-800 border border-slate-700"
+                      : "bg-slate-100 border border-slate-200"
                   }`}
                   onPress={() => setShowWalletModal(false)}
                 >
                   <Text
-                    className={`text-center font-bold ${isDark ? "text-white" : "text-gray-800"}`}
+                    className={`text-center font-bold ${isDark ? "text-white" : "text-slate-800"}`}
                   >
                     Cancel
                   </Text>
                 </Pressable>
                 <Pressable
-                  className={`flex-1 p-4 rounded-xl ${isDark ? "bg-orange-600" : "bg-orange-700"}`}
+                  className="flex-1 p-4 rounded-2xl bg-lime-400"
                   onPress={() => {
                     setShowWalletModal(false);
-                    // Navigate to wallet setup
                   }}
                 >
-                  <Text className="text-white text-center font-bold">
+                  <Text className="text-black text-center font-bold">
                     Setup Now
                   </Text>
                 </Pressable>
@@ -879,31 +877,27 @@ export default function ProfileScreen() {
           className={`flex-1 justify-center items-center px-5 ${isDark ? "bg-black/80" : "bg-black/40"}`}
         >
           <View
-            className={`rounded-2xl p-6 w-full backdrop-blur-xl ${
+            className={`rounded-2xl p-6 w-full ${
               isDark
-                ? "bg-white/10 border border-white/20"
-                : "bg-white/80 border border-gray-200/50"
+                ? "bg-slate-900 border border-slate-700"
+                : "bg-white border border-slate-200"
             }`}
           >
             <View className="items-center mb-6">
               <View
                 className={`w-16 h-16 rounded-full items-center justify-center mb-4 ${
-                  isDark ? "bg-lime-500/20" : "bg-lime-100"
+                  isDark ? "bg-lime-400/20" : "bg-lime-100"
                 }`}
               >
-                <Ionicons
-                  name="key"
-                  size={32}
-                  color={isDark ? "#84cc16" : "#65a30d"}
-                />
+                <Key size={32} color={isDark ? "#a3e635" : "#65a30d"} />
               </View>
               <Text
-                className={`text-2xl font-bold mb-2 ${isDark ? "text-white" : "text-gray-900"}`}
+                className={`text-2xl font-brand font-bold mb-2 ${isDark ? "text-white" : "text-slate-900"}`}
               >
                 {pinStep === "old" ? "Verify Current PIN" : "Set New PIN"}
               </Text>
               <Text
-                className={`text-center ${isDark ? "text-gray-400" : "text-gray-600"}`}
+                className={`text-center ${isDark ? "text-slate-400" : "text-slate-600"}`}
               >
                 {pinStep === "old"
                   ? "Enter your current 6-digit PIN"
@@ -913,13 +907,13 @@ export default function ProfileScreen() {
 
             {pinStep === "old" ? (
               <TextInput
-                className={`p-4 rounded-xl mb-4 text-lg backdrop-blur-xl ${
+                className={`p-4 rounded-2xl mb-4 text-lg ${
                   isDark
-                    ? "bg-white/10 border border-white/20 text-white"
-                    : "bg-white border-2 border-gray-200 text-gray-900"
+                    ? "bg-slate-800 border border-slate-700 text-white"
+                    : "bg-slate-50 border border-slate-200 text-slate-900"
                 }`}
                 placeholder="Current PIN"
-                placeholderTextColor={isDark ? "#9CA3AF" : "#6B7280"}
+                placeholderTextColor={isDark ? "#94a3b8" : "#64748b"}
                 value={oldPin}
                 onChangeText={setOldPin}
                 keyboardType="numeric"
@@ -930,13 +924,13 @@ export default function ProfileScreen() {
             ) : (
               <>
                 <TextInput
-                  className={`p-4 rounded-xl mb-4 text-lg backdrop-blur-xl ${
+                  className={`p-4 rounded-2xl mb-4 text-lg ${
                     isDark
-                      ? "bg-white/10 border border-white/20 text-white"
-                      : "bg-white border-2 border-gray-200 text-gray-900"
+                      ? "bg-slate-800 border border-slate-700 text-white"
+                      : "bg-slate-50 border border-slate-200 text-slate-900"
                   }`}
                   placeholder="New PIN"
-                  placeholderTextColor={isDark ? "#9CA3AF" : "#6B7280"}
+                  placeholderTextColor={isDark ? "#94a3b8" : "#64748b"}
                   value={newPin}
                   onChangeText={setNewPin}
                   keyboardType="numeric"
@@ -945,13 +939,13 @@ export default function ProfileScreen() {
                   autoFocus
                 />
                 <TextInput
-                  className={`p-4 rounded-xl mb-4 text-lg backdrop-blur-xl ${
+                  className={`p-4 rounded-2xl mb-4 text-lg ${
                     isDark
-                      ? "bg-white/10 border border-white/20 text-white"
-                      : "bg-white border-2 border-gray-200 text-gray-900"
+                      ? "bg-slate-800 border border-slate-700 text-white"
+                      : "bg-slate-50 border border-slate-200 text-slate-900"
                   }`}
                   placeholder="Confirm New PIN"
-                  placeholderTextColor={isDark ? "#9CA3AF" : "#6B7280"}
+                  placeholderTextColor={isDark ? "#94a3b8" : "#64748b"}
                   value={confirmPin}
                   onChangeText={setConfirmPin}
                   keyboardType="numeric"
@@ -963,10 +957,10 @@ export default function ProfileScreen() {
 
             <View className="flex-row gap-2">
               <Pressable
-                className={`flex-1 p-4 rounded-xl backdrop-blur-xl ${
+                className={`flex-1 p-4 rounded-2xl ${
                   isDark
-                    ? "bg-white/5 border border-white/10"
-                    : "bg-gray-100 border border-gray-200"
+                    ? "bg-slate-800 border border-slate-700"
+                    : "bg-slate-100 border border-slate-200"
                 }`}
                 onPress={() => {
                   setShowPinModal(false);
@@ -977,16 +971,16 @@ export default function ProfileScreen() {
                 }}
               >
                 <Text
-                  className={`text-center font-bold ${isDark ? "text-white" : "text-gray-800"}`}
+                  className={`text-center font-bold ${isDark ? "text-white" : "text-slate-800"}`}
                 >
                   Cancel
                 </Text>
               </Pressable>
               <Pressable
-                className={`flex-1 p-4 rounded-xl ${isDark ? "bg-lime-600" : "bg-lime-700"}`}
+                className="flex-1 p-4 rounded-2xl bg-lime-400"
                 onPress={handlePinChange}
               >
-                <Text className="text-white text-center font-bold">
+                <Text className="text-black text-center font-bold">
                   {pinStep === "old" ? "Continue" : "Update PIN"}
                 </Text>
               </Pressable>

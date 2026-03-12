@@ -27,7 +27,7 @@ const USSDCodeDetail = () => {
 
   if (loading) {
     return (
-      <SafeAreaView className="flex-1 bg-indigo-50">
+      <SafeAreaView className="flex-1 bg-lime-50">
         <View className="flex-1 justify-center items-center">
           <Text className="text-xl font-semibold text-gray-700">
             Loading USSD Details...

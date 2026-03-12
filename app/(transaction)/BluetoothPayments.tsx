@@ -1,9 +1,9 @@
 import BalanceCard from "@/components/ui/BalanceCard";
 import AmountInput from "@/components/ui/Input/AmountInput";
+import TransactionFailure from "@/components/ui/Modals/Transaction/TransactionFailure";
+import TransactionPin from "@/components/ui/Modals/Transaction/TransactionPinModal";
+import TransactionSuccess from "@/components/ui/Modals/Transaction/TransactionSuccess";
 import ScreenHeader from "@/components/ui/ScreenHeader";
-import TransactionFailure from "@/components/ui/Transaction/TransactionFailure";
-import TransactionPin from "@/components/ui/Transaction/TransactionPinModal";
-import TransactionSuccess from "@/components/ui/Transaction/TransactionSuccess";
 import BLEService from "@/lib/services/BLEService";
 import ToastService from "@/lib/services/ToastService";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
@@ -11,13 +11,13 @@ import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  FlatList,
-  Modal,
-  Text,
-  TouchableOpacity,
-  useColorScheme,
-  View,
+    ActivityIndicator,
+    FlatList,
+    Modal,
+    Pressable,
+    Text,
+    useColorScheme,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -268,7 +268,7 @@ const BluetoothPayments = () => {
           </View>
         </View> */}
 
-        <TouchableOpacity
+        <Pressable
           className={`p-4 rounded-2xl mb-4 ${
             isDark ? "bg-emerald-600" : "bg-emerald-700"
           }`}
@@ -279,9 +279,9 @@ const BluetoothPayments = () => {
               ? "Continue to Credit"
               : "Continue to Payment"}
           </Text>
-        </TouchableOpacity>
+        </Pressable>
 
-        <TouchableOpacity
+        <Pressable
           className={`p-4 rounded-2xl backdrop-blur-xl ${
             isDark
               ? "bg-white/5 border border-white/10"
@@ -304,7 +304,7 @@ const BluetoothPayments = () => {
               Receive Payment
             </Text>
           </View>
-        </TouchableOpacity>
+        </Pressable>
       </View>
 
       {/* <View className="flex-1 px-6">
@@ -315,7 +315,7 @@ const BluetoothPayments = () => {
               : "bg-white/60 border border-gray-200/50 shadow-sm"
           }`}
         >
-          <TouchableOpacity
+          <Pressable
             onPress={handleStartPayment}
             className={`p-6 rounded-2xl mb-4 ${
               isDark ? "bg-lime-600" : "bg-lime-700"
@@ -341,7 +341,7 @@ const BluetoothPayments = () => {
               </View>
               <Ionicons name="chevron-forward" size={24} color="white" />
             </View>
-          </TouchableOpacity>
+          </Pressable>
         </View>
       </View> */}
 
@@ -455,7 +455,7 @@ const BluetoothPayments = () => {
           </View>
         )}
 
-        <TouchableOpacity
+        <Pressable
           className={`p-4 rounded-2xl backdrop-blur-xl ${
             isDark
               ? "bg-white/5 border border-white/10"
@@ -470,7 +470,7 @@ const BluetoothPayments = () => {
           >
             Cancel Payment
           </Text>
-        </TouchableOpacity>
+        </Pressable>
       </View>
     </SafeAreaView>
   );
@@ -523,13 +523,13 @@ const BluetoothPayments = () => {
               >
                 {scanning ? "Scanning..." : "Select Payment Terminal"}
               </Text>
-              <TouchableOpacity onPress={() => setShowDeviceModal(false)}>
+              <Pressable onPress={() => setShowDeviceModal(false)}>
                 <MaterialCommunityIcons
                   name="close"
                   size={24}
                   color={isDark ? "white" : "black"}
                 />
-              </TouchableOpacity>
+              </Pressable>
             </View>
 
             {scanning ? (
@@ -551,7 +551,7 @@ const BluetoothPayments = () => {
                 data={availableTerminals}
                 keyExtractor={(item) => item.id}
                 renderItem={({ item }) => (
-                  <TouchableOpacity
+                  <Pressable
                     className={`p-4 rounded-xl mb-3 border ${
                       isDark
                         ? "bg-white/5 border-white/10"
@@ -597,7 +597,7 @@ const BluetoothPayments = () => {
                         </Text>
                       </View>
                     </View>
-                  </TouchableOpacity>
+                  </Pressable>
                 )}
               />
             )}
