@@ -10,7 +10,7 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        brand: ["AutourOne-Regular"],
+        brand: ["AutourOne"],
         // "brand-bold": ["Brand-Bold"],
         // "brand-italic":["Brand-Italic"],
       },

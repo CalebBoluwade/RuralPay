@@ -1,0 +1,80 @@
+{
+  "auth": {
+    "login": "Wọle",
+    "register": "Ṣẹda Akọọlẹ",
+    "welcomeBack": "Kaabo Pada",
+    "email": "Imeeli",
+    "password": "Ọrọ Aṣina",
+    "firstName": "Orukọ Akọkọ",
+    "lastName": "Orukọ Idile",
+    "phoneNumber": "Nọmba Foonu",
+    "confirmPassword": "Jẹrisi Ọrọ Aṣina",
+    "forgotPassword": "Gbagbe Ọrọ Aṣina?",
+    "alreadyHaveAccount": "Ṣe o ni akọọlẹ tẹlẹ?",
+    "dontHaveAccount": "Ko ni akọọlẹ?",
+    "signUp": "Forukọsilẹ"
+  },
+  "home": {
+    "balance": "Iye Owo",
+    "quickLinks": "Awọn Ọna Yara",
+    "recentTransactions": "Awọn Iṣowo Aipẹ",
+    "viewAll": "Wo Gbogbo",
+    "goodMorning": "Ẹ Kaaro",
+    "goodAfternoon": "Ẹ Kaasan",
+    "goodEvening": "Ẹ Kaalẹ"
+  },
+  "payments": {
+    "title": "Awọn Isanwo",
+    "voice": "Isanwo Ohùn",
+    "bluetooth": "Isanwo Bluetooth",
+    "bankTransfer": "Gbigbe Owo Ile-ifowopamọ",
+    "ussd": "Isanwo USSD",
+    "nfc": "Isanwo NFC",
+    "history": "Itan Iṣowo",
+    "merchant": "Awọn Iṣẹ Oniṣowo"
+  },
+  "transactions": {
+    "spendingTrackerSubtitle": "Nibo ni owo rẹ lọ?",
+    "transferMoneyDescription": "Gbigbe Owo Si Awọn Akọọlẹ Miiran"
+  },
+  "profile": {
+    "title": "Profaili",
+    "security": "Aabo ati Aṣiri",
+    "biometricLogin": "Wiwọle Biometric",
+    "transactionSecurity": "Aabo Iṣowo",
+    "visibleBalance": "Iye Owo Ti O Han",
+    "language": "Ede Ohun Elo",
+    "changePin": "Yi PIN Aabo Pada",
+    "spendingLimits": "Awọn Opin Inawo",
+    "dailyLimit": "Opin Inawo Ojoojumọ",
+    "monthlyLimit": "Opin Inawo Oṣooṣu",
+    "signOut": "Jade"
+  },
+  "common": {
+    "continue": "Tẹsiwaju",
+    "cancel": "Fagilee",
+    "save": "Fipamọ",
+    "confirm": "Jẹrisi",
+    "success": "Aṣeyọri",
+    "error": "Aṣiṣe",
+    "loading": "N ṣiṣẹ..."
+  },
+  "feedback": {
+    "mostLovedFeature": {
+      "label": "Kini o fẹran julọ?",
+      "placeholder": "a.p. Sisanwo pẹlu ifọwọkan yara gan"
+    },
+    "mostHatedFeature": {
+      "label": "Kini o n bi ọ ninu?",
+      "placeholder": "a.p. Owo ti a le gbe ko to nkankan"
+    },
+    "niceHaveFeature": {
+      "label": "Kini a le ṣe lati mu ki o pe iye?",
+      "placeholder": "a.p. Ipo dudu, pipin owo sisan..."
+    },
+    "generalFeedback": {
+      "label": "Njẹ o ni nkan miiran lọkan?",
+      "placeholder": "Sọ ero rẹ fun wa — a n ka gbogbo rẹ"
+    }
+  }
+}

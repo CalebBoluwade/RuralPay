@@ -19,3 +19,16 @@ if [ -f "$BUILD_GRADLE_PATH" ]; then
 else
     echo "❌ react-native-ble-advertiser build.gradle not found"
 fi
+
+# Fix react-native-hce jcenter() removal
+echo "Applying react-native-hce patch..."
+
+HCE_GRADLE_PATH="node_modules/react-native-hce/android/build.gradle"
+
+if [ -f "$HCE_GRADLE_PATH" ]; then
+    sed -i.bak '/^[[:space:]]*jcenter()/d' "$HCE_GRADLE_PATH"
+    rm -f "$HCE_GRADLE_PATH.bak"
+    echo "✅ react-native-hce patch applied successfully"
+else
+    echo "❌ react-native-hce build.gradle not found"
+fi

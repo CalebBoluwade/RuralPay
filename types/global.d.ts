@@ -1,8 +1,26 @@
 global {
   // --- Types ---
+  type AuthStep =
+    | "PIN"
+    | "Select-2FA"
+    | "Verify-2FA"
+    | "Confirm"
+    | "Success"
+    | "Failure";
 
   type TransferStatus = "PENDING_RECIPIENT" | "COMPLETED" | "FAILED";
   type TransactionType = "CREDIT" | "DEBIT" | "P2P_DEBIT" | "P2P_CREDIT";
+
+  type UserRegistrationStep =
+    | "personal"
+    | "merchant"
+    | "bvn"
+    | "phone-verify"
+    | "liveness"
+    | "pin"
+    | "success";
+
+  type KYCStatus = "VERIFIED" | "PENDING" | "FAILED" | "UNVERIFIED";
 
   type PaymentMode =
     | "CARD"
@@ -90,8 +108,6 @@ global {
     bvn: string;
     pushToken: string;
   }
-
-  type KYCStatus = "VERIFIED" | "PENDING" | "FAILED" | "UNVERIFIED";
 
   export interface User {
     id: string;
@@ -190,12 +206,22 @@ global {
     reference: string;
     currency: string;
     amount: number;
-    merchantId?: string;
+    toAccount: string;
+    profit?: string;
+    settlementDate?: string;
     fromAccount: string;
     narration?: string;
     status: string;
     txType: TransactionType;
     paymentMode: PaymentMode;
+  }
+
+  interface PaginatedTransactions {
+    transactions: TransactionHistory[];
+    total: number;
+    page: number;
+    limit: number;
+    hasMore: boolean;
   }
 
   interface Transaction {
@@ -313,15 +339,21 @@ global {
     lastUsed: string;
   }
 
+  interface BINData {
+    scheme: string;
+    bankName: string;
+  }
+
   interface PaymentCard {
     PAN: string;
     expiryDate: string;
-    bin: string;
+    BIN: string;
     last4: string;
   }
 
   interface CardInfo extends PaymentCard {
     success: boolean;
+    errorMessage?: string;
     PIN: string;
     cryptogram: string;
     issuerAppData: string;
@@ -329,7 +361,6 @@ global {
     ATC: number;
     CVR: string;
     cardNonce: string;
-
     cardholderName: string;
     applicationLabel: string;
     countryCode: string;
@@ -344,6 +375,7 @@ global {
   }
 
   interface CardDetailsResult {
+    BIN: string;
     success: boolean;
     message: string;
     transaction?: NFCCardTransaction;

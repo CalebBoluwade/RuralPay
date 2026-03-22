@@ -7,11 +7,11 @@ const OWNER = "calebjnr";
 
 // App production config
 const APP_NAME = "RuralPay";
-const BUNDLE_IDENTIFIER = "com.groovetech.ruralpay";
+const BUNDLE_IDENTIFIER = "com.zegiftedtechnologies.ruralpay";
 const APP_DOMAIN = "applinks:app.ruralpay.com";
-const PACKAGE_NAME = "com.groovetech.ruralpay";
-const ICON = "./assets/images/MS.png";
-const ADAPTIVE_ICON = "./assets/images/MS.png";
+const PACKAGE_NAME = "com.zegiftedtechnologies.ruralpay";
+const ICON = "./assets/images/RuralPayLogo.jpg";
+const ADAPTIVE_ICON = "./assets/images/RuralPayLogo.jpg";
 const SCHEME = "ruralpay";
 
 export default ({ config }: ConfigContext): ExpoConfig => {
@@ -22,7 +22,6 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       "APP_ENV or EXPO_PUBLIC_ENVIRONMENT environment variable is required",
     );
   }
-  console.log("⚙️ Building app for environment:", appEnv);
 
   const {
     name,
@@ -41,7 +40,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     slug: PROJECT_SLUG, // Must be consistent across all environments.
     orientation: "portrait",
     userInterfaceStyle: "automatic",
-    newArchEnabled: true,
+    // newArchEnabled: true,
     icon: icon,
     scheme: scheme,
     ios: {
@@ -72,9 +71,10 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       adaptiveIcon: {
         foregroundImage: adaptiveIcon,
         backgroundColor: "#ffffff",
-        backgroundImage: "./assets/images/MS.png",
-        monochromeImage: "./assets/images/MS.png",
+        backgroundImage: "./assets/images/RuralPayLogo.jpg",
+        monochromeImage: "./assets/images/RuralPayLogo.jpg",
       },
+      predictiveBackGestureEnabled: false,
       package: packageName,
       intentFilters: [
         {
@@ -90,8 +90,6 @@ export default ({ config }: ConfigContext): ExpoConfig => {
           category: ["BROWSABLE", "DEFAULT"],
         },
       ],
-      edgeToEdgeEnabled: true,
-      predictiveBackGestureEnabled: false,
       ...(googleServicesFile && { googleServicesFile }),
       permissions: [
         "android.permission.NFC",
@@ -127,16 +125,38 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       favicon: "./assets/images/favicon.png",
     },
     plugins: [
+      "expo-audio",
+      "expo-font",
+      "expo-image",
+      "expo-sharing",
+      "expo-web-browser",
+      "expo-router",
       [
-        "expo-router",
+        "expo-splash-screen",
         {
-          // asyncRoutes: true,
+          backgroundColor: "#208AEF",
+          android: {
+            image: ICON,
+            imageWidth: 76,
+          },
         },
       ],
+      //      [
+      //   "expo-splash-screen",
+      //   {
+      //     image: "./assets/images/RuralPaySplash.jpg",
+      //     imageWidth: 300,
+      //     resizeMode: "cover",
+      //     backgroundColor: "#ffffff",
+      //     dark: {
+      //       backgroundColor: "#000000",
+      //     },
+      //   },
+      // ],
       [
         "expo-notifications",
         {
-          icon: "./assets/images/MS.png",
+          icon: ICON,
           color: "#ffffff",
         },
       ],
@@ -150,60 +170,49 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         "expo-location",
         {
           locationAlwaysAndWhenInUsePermission:
-            "Allow $(PRODUCT_NAME) to use your location.",
+            "Allow $(PRODUCT_NAME) To Use Your Location For Transaction Security",
         },
       ],
       [
         "expo-camera",
         {
-          cameraPermission: "Allow $(PRODUCT_NAME) to access your camera",
+          cameraPermission: "Allow $(PRODUCT_NAME) To Access Your Camera",
           microphonePermission:
-            "Allow $(PRODUCT_NAME) to access your microphone",
+            "Allow $(PRODUCT_NAME) To Access Your Microphone",
           recordAudioAndroid: true,
         },
       ],
-      [
-        "expo-splash-screen",
-        {
-          image: "./assets/images/MS.png",
-          imageWidth: 200,
-          resizeMode: "contain",
-          backgroundColor: "#ffffff",
-          dark: {
-            backgroundColor: "#000000",
-          },
-        },
-      ],
-      [
-        "expo-sqlite",
-        {
-          enableFTS: true,
-          useSQLCipher: true,
-          android: {
-            enableFTS: false,
-            useSQLCipher: false,
-          },
-          ios: {
-            customBuildFlags: [
-              "-DSQLITE_ENABLE_DBSTAT_VTAB=1 -DSQLITE_ENABLE_SNAPSHOT=1",
-            ],
-          },
-        },
-      ],
+      // [
+      //   "expo-sqlite",
+      //   {
+      //     enableFTS: true,
+      //     useSQLCipher: true,
+      //     android: {
+      //       enableFTS: false,
+      //       useSQLCipher: false,
+      //     },
+      //     ios: {
+      //       customBuildFlags: [
+      //         "-DSQLITE_ENABLE_DBSTAT_VTAB=1 -DSQLITE_ENABLE_SNAPSHOT=1",
+      //       ],
+      //     },
+      //   },
+      // ],
       "expo-secure-store",
       [
         "expo-local-authentication",
         {
-          faceIDPermission: "Allow $(PRODUCT_NAME) to use Face ID.",
+          faceIDPermission: "Allow $(PRODUCT_NAME) to Use FACE ID.",
+          touchIDPermission: "Allow $(PRODUCT_NAME) to Use TOUCH ID",
         },
       ],
       [
         "expo-build-properties",
         {
           android: {
-            compileSdkVersion: 35,
+            compileSdkVersion: 36,
             targetSdkVersion: 35,
-            buildToolsVersion: "35.0.0",
+            buildToolsVersion: "36.0.0",
           },
         },
       ],
@@ -233,12 +242,12 @@ export const getDynamicAppConfig = (
 
   if (environment === "preview") {
     return {
-      name: `${APP_NAME} Preview`,
-      bundleIdentifier: BUNDLE_IDENTIFIER,
+      name: `${APP_NAME} Staging`,
+      bundleIdentifier: `${BUNDLE_IDENTIFIER}.staging`,
       packageName: PACKAGE_NAME,
       icon: ICON,
       adaptiveIcon: ADAPTIVE_ICON,
-      scheme: `${SCHEME}-prev`,
+      scheme: `${SCHEME}-preview`,
       googleServicesFile: "./google-services.json",
     };
   }
@@ -259,7 +268,7 @@ export const getApiUrl = (
   const envApiUrl = process.env.EXPO_PUBLIC_API_URL;
   if (!envApiUrl) {
     throw new Error(
-      `EXPO_PUBLIC_API_URL environment variable is required for ${environment} environment`,
+      `EXPO_PUBLIC_API_URL Environment Variable Required for ${environment} Environment`,
     );
   }
   return envApiUrl;

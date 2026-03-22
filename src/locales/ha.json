@@ -1,0 +1,81 @@
+{
+  "auth": {
+    "login": "Shiga",
+    "register": "Ƙirƙiri Asusun",
+    "welcomeBack": "Barka da Dawowa",
+    "email": "Imel",
+    "password": "Kalmar Sirri",
+    "firstName": "Suna Na Farko",
+    "lastName": "Sunan Iyali",
+    "phoneNumber": "Lambar Waya",
+    "confirmPassword": "Tabbatar da Kalmar Sirri",
+    "forgotPassword": "Ka Manta da Kalmar Sirri?",
+    "alreadyHaveAccount": "Kana da asusun?",
+    "dontHaveAccount": "Ba ka da asusun?",
+    "signUp": "Yi Rajista"
+  },
+  "home": {
+    "balance": "Ma'auni",
+    "quickLinks": "Hanyoyin Sauri",
+    "recentTransactions": "Ma'amaloli Na Baya-bayan Nan",
+    "viewAll": "Duba Duka",
+    "goodMorning": "Barka da Safiya",
+    "goodAfternoon": "Barka da Rana",
+    "goodEvening": "Barka da Yamma"
+  },
+  "payments": {
+    "title": "Biyan Kuɗi",
+    "voice": "Biyan Kuɗi Voice",
+    "bluetooth": "Biyan Kuɗi Bluetooth",
+    "bankTransfer": "Canja Wurin Kuɗin Banki",
+    "ussd": "Biyan Kuɗi USSD",
+    "nfc": "Biyan Kuɗi NFC",
+    "history": "Tarihin Ma'amala",
+    "merchant": "Ayyukan Kasuwanci"
+  },
+  "transactions": {
+    "spendingTrackerSubtitle": "Ina kuɗin ka ya tafi?",
+    "transferMoneyDescription": "Canja Kuɗi Zuwa Wasu Asusun"
+  },
+  "profile": {
+    "title": "Bayani",
+    "security": "Tsaro da Sirri",
+    "biometricLogin": "Shiga Biometric",
+    "transactionSecurity": "Tsaron Ma'amala",
+    "visibleBalance": "Ma'aunin Da Ake Gani",
+    "language": "Harshen App",
+    "changePin": "Canza PIN Tsaro",
+    "spendingLimits": "Iyakokin Kashewa",
+    "dailyLimit": "Iyakar Kashewa Ta Yau Da Kullun",
+    "monthlyLimit": "Iyakar Kashewa Ta Wata-wata",
+    "signOut": "Fita"
+  },
+  "common": {
+    "continue": "Ci Gaba",
+    "cancel": "Soke",
+    "save": "Ajiye",
+    "confirm": "Tabbatar",
+    "success": "Nasara",
+    "error": "Kuskure",
+    "loading": "Ana Lodi..."
+  },
+
+  "feedback": {
+    "mostLovedFeature": {
+      "label": "Mene ne kafi so?",
+      "placeholder": "misali. Biyan kuɗi ta hanyar taɓawa yana da sauri"
+    },
+    "mostHatedFeature": {
+      "label": "Mene ne ke ɓata maka rai?",
+      "placeholder": "misali. Iyakacin kuɗin aikewa ya yi kaɗan"
+    },
+    "niceHaveFeature": {
+      "label": "Mene ne zai sa wannan ya zama cikakke?",
+      "placeholder": "misali. Yanayin duhu, raba biyan kuɗi..."
+    },
+    "generalFeedback": {
+      "label": "Akwai wani abu a ranka?",
+      "placeholder": "Faɗa mana ra'ayinka — muna karanta komai"
+    }
+  }
+}

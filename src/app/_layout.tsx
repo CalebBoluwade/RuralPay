@@ -1,0 +1,129 @@
+import "@/global.css";
+import { ErrorBoundary } from "@/src/components/ErrorBoundary";
+import {
+  DarkTheme,
+  DefaultTheme,
+  ThemeProvider,
+} from "@react-navigation/native";
+import { useFonts } from "expo-font";
+import { isLiquidGlassAvailable } from "expo-glass-effect";
+import * as Notifications from "expo-notifications";
+import { router, SplashScreen, Stack } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import { useEffect } from "react";
+import { useColorScheme } from "react-native";
+import "react-native-reanimated";
+import { AuthProvider } from "../components/context/AuthProvider";
+import { LanguageProvider } from "../components/context/LanguageContext";
+import { ToastProvider } from "../components/context/ToastProvider";
+import ComplianceGuard from "../components/ui/ComplianceGuard";
+
+SplashScreen.preventAutoHideAsync();
+
+export default function RootLayout() {
+  const [loaded, error] = useFonts({
+    AutourOne: require("@/assets/fonts/AutourOne-Regular.ttf"),
+  });
+  const colorScheme = useColorScheme();
+
+  useEffect(() => {
+    const subscription = Notifications.addNotificationResponseReceivedListener(
+      (response) => {
+        const url = response.notification.request.content.data?.url;
+        if (url) router.push(url as any);
+      },
+    );
+    return () => subscription.remove();
+  }, []);
+
+  useEffect(() => {
+    if (loaded || error) SplashScreen.hideAsync();
+  }, [loaded, error]);
+
+  if (!loaded && !error) return null;
+
+  return (
+    <ErrorBoundary>
+      <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+        <ToastProvider>
+          <AuthProvider>
+            <LanguageProvider>
+              <ComplianceGuard>
+                {/* <Slot /> */}
+                <RootNavigator />
+
+                <StatusBar style="auto" />
+              </ComplianceGuard>
+            </LanguageProvider>
+          </AuthProvider>
+        </ToastProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
+  );
+}
+
+function RootNavigator() {
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === "dark";
+  const colorTheme = isDark ? "#f8fafc" : "#020617";
+
+  return (
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen
+        name="forgot-password"
+        options={{
+          presentation: "formSheet",
+          sheetGrabberVisible: true,
+          sheetAllowedDetents: [0.45],
+          contentStyle: {
+            backgroundColor: isLiquidGlassAvailable()
+              ? "transparent"
+              : colorTheme,
+          },
+        }}
+      />
+
+      <Stack.Screen
+        name="select-language"
+        options={{
+          presentation: "formSheet",
+          sheetGrabberVisible: true,
+          sheetAllowedDetents: [0.65],
+          contentStyle: {
+            backgroundColor: isLiquidGlassAvailable()
+              ? "transparent"
+              : colorTheme,
+          },
+        }}
+      />
+
+      <Stack.Screen
+        name="quick-links"
+        options={{
+          presentation: "formSheet",
+          sheetGrabberVisible: true,
+          sheetAllowedDetents: [0.65],
+          contentStyle: {
+            backgroundColor: isLiquidGlassAvailable()
+              ? "transparent"
+              : colorTheme,
+          },
+        }}
+      />
+
+      <Stack.Screen
+        name="screen-menu"
+        options={{
+          presentation: "formSheet",
+          sheetGrabberVisible: true,
+          sheetAllowedDetents: [0.56],
+          contentStyle: {
+            backgroundColor: isLiquidGlassAvailable()
+              ? "transparent"
+              : colorTheme,
+          },
+        }}
+      />
+    </Stack>
+  );
+}

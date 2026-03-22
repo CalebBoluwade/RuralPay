@@ -1,8 +1,8 @@
-import en from "./locales/en.json";
-import gZ from "./locales/gZ.json";
-import ha from "./locales/ha.json";
-import ig from "./locales/ig.json";
-import yo from "./locales/yo.json";
+import en from "./src/locales/en.json";
+import gZ from "./src/locales/gZ.json";
+import ha from "./src/locales/ha.json";
+import ig from "./src/locales/ig.json";
+import yo from "./src/locales/yo.json";
 
 export type Language = "en" | "gZ" | "yo" | "ig" | "ha";
 

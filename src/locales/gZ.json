@@ -1,0 +1,80 @@
+{
+  "auth": {
+    "login": "Log In",
+    "register": "Join the Squad",
+    "welcomeBack": "You're Back! 🔥",
+    "email": "Email",
+    "password": "Password",
+    "firstName": "First Name",
+    "lastName": "Last Name",
+    "phoneNumber": "Phone Number",
+    "confirmPassword": "Confirm Password",
+    "forgotPassword": "Forgot Password?",
+    "alreadyHaveAccount": "Already Part of the Geng?",
+    "dontHaveAccount": "New here?",
+    "signUp": "Join The Geng"
+  },
+  "home": {
+    "balance": "Your Bag 💰",
+    "quickLinks": "Quick Moves",
+    "recentTransactions": "Recent Moves",
+    "viewAll": "See Everything",
+    "goodMorning": "Morning Vibes ☀️",
+    "goodAfternoon": "Afternoon Energy ⚡",
+    "goodEvening": "Evening Mood 🌙"
+  },
+  "payments": {
+    "title": "Send It",
+    "voice": "Voice Banking",
+    "bluetooth": "Bluetooth Pay",
+    "bankTransfer": "Bank Transfer",
+    "ussd": "USSD Pay",
+    "nfc": "Tap to Pay",
+    "history": "Payment History",
+    "merchant": "Business Stuff"
+  },
+  "transactions": {
+    "spendingTrackerSubtitle": "Where'd Your Money Go? 👀",
+    "transferMoneyDescription": "Send Money to Your People"
+  },
+  "profile": {
+    "title": "Your Vibe",
+    "security": "Security & Privacy",
+    "biometricLogin": "Face/Touch ID",
+    "transactionSecurity": "Transaction Security",
+    "visibleBalance": "Show Balance",
+    "language": "App Language",
+    "changePin": "Change PIN",
+    "spendingLimits": "Spending Limits",
+    "dailyLimit": "Daily Limit",
+    "monthlyLimit": "Monthly Limit",
+    "signOut": "Peace Out ✌️"
+  },
+  "common": {
+    "continue": "Let's Go",
+    "cancel": "Nah",
+    "save": "Save It",
+    "confirm": "Bet",
+    "success": "W 🎉",
+    "error": "L 😬",
+    "loading": "Loading..."
+  },
+  "feedback": {
+    "mostLovedFeature": {
+      "label": "What Do You Love Most?",
+      "placeholder": "e.g. Tap-to-pay is super fast and seamless"
+    },
+    "mostHatedFeature": {
+      "label": "What Frustrates You?",
+      "placeholder": "e.g. The transfer limit feels too low"
+    },
+    "niceHaveFeature": {
+      "label": "What would make this perfect?",
+      "placeholder": "e.g. Dark mode scheduling, split payments..."
+    },
+    "generalFeedback": {
+      "label": "Anything else on your mind?",
+      "placeholder": "Share any other thoughts — we read every word"
+    }
+  }
+}
