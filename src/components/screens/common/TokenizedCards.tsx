@@ -1,4 +1,3 @@
-import PaymentCard from "@/src/components/PaymentCard";
 import AmountInput from "@/src/components/ui/Input/AmountInput";
 import PaymentMethodModal from "@/src/components/ui/Modals/Transaction/PaymentMethodModal";
 import ScreenHeader from "@/src/components/ui/ScreenHeader";
@@ -10,6 +9,7 @@ import { useForm } from "react-hook-form";
 import { ScrollView, useColorScheme } from "react-native";
 import PagerView from "react-native-pager-view";
 import { SafeAreaView } from "react-native-safe-area-context";
+import PaymentCard from "./PaymentCard";
 
 const TokenizedCards = () => {
   const colorScheme = useColorScheme();
