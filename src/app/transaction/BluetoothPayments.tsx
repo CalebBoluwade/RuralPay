@@ -1,8 +1,6 @@
 import BalanceCard from "@/src/components/ui/BalanceCard";
 import AmountInput from "@/src/components/ui/Input/AmountInput";
-import TransactionFailure from "@/src/components/ui/Modals/Transaction/TransactionFailure";
 import TransactionPin from "@/src/components/ui/Modals/Transaction/TransactionPinModal";
-import TransactionSuccess from "@/src/components/ui/Modals/Transaction/TransactionSuccess";
 import ScreenHeader from "@/src/components/ui/ScreenHeader";
 import BLEService from "@/src/lib/services/BLEService";
 import ToastService from "@/src/lib/services/ToastService";
@@ -11,13 +9,13 @@ import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    FlatList,
-    Modal,
-    Pressable,
-    Text,
-    useColorScheme,
-    View,
+  ActivityIndicator,
+  FlatList,
+  Modal,
+  Pressable,
+  Text,
+  useColorScheme,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -201,8 +199,12 @@ const BluetoothPayments = () => {
     }
   };
 
-  const handlePinSuccess = () => {
+  const handlePinSuccess = async (
+    TwoFA_VerificationCode: string,
+  ): Promise<boolean> => {
     setStep("TAP_CARD");
+
+    return true;
   };
 
   const handlePinCancel = () => {
@@ -357,11 +359,13 @@ const BluetoothPayments = () => {
 
   const renderEnterPin = () => (
     <TransactionPin
-      amount={amount}
-      recipient={""}
       paymentMessage={`Enter PIN to Confirm Bluetooth Payment of ₦${amount} to [{bankName}]`}
       showPinModal={true}
-      onSuccess={handlePinSuccess}
+      isLoading={false}
+      setIsLoading={() => {}}
+      error={"errorMessage"}
+      initiateTransaction={handlePinSuccess}
+      // transactionResult={transactionResult}
       onCancel={handlePinCancel}
     />
   );
@@ -480,28 +484,6 @@ const BluetoothPayments = () => {
       {step === "ENTER_DETAILS" && renderEnterDetails()}
       {step === "ENTER_PIN" && renderEnterPin()}
       {step === "BLE_PAYMENT" && renderBLEPayment()}
-      {step === "SUCCESS" && (
-        <TransactionSuccess
-          visible
-          data={{
-            amount: amount,
-            recipient: "BLE Payment",
-            reference: paymentResult?.transaction?.txId || "",
-            date: new Date().toLocaleDateString(),
-            type: "Bluetooth Payment",
-          }}
-          onClose={handleClose}
-          onDownloadReceipt={() => {}}
-        />
-      )}
-      {step === "FAILURE" && (
-        <TransactionFailure
-          visible
-          error={error}
-          onRetry={handleRetry}
-          onClose={handleClose}
-        />
-      )}
 
       <Modal
         visible={showDeviceModal}

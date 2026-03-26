@@ -472,20 +472,6 @@ const BankTransfers = () => {
           amount={Number.parseFloat(transferData?.amount || "0") || 0}
           onPaymentMethodSelected={handlePaymentMethodSelected}
         />
-
-        {/* <TransactionSuccess
-          visible={showSuccessModal}
-          data={transactionResult}
-          onClose={handleCloseSuccess}
-          onDownloadReceipt={handleDownloadReceipt}
-        /> */}
-
-        {/* <TransactionFailure
-          visible={showFailureModal}
-          error={errorMessage}
-          onRetry={handleRetry}
-          onClose={() => setShowFailureModal(false)}
-        /> */}
       </ScrollView>
     </SafeAreaView>
   );
