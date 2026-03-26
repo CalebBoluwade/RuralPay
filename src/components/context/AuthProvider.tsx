@@ -18,6 +18,7 @@ interface AuthContextType {
   visibleBalance: boolean;
   hasBiometricCredentials: boolean;
   hasRequiredConsents: boolean;
+  consentOutdated: boolean;
   login: (identifier: string, password: string) => Promise<void>;
   biometricLogin: () => Promise<void>;
   register: (data: RegisterData) => Promise<string>;
@@ -42,6 +43,7 @@ export function AuthProvider({
   const [visibleBalance, setVisibleBalance] = useState(true);
   const [hasBiometricCredentials, setHasBiometricCredentials] = useState(false);
   const [hasRequiredConsents, setHasRequiredConsents] = useState(false);
+  const [consentOutdated, setConsentOutdated] = useState(false);
 
   const [token, setToken] = useState<string | null>(null);
   const [isLocked, setIsLocked] = useState(false);
@@ -70,6 +72,9 @@ export function AuthProvider({
 
       const hasConsents = await complianceService.hasRequiredConsents();
       setHasRequiredConsents(hasConsents);
+
+      const outdated = await complianceService.isConsentOutdated();
+      setConsentOutdated(outdated);
     } catch (error) {
       console.error("Auth check failed:", error);
     } finally {
@@ -96,6 +101,9 @@ export function AuthProvider({
   const checkConsents = async () => {
     const hasConsents = await complianceService.hasRequiredConsents();
     setHasRequiredConsents(hasConsents);
+
+    const outdated = await complianceService.isConsentOutdated();
+    setConsentOutdated(outdated);
   };
 
   const login = async (identifier: string, password: string) => {
@@ -205,6 +213,7 @@ export function AuthProvider({
         visibleBalance,
         hasBiometricCredentials,
         hasRequiredConsents,
+        consentOutdated,
         login,
         biometricLogin,
         register,

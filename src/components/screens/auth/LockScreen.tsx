@@ -25,6 +25,8 @@ const LockScreen = () => {
     React.useState<boolean>(false);
   const [biometricType, setBiometricType] = React.useState("");
   const [isLoading, setIsLoading] = React.useState<boolean>(false);
+  const [lockSeconds, setLockSeconds] = React.useState<number>(0);
+  const isLocked = lockSeconds > 0;
   const codeLength = new Array(6).fill(0);
 
   const offset = useSharedValue(0);
@@ -38,17 +40,20 @@ const LockScreen = () => {
   const TIME = 80;
 
   const OnNumberPressDown = (num: number) => {
-    if (code.length < 6) {
-      // Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      // setCode((prev) => [...prev, num]);
-    }
+    if (isLocked || code.length >= 6) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setCode((prev) => [...prev, num]);
   };
 
-  // Check if device supports biometric authentication and if PIN exists
+  // Check biometric support and initial lock state
   useEffect(() => {
     (async () => {
-      const compatible = await biometricService.isBiometricAvailable();
+      const [compatible, remaining] = await Promise.all([
+        biometricService.isBiometricAvailable(),
+        PinService.getLockSecondsRemaining(),
+      ]);
       setIsBiometricSupported(compatible);
+      setLockSeconds(remaining);
 
       if (compatible) {
         const biometricTypes =
@@ -72,21 +77,32 @@ const LockScreen = () => {
     })();
   }, []);
 
+  // Countdown timer when locked
+  useEffect(() => {
+    if (lockSeconds <= 0) return;
+    const timer = setInterval(() => {
+      setLockSeconds((s) => {
+        if (s <= 1) { clearInterval(timer); return 0; }
+        return s - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [lockSeconds > 0]);
+
   useEffect(() => {
     if (code.length === 6) {
       const validatePin = async () => {
         try {
           const isValid = await PinService.ValidatePin(code.join(""));
-          console.log(isValid);
 
           if (isValid) {
             ToastService.success("PIN Is Correct");
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             setCode([]);
-
             await GetUserRefreshToken();
           } else {
-            ToastService.error("Incorrect PIN");
+            const remaining = await PinService.getLockSecondsRemaining();
+            if (remaining > 0) setLockSeconds(remaining);
 
             offset.value = withSequence(
               withTiming(-OFFSET, { duration: TIME / 2 }),
@@ -177,7 +193,7 @@ const LockScreen = () => {
             <Text
               className={`text-sm mb-6 ${isDark ? "text-gray-500" : "text-gray-500"}`}
             >
-              Enter your PIN
+              {isLocked ? `Too many attempts. Try again in ${lockSeconds}s` : "Enter your PIN"}
             </Text>
             <Animated.View
               // style={style}

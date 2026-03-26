@@ -1,5 +1,7 @@
+import axios from "axios";
 import * as SecureStore from "expo-secure-store";
 import { axiosInstance } from "../api";
+import { config } from "../config";
 import { ErrorHandler } from "../utils/ErrorHandler";
 import { DeviceService } from "./Device";
 import ToastService from "./ToastService";
@@ -103,10 +105,15 @@ class AuthService {
       const refreshToken = await SecureStore.getItemAsync(REFRESH_TOKEN_KEY);
       if (!refreshToken) return null;
 
-      const response = await axiosInstance.post("/auth/refresh", {
-        refreshToken,
-      });
-      const { token, refreshToken: newRefreshToken } = response as any;
+      // Use raw axios — bypasses the axiosInstance interceptors to prevent
+      // an infinite retry loop if the refresh endpoint itself returns 401.
+      const { data } = await axios.post(
+        `${config.apiUrl}/auth/refresh`,
+        { refreshToken },
+        { headers: { "Content-Type": "application/json" } },
+      );
+
+      const { token, refreshToken: newRefreshToken } = data?.details ?? data;
 
       await SecureStore.setItemAsync(AUTH_TOKEN_KEY, token);
       await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, newRefreshToken);

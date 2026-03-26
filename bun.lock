@@ -11,6 +11,8 @@
         "@react-navigation/bottom-tabs": "^7.15.5",
         "@react-navigation/elements": "^2.9.10",
         "@react-navigation/native": "^7.1.33",
+        "@stripe/stripe-react-native": "0.58.0",
+        "@stripe/stripe-terminal-react-native": "^0.0.1-beta.29",
         "@tensorflow-models/blazeface": "^0.1.0",
         "@tensorflow/tfjs": "^4.22.0",
         "@vladmandic/face-api": "^1.7.15",
@@ -70,6 +72,7 @@
         "react-native-reanimated": "4.2.1",
         "react-native-safe-area-context": "~5.6.0",
         "react-native-screens": "~4.23.0",
+        "react-native-ssl-public-key-pinning": "^1.2.6",
         "react-native-svg": "15.15.3",
         "react-native-web": "~0.21.0",
         "react-native-worklets": "0.7.2",
@@ -696,6 +699,10 @@
 
     "@standard-schema/utils": ["@standard-schema/utils@0.3.0", "", {}, "sha512-e7Mew686owMaPJVNNLs55PUvgz371nKgwsc4vxE49zsODpJEnxgxRo2y/OKrqueavXgZNMDVj3DdHFlaSAeU8g=="],
 
+    "@stripe/stripe-react-native": ["@stripe/stripe-react-native@0.58.0", "", { "peerDependencies": { "expo": ">=46.0.9", "react": "*", "react-native": "*", "react-native-webview": "*" }, "optionalPeers": ["expo", "react-native-webview"] }, "sha512-5JSx/4thMMubVewUZezIfWOrwkeSjAsMjusf1eR5A85MUxmbDer71gXbKSt+hjAuJfhqw4W6F4nCPqsYwPjUZA=="],
+
+    "@stripe/stripe-terminal-react-native": ["@stripe/stripe-terminal-react-native@0.0.1-beta.29", "", { "dependencies": { "base-64": "^1.0.0" }, "peerDependencies": { "react": "*", "react-native": "*" } }, "sha512-uAGU5/cDDxbh0ctOnVw3o8Wtj0hZFrN40iUiJxXvfa35MCkTUtRDZLoe1T1RDiW51Q8KluamBuJW65T1vgsM2Q=="],
+
     "@tensorflow-models/blazeface": ["@tensorflow-models/blazeface@0.1.0", "", { "peerDependencies": { "@tensorflow/tfjs-converter": "^4.10.0", "@tensorflow/tfjs-core": "^4.10.0" } }, "sha512-Qc5Wii8/OE5beC7XfehkhF9SEFLaPbVKnxxalV0T9JXsUynXqvLommc9Eko7b8zXKy4SJ1BtVlcX2cmCzQrn9A=="],
 
     "@tensorflow/tfjs": ["@tensorflow/tfjs@4.22.0", "", { "dependencies": { "@tensorflow/tfjs-backend-cpu": "4.22.0", "@tensorflow/tfjs-backend-webgl": "4.22.0", "@tensorflow/tfjs-converter": "4.22.0", "@tensorflow/tfjs-core": "4.22.0", "@tensorflow/tfjs-data": "4.22.0", "@tensorflow/tfjs-layers": "4.22.0", "argparse": "^1.0.10", "chalk": "^4.1.0", "core-js": "3.29.1", "regenerator-runtime": "^0.13.5", "yargs": "^16.0.3" }, "bin": { "tfjs-custom-module": "dist/tools/custom_module/cli.js" } }, "sha512-0TrIrXs6/b7FLhLVNmfh8Sah6JgjBPH4mZ8JGb7NU6WW+cx00qK5BcAZxw7NCzxj6N8MRAIfHq+oNbPUNG5VAg=="],
@@ -917,6 +924,8 @@
     "balanced-match": ["balanced-match@1.0.2", "", {}, "sha512-3oSeUO0TMV67hN1AmbXsK4yaqU7tjiHlbxRDZOpH0KW9+CeX4bRAaX0Anxt0tx2MrpRpWwQaPwIlISEJhYU5Pw=="],
 
     "barcode-detector": ["barcode-detector@3.1.1", "", { "dependencies": { "zxing-wasm": "3.0.1" } }, "sha512-ghWlEAV93ZCUniO7Co3ih/01XPm+U30CV+NoPbO6Chj5lZzHydDAqKlrBEd+37TkoR+QTH3tnnwd8k8epGTfIg=="],
+
+    "base-64": ["base-64@1.0.0", "", {}, "sha512-kwDPIFCGx0NZHog36dj+tHiwP4QMzsZ3AgMViUBKI0+V5n4U0ufTCUMhnQ04diaRI8EX/QcPfql7zlhZ7j4zgg=="],
 
     "base64-js": ["base64-js@1.5.1", "", {}, "sha512-AKpaYlHn8t4SVbOHCy+b5+KKgvR4vrsD8vbvrbiQJps7fKDTkjkDry6ji0rUJjC0kzbNePLwzxq8iypo41qeWA=="],
 
@@ -1923,6 +1932,8 @@
     "react-native-safe-area-context": ["react-native-safe-area-context@5.6.2", "", { "peerDependencies": { "react": "*", "react-native": "*" } }, "sha512-4XGqMNj5qjUTYywJqpdWZ9IG8jgkS3h06sfVjfw5yZQZfWnRFXczi0GnYyFyCc2EBps/qFmoCH8fez//WumdVg=="],
 
     "react-native-screens": ["react-native-screens@4.23.0", "", { "dependencies": { "react-freeze": "^1.0.0", "warn-once": "^0.1.0" }, "peerDependencies": { "react": "*", "react-native": "*" } }, "sha512-XhO3aK0UeLpBn4kLecd+J+EDeRRJlI/Ro9Fze06vo1q163VeYtzfU9QS09/VyDFMWR1qxDC1iazCArTPSFFiPw=="],
+
+    "react-native-ssl-public-key-pinning": ["react-native-ssl-public-key-pinning@1.2.6", "", { "peerDependencies": { "react": "*", "react-native": "*" } }, "sha512-WrWCRgXSet/lw8VVgrnTM5RXI+YWmSxE4+PmWcxFOUq7Kea+arkYASvDD1Dajw6yFGEw4GYuvIRdp6s7KxO60Q=="],
 
     "react-native-svg": ["react-native-svg@15.15.3", "", { "dependencies": { "css-select": "^5.1.0", "css-tree": "^1.1.3", "warn-once": "0.1.1" }, "peerDependencies": { "react": "*", "react-native": "*" } }, "sha512-/k4KYwPBLGcx2f5d4FjE+vCScK7QOX14cl2lIASJ28u4slHHtIhL0SZKU7u9qmRBHxTCKPoPBtN6haT1NENJNA=="],
 

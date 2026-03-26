@@ -1,3 +1,3 @@
-import SelectLanguageScreen from "../components/screens/SelectLanguageScreen";
+import SelectLanguageScreen from "@/src/components/screens/common/SelectLanguageScreen";
 
 export default SelectLanguageScreen;

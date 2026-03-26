@@ -1,4 +1,8 @@
 import { axiosInstance } from "@/src/lib/api";
+import * as Crypto from "expo-crypto";
+import { integrityService } from "./IntegrityService";
+
+const INTEGRITY_ERROR = "Payment blocked: device security compromised";
 
 class PaymentService {
   async MakeAirtimePurchase(
@@ -25,6 +29,8 @@ class PaymentService {
   async B2BTransfer(
     payload: TransferPayload,
   ): Promise<APIResponse<TransactionHistory>> {
+    if (await integrityService.isDeviceCompromised())
+      throw new Error(INTEGRITY_ERROR);
     const response = await axiosInstance.post<APIResponse<TransactionHistory>>(
       "/payments",
       payload,
@@ -35,6 +41,8 @@ class PaymentService {
   async MakeNFCCardPayment(
     payload: NFCCardTransaction,
   ): Promise<APIResponse<TransactionHistory>> {
+    if (await integrityService.isDeviceCompromised())
+      throw new Error(INTEGRITY_ERROR);
     const response = await axiosInstance.post<APIResponse<TransactionHistory>>(
       "/payments",
       payload,
@@ -44,8 +52,13 @@ class PaymentService {
 
   generateTransactionId(mode?: PaymentMode): string {
     const timestamp = Date.now();
-    const random = Math.floor(Math.random() * 1000000);
-    return `TX-${timestamp}-${random}`;
+    const [b0, b1, b2] = Crypto.getRandomBytes(3);
+    const random = ((b0 << 16) | (b1 << 8) | b2)
+      .toString(16)
+      .toUpperCase()
+      .padStart(6, "0");
+    const prefix = mode ? mode.replace(/_/g, "-") : "TX";
+    return `${prefix}-${timestamp}-${random}`;
   }
 
   async FetchAllTransactions(
@@ -97,50 +110,10 @@ class PaymentService {
   }
 
   async FetchVouchers(vasType: string): Promise<Voucher[]> {
-    // Simulated API — replace with axiosInstance call when endpoint is ready
-    const mock: Voucher[] = [
-      {
-        id: "v1",
-        voucherCode: "AIRTIME10",
-        voucherDescription: "₦10 off Airtime",
-        voucherDiscountAmount: 10,
-        voucherType: "FIXED",
-        voucherAllowedServices: ["airtime"],
-      },
-      {
-        id: "v2",
-        voucherCode: "AIR20PCT",
-        voucherDescription: "20% off Airtime",
-        voucherDiscountAmount: 20,
-        voucherType: "PERCENT",
-        voucherAllowedServices: ["airtime"],
-      },
-      {
-        id: "v3",
-        voucherCode: "TIX500",
-        voucherDescription: "₦500 off tickets",
-        voucherDiscountAmount: 500,
-        voucherType: "FIXED",
-        voucherAllowedServices: ["tickets"],
-      },
-      {
-        id: "v4",
-        voucherCode: "SAVE15",
-        voucherDescription: "15% off any VAS",
-        voucherDiscountAmount: 15,
-        voucherType: "PERCENT",
-        voucherAllowedServices: ["airtime", "tickets", "data", "general"],
-      },
-      {
-        id: "v5",
-        voucherCode: "DATA200",
-        voucherDescription: "₦200 off data",
-        voucherDiscountAmount: 200,
-        voucherType: "FIXED",
-        voucherAllowedServices: ["data"],
-      },
-    ];
-    return mock.filter((v) =>
+    const response =
+      await axiosInstance.get<APIResponse<Voucher[]>>("/vouchers");
+
+    return response.details.filter((v) =>
       v.voucherAllowedServices.includes(vasType as VASType),
     );
   }

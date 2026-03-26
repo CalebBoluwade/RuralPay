@@ -3,6 +3,7 @@ import NFCPayments from "@/src/components/screens/merchant/CardTapNFCPayments";
 import MerchantQRModal from "@/src/components/screens/merchant/MerchantQR";
 import VirtualAccounts from "@/src/components/screens/merchant/VirtualAccounts";
 import ScreenHeader from "@/src/components/ui/ScreenHeader";
+import MerchantService from "@/src/lib/services/MerchantService";
 import { router } from "expo-router";
 import {
   BarChart2,
@@ -100,22 +101,31 @@ export default function MerchantDashboard() {
   const [showMerchantPayModal, setShowMerchantPayModal] = useState(false);
   const [showMerchantQRModal, setShowMerchantQRModal] = useState(false);
   const [showVAModal, setShowVAModal] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
-  const [stats] = useState({ revenue: 124500, transactions: 89 });
+  const [stats, setStats] = useState<MerchantDetails | null>(null);
 
   const headerAnim = useFadeSlide(0);
   const statsAnim = useFadeSlide(80);
   const actionsAnim = useFadeSlide(160);
   const menuAnim = useFadeSlide(240);
 
+  const fetchStats = async () => {
+    const data = await MerchantService.GetMerchantAnalytics();
+    setStats(data);
+  };
+
   useEffect(() => {
-    setIsInitialLoad(false);
+    fetchStats().finally(() => {
+      setLoading(false);
+      setIsInitialLoad(false);
+    });
   }, []);
 
   const handleRefresh = async () => {
     setRefreshing(true);
+    await fetchStats();
     setRefreshing(false);
   };
 
@@ -186,9 +196,14 @@ export default function MerchantDashboard() {
           {[
             {
               label: "Today's Revenue",
-              value: `₦${stats.revenue.toLocaleString()}`,
+              value: loading
+                ? "—"
+                : `₦${(stats?.todayCompletedVolume ?? 0).toLocaleString()}`,
             },
-            { label: "Transactions", value: String(stats.transactions) },
+            {
+              label: "Today's Transactions",
+              value: loading ? "—" : String(stats?.todayCompletedCount ?? 0),
+            },
           ].map((stat) => (
             <View
               key={stat.label}
@@ -199,11 +214,19 @@ export default function MerchantDashboard() {
               >
                 {stat.label}
               </Text>
-              <Text
-                className={`text-2xl font-bold ${isDark ? "text-white" : "text-slate-900"}`}
-              >
-                {stat.value}
-              </Text>
+              {loading ? (
+                <View
+                  className={`h-8 w-24 rounded-lg mt-1 ${
+                    isDark ? "bg-white/10" : "bg-slate-200"
+                  }`}
+                />
+              ) : (
+                <Text
+                  className={`text-2xl font-bold ${isDark ? "text-white" : "text-slate-900"}`}
+                >
+                  {stat.value}
+                </Text>
+              )}
             </View>
           ))}
         </Animated.View>

@@ -1,3 +1,4 @@
+import Constants from "expo-constants";
 import * as SecureStore from "expo-secure-store";
 
 export interface PrivacyConsent {
@@ -15,10 +16,20 @@ export interface ComplianceConsent {
   version: string;
 }
 
-class ComplianceService {
+export class ComplianceService {
   private static readonly PRIVACY_CONSENT_KEY = "privacy_consent";
   private static readonly COMPLIANCE_CONSENT_KEY = "compliance_consent";
-  private static readonly CURRENT_VERSION = "1.0.0";
+
+  /**
+   * Priority: EXPO_PUBLIC_CONSENT_VERSION env var → package.json version via
+   * expo-constants → hardcoded fallback.
+   * Bump EXPO_PUBLIC_CONSENT_VERSION in your .env files to re-prompt all
+   * existing users on next launch without a code change.
+   */
+  static readonly CURRENT_VERSION: string =
+    process.env.EXPO_PUBLIC_CONSENT_VERSION ??
+    Constants.expoConfig?.version ??
+    "1.0.0";
 
   async getPrivacyConsent(): Promise<PrivacyConsent | null> {
     try {
@@ -67,8 +78,25 @@ class ComplianceService {
   async hasRequiredConsents(): Promise<boolean> {
     const privacy = await this.getPrivacyConsent();
     const compliance = await this.getComplianceConsent();
-    
+
     return !!(privacy?.dataCollection && compliance?.privacyPolicy && compliance?.termsOfService);
+  }
+
+  /**
+   * Returns true when the user has previously consented but their stored
+   * version is older than CURRENT_VERSION — meaning they must re-consent.
+   */
+  async isConsentOutdated(): Promise<boolean> {
+    const privacy = await this.getPrivacyConsent();
+    const compliance = await this.getComplianceConsent();
+
+    // No stored consent at all — not "outdated", just missing (handled by hasRequiredConsents)
+    if (!privacy || !compliance) return false;
+
+    return (
+      privacy.version !== ComplianceService.CURRENT_VERSION ||
+      compliance.version !== ComplianceService.CURRENT_VERSION
+    );
   }
 
   async clearAllConsents(): Promise<void> {

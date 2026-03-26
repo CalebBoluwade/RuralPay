@@ -68,6 +68,8 @@ const TransactionPin: React.FC<TransactionPinProps> = ({
   const [showPinSetup, setShowPinSetup] = React.useState<boolean>(false);
   const [currentStep, setCurrentStep] = React.useState<AuthStep>("PIN");
   const [selected2FA, setSelected2FA] = React.useState<string>("");
+  const [lockSeconds, setLockSeconds] = React.useState<number>(0);
+  const isLocked = lockSeconds > 0;
   const codeLength = new Array(6).fill(0);
 
   const handleDownloadReceipt = async () => {
@@ -157,6 +159,9 @@ const TransactionPin: React.FC<TransactionPinProps> = ({
         return;
       }
 
+      const remaining = await PinService.getLockSecondsRemaining();
+      setLockSeconds(remaining);
+
       const compatible = await biometricService.isBiometricAvailable();
       setIsBiometricSupported(compatible);
 
@@ -192,11 +197,22 @@ const TransactionPin: React.FC<TransactionPinProps> = ({
   const OFFSET = 20;
   const TIME = 80;
 
+  // Countdown timer when locked
+  useEffect(() => {
+    if (lockSeconds <= 0) return;
+    const timer = setInterval(() => {
+      setLockSeconds((s) => {
+        if (s <= 1) { clearInterval(timer); return 0; }
+        return s - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [lockSeconds > 0]);
+
   const OnNumberPressDown = (num: number) => {
-    if (code.length < 6) {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      setCode((prev) => [...prev, num]);
-    }
+    if (isLocked || code.length >= 6) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setCode((prev) => [...prev, num]);
   };
 
   const RenderButton = (num: number) => (
@@ -240,7 +256,7 @@ const TransactionPin: React.FC<TransactionPinProps> = ({
         <Text
           className={`text-base font-semibold text-center ${isDark ? "text-gray-400" : "text-gray-600"}`}
         >
-          {paymentMessage}
+          {isLocked ? `Too many attempts. Try again in ${lockSeconds}s` : paymentMessage}
         </Text>
       </View>
 
@@ -517,7 +533,8 @@ const TransactionPin: React.FC<TransactionPinProps> = ({
             setCode([]);
             setCurrentStep("Select-2FA");
           } else {
-            ToastService.error("Incorrect PIN");
+            const remaining = await PinService.getLockSecondsRemaining();
+            if (remaining > 0) setLockSeconds(remaining);
 
             offset.value = withSequence(
               withTiming(-OFFSET, { duration: TIME / 2 }),

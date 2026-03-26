@@ -1,6 +1,6 @@
 import { useAuth } from "@/src/components/context/AuthProvider";
 import ScreenHeader from "@/src/components/ui/ScreenHeader";
-import { complianceService } from "@/src/lib/services/ComplianceService";
+import { complianceService, ComplianceService } from "@/src/lib/services/ComplianceService";
 import { router } from "expo-router";
 import {
   Check,
@@ -23,7 +23,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function PrivacyPolicyModal() {
-  const { checkConsents } = useAuth();
+  const { checkConsents, consentOutdated } = useAuth();
   const isDark = useColorScheme() === "dark";
   const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
@@ -56,6 +56,34 @@ export default function PrivacyPolicyModal() {
       />
 
       <View className="flex-1 px-6 py-5">
+      {/* Re-consent update banner */}
+        {consentOutdated && (
+          <View
+            className={`mx-6 mb-4 px-4 py-3 rounded-2xl flex-row items-start gap-3 ${
+              isDark ? "bg-amber-500/15 border border-amber-500/30" : "bg-amber-50 border border-amber-200"
+            }`}
+          >
+            <Text className="text-lg">📋</Text>
+            <View className="flex-1">
+              <Text
+                className={`text-sm font-bold mb-0.5 ${
+                  isDark ? "text-amber-300" : "text-amber-800"
+                }`}
+              >
+                Policies Updated — v{ComplianceService.CURRENT_VERSION}
+              </Text>
+              <Text
+                className={`text-xs leading-4 ${
+                  isDark ? "text-amber-400/80" : "text-amber-700"
+                }`}
+              >
+                We’ve made changes since you last agreed. Please review and
+                re-accept to continue.
+              </Text>
+            </View>
+          </View>
+        )}
+
         {/* Tab Selector */}
         <View
           className={`flex-row rounded-2xl p-2 mb-6 ${isDark ? "bg-white/10" : "bg-gray-100"}`}

@@ -5,6 +5,7 @@ import NfcManager, { Ndef, NfcTech } from "react-native-nfc-manager";
 
 import { ErrorHandler } from "../utils/ErrorHandler";
 import EncryptionService from "./EncryptionService";
+import { integrityService } from "./IntegrityService";
 import PaymentService from "./PaymentService";
 import ToastService from "./ToastService";
 
@@ -65,13 +66,6 @@ class NFCService {
       ToastService.error("Failed to initialize NFC");
       return false;
     }
-  }
-
-  generateCardId() {
-    return (
-      Math.random().toString(36).substring(2, 15) +
-      Math.random().toString(36).substring(2, 15)
-    );
   }
 
   async isSupported() {
@@ -367,6 +361,15 @@ class NFCService {
     cardPIN: string;
   }): Promise<CardDetailsResult> {
     try {
+      const compromised = await integrityService.isDeviceCompromised();
+      if (compromised) {
+        return {
+          success: false,
+          BIN: "",
+          message: "Payment Rejected: device security compromised",
+        };
+      }
+
       ToastService.info("Hold Card Near Device...");
 
       if (amount <= 0) {
@@ -531,11 +534,7 @@ class NFCService {
 
   // Utility functions
   generateNonce(length: number): number[] {
-    const array = new Uint8Array(length);
-    for (let i = 0; i < length; i++) {
-      array[i] = Math.floor(Math.random() * 256);
-    }
-    return Array.from(array);
+    return Array.from(Crypto.getRandomBytes(length));
   }
 
   hexToBytes(hex: string): number[] {
@@ -656,6 +655,11 @@ class NFCService {
 
   async readCard(): Promise<CardInfo> {
     try {
+      const compromised = await integrityService.isDeviceCompromised();
+      if (compromised) {
+        throw new Error("NFC read blocked: device security compromised");
+      }
+
       if (this.isReading) {
         throw new Error("Card Reading Already in Progress");
       }
@@ -1257,7 +1261,8 @@ class NFCService {
   ): { hex: string; nonce: string } {
     let dataPacket = "";
     // Generate a 4-byte random nonce (Unpredictable Number)
-    const nonce = Math.floor(Math.random() * 0xffffffff)
+    const [b0, b1, b2, b3] = Crypto.getRandomBytes(4);
+    const nonce = (((b0 << 24) | (b1 << 16) | (b2 << 8) | b3) >>> 0)
       .toString(16)
       .padStart(8, "0")
       .toUpperCase();

@@ -161,7 +161,9 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         },
       ],
       "./plugins/withModularHeaders",
+      "./plugins/withMavenCentral",
       "./plugins/withBLEPermissions",
+      "./plugins/withScreenSecurity",
       [
         "react-native-nfc-manager",
         { nfcReaderUsageDescription: "Allow NFC to Scan Devices." },
@@ -169,19 +171,18 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       [
         "expo-location",
         {
-          locationAlwaysAndWhenInUsePermission:
-            "Allow $(PRODUCT_NAME) To Use Your Location For Transaction Security",
+          locationAlwaysAndWhenInUsePermission: `Allow ${APP_NAME} To Use Your Location For Transaction Security`,
         },
       ],
       [
         "expo-camera",
         {
-          cameraPermission: "Allow $(PRODUCT_NAME) To Access Your Camera",
-          microphonePermission:
-            "Allow $(PRODUCT_NAME) To Access Your Microphone",
+          cameraPermission: `Allow ${APP_NAME} To Access Your Camera`,
+          microphonePermission: `Allow ${APP_NAME} To Access Your Microphone`,
           recordAudioAndroid: true,
         },
       ],
+      ["@stripe/stripe-react-native", {}],
       // [
       //   "expo-sqlite",
       //   {
@@ -202,8 +203,9 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       [
         "expo-local-authentication",
         {
-          faceIDPermission: "Allow $(PRODUCT_NAME) to Use FACE ID.",
-          touchIDPermission: "Allow $(PRODUCT_NAME) to Use TOUCH ID",
+          faceIDPermission: `Allow ${APP_NAME} to Use FACE ID.`,
+          fingerprintPermission: `Allow ${APP_NAME} to Use FINGERPRINT`,
+          touchIDPermission: `Allow ${APP_NAME} to Use TOUCH ID`,
         },
       ],
       [
@@ -213,6 +215,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
             compileSdkVersion: 36,
             targetSdkVersion: 35,
             buildToolsVersion: "36.0.0",
+            minSdkVersion: 26,
           },
         },
       ],

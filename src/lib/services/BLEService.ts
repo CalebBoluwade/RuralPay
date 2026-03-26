@@ -13,7 +13,10 @@ const fromBase64 = (b64: string): Uint8Array =>
   Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
 
 const readUInt32LE = (buf: Uint8Array, offset: number): number =>
-  buf[offset] | (buf[offset + 1] << 8) | (buf[offset + 2] << 16) | (buf[offset + 3] << 24);
+  buf[offset] |
+  (buf[offset + 1] << 8) |
+  (buf[offset + 2] << 16) |
+  (buf[offset + 3] << 24);
 
 // UUIDs for the Broadcast Handshake Protocol
 const MERCHANT_SERVICE_UUID = "12345678-1234-1234-1234-123456789abc";
@@ -343,10 +346,6 @@ class BLEService {
     this.manager.stopDeviceScan();
     await this.stopAdvertising();
     return { success: true };
-  }
-
-  private generatePaymentId(): string {
-    return `PAY-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   }
 
   private getReadableDistance(rssi: number): string {

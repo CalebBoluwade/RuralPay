@@ -15,6 +15,7 @@ import {
   Clock,
   CreditCard,
   KeyRound,
+  Nfc,
   QrCode,
   Receipt,
   Store,
@@ -64,6 +65,12 @@ const QUICK_ACTIONS: {
     label: "Cards",
     icon: CreditCard,
     route: "/transaction/Cards",
+  },
+  {
+    id: "tap",
+    label: "Tap Pay",
+    icon: Nfc,
+    route: "user/tapPayments",
   },
 ] as const;
 

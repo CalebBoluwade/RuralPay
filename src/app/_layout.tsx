@@ -17,6 +17,7 @@ import { AuthProvider } from "../components/context/AuthProvider";
 import { LanguageProvider } from "../components/context/LanguageContext";
 import { ToastProvider } from "../components/context/ToastProvider";
 import ComplianceGuard from "../components/ui/ComplianceGuard";
+import { pinningService } from "../lib/services/PinningService";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -25,6 +26,10 @@ export default function RootLayout() {
     AutourOne: require("@/assets/fonts/AutourOne-Regular.ttf"),
   });
   const colorScheme = useColorScheme();
+
+  useEffect(() => {
+    pinningService.initialize();
+  }, []);
 
   useEffect(() => {
     const subscription = Notifications.addNotificationResponseReceivedListener(
@@ -70,6 +75,20 @@ function RootNavigator() {
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen
+        name="screen-menu"
+        options={{
+          presentation: "formSheet",
+          sheetGrabberVisible: true,
+          sheetAllowedDetents: [0.56],
+          contentStyle: {
+            backgroundColor: isLiquidGlassAvailable()
+              ? "transparent"
+              : colorTheme,
+          },
+        }}
+      />
+
+      <Stack.Screen
         name="forgot-password"
         options={{
           presentation: "formSheet",
@@ -103,20 +122,6 @@ function RootNavigator() {
           presentation: "formSheet",
           sheetGrabberVisible: true,
           sheetAllowedDetents: [0.65],
-          contentStyle: {
-            backgroundColor: isLiquidGlassAvailable()
-              ? "transparent"
-              : colorTheme,
-          },
-        }}
-      />
-
-      <Stack.Screen
-        name="screen-menu"
-        options={{
-          presentation: "formSheet",
-          sheetGrabberVisible: true,
-          sheetAllowedDetents: [0.56],
           contentStyle: {
             backgroundColor: isLiquidGlassAvailable()
               ? "transparent"
