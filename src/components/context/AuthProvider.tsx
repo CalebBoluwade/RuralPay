@@ -76,7 +76,7 @@ export function AuthProvider({
       const outdated = await complianceService.isConsentOutdated();
       setConsentOutdated(outdated);
     } catch (error) {
-      console.error("Auth check failed:", error);
+      if (__DEV__) console.error("Auth check failed:", error);
     } finally {
       setIsLoading(false);
     }
@@ -89,7 +89,7 @@ export function AuthProvider({
     const decoded: any = jwtDecode(token);
     const expiry = decoded.exp * 1000;
 
-    console.log("Az Expired: " + expiry, expiry - Date.now());
+    if (__DEV__) console.log("Az Expired: " + expiry, expiry - Date.now());
 
     const timeout = setTimeout(() => {
       logout();

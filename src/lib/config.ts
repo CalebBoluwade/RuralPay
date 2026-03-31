@@ -21,9 +21,10 @@ const getConfig = (): AppConfig => {
     "development";
 
   if (!apiUrl) {
-    console.error("Platform:", Platform.OS);
-    console.error("Environment variables:", process.env);
-    console.error("Expo config extra:", Constants.expoConfig?.extra);
+    if (__DEV__) console.error("Platform:", Platform.OS);
+    if (__DEV__) console.error("Environment variables:", process.env);
+    if (__DEV__)
+      console.error("Expo config extra:", Constants.expoConfig?.extra);
     throw new Error(
       "API URL is not configured. Please set EXPO_PUBLIC_API_URL environment variable or configure it in app.json extra field.",
     );

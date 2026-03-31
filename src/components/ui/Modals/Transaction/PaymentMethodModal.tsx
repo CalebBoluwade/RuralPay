@@ -182,7 +182,7 @@ const PaymentMethodActions: React.FC<PaymentMethodActionsProps> = ({
             ToastService.info("Starting payment server...");
             await BLEService.startAdvertising({ amount });
             const result = await BLEService.startPaymentServer((payment) => {
-              console.log(payment);
+              if (__DEV__) console.log(payment);
               ToastService.success("Payment Successful via Bluetooth!");
               onPaymentMethodSelected({ method: "BLUETOOTH" });
               onClose();
@@ -424,7 +424,7 @@ const PaymentMethodModal: React.FC<PaymentMethodModalProps> = ({
       finalAmount,
     });
 
-    console.log(paymentResult);
+    if (__DEV__) console.log(paymentResult);
     onClose();
   };
 

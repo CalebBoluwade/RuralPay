@@ -1,9 +1,9 @@
 import "@/global.css";
 import { ErrorBoundary } from "@/src/components/ErrorBoundary";
 import {
-  DarkTheme,
-  DefaultTheme,
-  ThemeProvider,
+    DarkTheme,
+    DefaultTheme,
+    ThemeProvider,
 } from "@react-navigation/native";
 import { useFonts } from "expo-font";
 import { isLiquidGlassAvailable } from "expo-glass-effect";
@@ -15,6 +15,7 @@ import { useColorScheme } from "react-native";
 import "react-native-reanimated";
 import { AuthProvider } from "../components/context/AuthProvider";
 import { LanguageProvider } from "../components/context/LanguageContext";
+import { SessionProvider } from "../components/context/SessionProvider";
 import { ToastProvider } from "../components/context/ToastProvider";
 import ComplianceGuard from "../components/ui/ComplianceGuard";
 import { pinningService } from "../lib/services/PinningService";
@@ -52,14 +53,16 @@ export default function RootLayout() {
       <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
         <ToastProvider>
           <AuthProvider>
-            <LanguageProvider>
-              <ComplianceGuard>
-                {/* <Slot /> */}
-                <RootNavigator />
+            <SessionProvider>
+              <LanguageProvider>
+                <ComplianceGuard>
+                  {/* <Slot /> */}
+                  <RootNavigator />
 
-                <StatusBar style="auto" />
-              </ComplianceGuard>
-            </LanguageProvider>
+                  <StatusBar style="auto" />
+                </ComplianceGuard>
+              </LanguageProvider>
+            </SessionProvider>
           </AuthProvider>
         </ToastProvider>
       </ThemeProvider>

@@ -5,12 +5,12 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-  Alert,
-  Pressable,
-  ScrollView,
-  Text,
-  View,
-  useColorScheme,
+    Alert,
+    Pressable,
+    ScrollView,
+    Text,
+    View,
+    useColorScheme,
 } from "react-native";
 import { SvgUri } from "react-native-svg";
 
@@ -28,7 +28,7 @@ export default function ManageLinkedAccounts() {
       );
       setLoading(false);
     } catch (error) {
-      console.warn(error);
+      if (__DEV__) console.warn(error);
       ToastService.error("Failed to load Balance");
       setLoading(false);
     }

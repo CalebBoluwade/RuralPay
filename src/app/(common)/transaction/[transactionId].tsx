@@ -79,7 +79,7 @@ export default function TransactionDetail() {
   const router = useRouter();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
-  const [transaction, setTransaction] = useState<TransactionHistory | null>(
+  const [transaction, setTransaction] = useState<TransactionHistoryItem | null>(
     null,
   );
   const [loading, setLoading] = useState(true);
@@ -108,14 +108,12 @@ export default function TransactionDetail() {
   const isCredit = (transaction.txType || "").includes("CREDIT");
 
   const handleDownloadReceipt = async () => {
-    await ReceiptService.downloadReceipt({
+    await ReceiptService.DownloadTransactionReceipt({
+      ...transaction,
       amount: transaction.amount.toString(),
-      recipient: transaction.toAccount ?? "N/A",
+      toAccount: transaction.toAccount ?? "N/A",
       reference: transaction.transactionId,
       narration: transaction.narration || "N/A",
-      date: new Date(transaction.transactionDate).toLocaleString(),
-      // type: typeInfo.label,
-      type: transaction.paymentMode,
     });
   };
 

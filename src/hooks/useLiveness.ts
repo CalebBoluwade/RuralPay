@@ -74,7 +74,7 @@ export function useLiveness(
       });
       setStatus("ready");
     } catch (e) {
-      console.log(e);
+      if (__DEV__) console.log(e);
       setError("Failed to Load Face Detection Model.");
       setStatus("failed");
     }
@@ -224,15 +224,16 @@ export function useLiveness(
       if (checkChallenge(face, CHALLENGES[challengeIndexRef.current])) {
         clearTimers();
         prevFaceRef.current = null;
-        advanceChallenge(challengeIndexRef.current + 1);
+        // Schedule next challenge to avoid creating timers during interval callback
+        setTimeout(() => advanceChallenge(challengeIndexRef.current + 1), 0);
       } else {
         prevFaceRef.current = face;
       }
     }, DETECTION_INTERVAL_MS);
-  }, []);
+  }, [bvn]);
 
   const start = useCallback(() => {
-    console.log(modelRef.current);
+    if (__DEV__) console.log(modelRef.current);
     if (!modelRef.current) return;
     setError(null);
     setStatus("detecting");

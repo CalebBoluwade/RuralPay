@@ -7,46 +7,51 @@ const INTEGRITY_ERROR = "Payment blocked: device security compromised";
 class PaymentService {
   async MakeAirtimePurchase(
     payload: AirtimeDataPayload,
-  ): Promise<APIResponse<TransactionHistory>> {
-    return axiosInstance.post<APIResponse<TransactionHistory>>(
+  ): Promise<APIResponse<TransactionHistoryItem>> {
+    return axiosInstance.post<APIResponse<TransactionHistoryItem>>(
       "/payments",
       payload,
     );
   }
 
-  async GetBanks(): Promise<Bank[]> {
-    const response = await axiosInstance.get<APIResponse<Bank[]>>("/banks");
+  async GetBanks(abortSignal?: AbortSignal): Promise<Bank[]> {
+    const response = await axiosInstance.get<APIResponse<Bank[]>>("/banks", {
+      signal: abortSignal,
+    });
     return response.details;
   }
 
-  async GetCardBIN(bin: string): Promise<any> {
-    const response = await axiosInstance.get<APIResponse<Bank[]>>(
-      `/cards/bin?bin=${bin}`,
+  async GetCardBIN(bin: string): Promise<BINData> {
+    const response = await axiosInstance.get<APIResponse<BINData>>(
+      `/card/bin?bin=${bin}`,
     );
+
     return response.details;
   }
 
   async B2BTransfer(
     payload: TransferPayload,
-  ): Promise<APIResponse<TransactionHistory>> {
+    abortSignal?: AbortSignal,
+  ): Promise<APIResponse<TransactionHistoryItem>> {
     if (await integrityService.isDeviceCompromised())
       throw new Error(INTEGRITY_ERROR);
-    const response = await axiosInstance.post<APIResponse<TransactionHistory>>(
-      "/payments",
-      payload,
-    );
+    const response = await axiosInstance.post<
+      APIResponse<TransactionHistoryItem>
+    >("/payments", payload, { signal: abortSignal });
     return response;
   }
 
   async MakeNFCCardPayment(
     payload: NFCCardTransaction,
-  ): Promise<APIResponse<TransactionHistory>> {
+    abortSignal?: AbortSignal,
+  ): Promise<APIResponse<TransactionHistoryItem>> {
     if (await integrityService.isDeviceCompromised())
       throw new Error(INTEGRITY_ERROR);
-    const response = await axiosInstance.post<APIResponse<TransactionHistory>>(
-      "/payments",
-      payload,
-    );
+    const response = await axiosInstance.post<
+      APIResponse<TransactionHistoryItem>
+    >("/payments", payload, { signal: abortSignal });
+
+    console.log(response);
     return response;
   }
 
@@ -67,6 +72,7 @@ class PaymentService {
     limit?: number,
     page?: number,
     status?: string,
+    abortSignal?: AbortSignal,
   ): Promise<PaginatedTransactions> {
     const urlParams = new URLSearchParams();
     if (page !== undefined) urlParams.append("page", page.toString());
@@ -77,24 +83,30 @@ class PaymentService {
 
     const response = await axiosInstance.get<
       APIResponse<PaginatedTransactions>
-    >(`/transaction${urlParams.toString() ? "?" + urlParams.toString() : ""}`);
+    >(`/transaction${urlParams.toString() ? "?" + urlParams.toString() : ""}`, {
+      signal: abortSignal,
+    });
 
     return response.details || [];
   }
 
   async FetchRecentTransactions(
     limit: number = 5,
+    abortSignal?: AbortSignal,
   ): Promise<PaginatedTransactions> {
     const response = await axiosInstance.get<
       APIResponse<PaginatedTransactions>
-    >(`/transaction?limit=${limit}`);
+    >(`/transaction?limit=${limit}`, { signal: abortSignal });
     return response.details || [];
   }
 
-  async FetchTransactionById(txId: string): Promise<TransactionHistory> {
-    const response = await axiosInstance.get<APIResponse<TransactionHistory>>(
-      `/transaction/${txId}`,
-    );
+  async FetchTransactionById(
+    txId: string,
+    abortSignal?: AbortSignal,
+  ): Promise<TransactionHistoryItem> {
+    const response = await axiosInstance.get<
+      APIResponse<TransactionHistoryItem>
+    >(`/transaction/${txId}`, { signal: abortSignal });
     return response.details;
   }
 

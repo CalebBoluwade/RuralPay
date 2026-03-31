@@ -31,6 +31,7 @@ const VoiceTransactionBanking = () => {
     | "SUCCESS"
     | "FAILURE"
   >("SELECT_COMMAND");
+
   const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY, (status) =>
     console.log("Recording status:", status),
   );

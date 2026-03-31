@@ -3,13 +3,13 @@ import ToastService from "@/src/lib/services/ToastService";
 import { Eye, EyeOff } from "lucide-react-native";
 import React, { useEffect, useRef, useState } from "react";
 import {
-    ActivityIndicator,
-    Dimensions,
-    Pressable,
-    ScrollView,
-    Text,
-    useColorScheme,
-    View,
+  ActivityIndicator,
+  Dimensions,
+  Pressable,
+  ScrollView,
+  Text,
+  useColorScheme,
+  View,
 } from "react-native";
 import { SvgUri } from "react-native-svg";
 import { useAuth } from "../context/AuthProvider";
@@ -47,7 +47,7 @@ const BalanceCard: React.FC<BalanceCardProps> = ({
       setInternalAccounts(accounts);
       setInternalLoading(false);
     } catch (error) {
-      console.warn(error);
+      if (__DEV__) console.warn(error);
       ToastService.error("Failed to load Balance");
       setInternalLoading(false);
     }

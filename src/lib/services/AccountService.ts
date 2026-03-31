@@ -1,9 +1,17 @@
 import { axiosInstance } from "../../lib/api";
 
 class AccountService {
+  async GetNotifications(): Promise<APIResponse<UserNotification[]>> {
+    const response = await axiosInstance.get<APIResponse<UserNotification[]>>(
+      "/account/notifications",
+    );
+
+    return response;
+  }
+
   async getAccountData(): Promise<AccountData> {
     const response = await axiosInstance.get("/account");
-    return response.data;
+    return response.de;
   }
 
   async GetVirtualAccount(): Promise<{
@@ -15,7 +23,7 @@ class AccountService {
     return response.details;
   }
 
-  async AccountBalanceEnquiry(): Promise<{
+  async AccountBalanceEnquiry(abortSignal?: AbortSignal): Promise<{
     accounts: BalanceEnquiry[];
     dailyLimit: number;
     singleTransactionLimit: number;
@@ -28,7 +36,7 @@ class AccountService {
         dailySpent: number;
         accounts: BalanceEnquiry[];
       }>
-    >(`/account/balance-enquiry`);
+    >(`/account/balance-enquiry`, { signal: abortSignal });
 
     return {
       dailyLimit: response.details.dailyLimit || 0,
@@ -70,21 +78,28 @@ class AccountService {
     }
   }
 
-  async LinkAccount({
-    bankCode,
-    accountNumber,
-    IsPrimary,
-  }: {
-    bankCode: string;
-    accountNumber: string;
-    IsPrimary: boolean;
-  }): Promise<APIResponse<{}>> {
+  async LinkAccount(
+    {
+      bankCode,
+      accountNumber,
+      IsPrimary,
+    }: {
+      bankCode: string;
+      accountNumber: string;
+      IsPrimary: boolean;
+    },
+    abortSignal?: AbortSignal,
+  ): Promise<APIResponse<{}>> {
     try {
-      const response = await axiosInstance.post("/account/link", {
-        bankCode,
-        accountNumber,
-        IsPrimary,
-      });
+      const response = await axiosInstance.post(
+        "/account/link",
+        {
+          bankCode,
+          accountNumber,
+          IsPrimary,
+        },
+        { signal: abortSignal },
+      );
 
       return response;
     } catch (error: any) {
@@ -115,7 +130,7 @@ class AccountService {
   }
 
   async SendUserOTP(action: string, channel: string): Promise<APIResponse<{}>> {
-    console.log(action, channel);
+    if (__DEV__) console.log(action, channel);
     try {
       const response = await axiosInstance.post<APIResponse<{}>>(
         "/account/send-otp",
@@ -163,7 +178,8 @@ class AccountService {
       });
       return response;
     } catch (error: any) {
-      const message = error.response?.data?.message || "Identity verification failed";
+      const message =
+        error.response?.data?.message || "Identity verification failed";
       return { success: false, message, details: { verified: false } };
     }
   }
@@ -171,12 +187,14 @@ class AccountService {
   async ResolveAccountName(
     bankCode: string,
     accountNumber: string,
+    abortSignal?: AbortSignal,
   ): Promise<APIResponse<{ accountName: string; accountId: string }>> {
     try {
       const response = await axiosInstance.get<
         APIResponse<{ accountName: string; accountId: string }>
       >(
         `/account/name-enquiry?accountId=${accountNumber}&bankCode=${bankCode}`,
+        { signal: abortSignal },
       );
 
       return response;

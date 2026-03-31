@@ -29,7 +29,7 @@ export default function VirtualAccounts({
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [timeLeft]);
+  }, []);
 
   const fetchVirtualAccount = async () => {
     try {
@@ -42,7 +42,7 @@ export default function VirtualAccounts({
 
       setTimeLeft(secondsLeft);
     } catch (error) {
-      console.error("Error fetching VA:", error);
+      if (__DEV__) console.error("Error fetching VA:", error);
     } finally {
       setLoading(false);
     }

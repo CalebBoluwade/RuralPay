@@ -90,7 +90,7 @@ const PinSetupModal: React.FC<PinSetupModalProps> = ({
     } else if (isConfirming && confirmCode.length === 6) {
       if (code.join("") === confirmCode.join("")) {
         const savePin = async () => {
-          const success = await PinService.setPin(code.join(""));
+          const success = await PinService.setPIN(code.join(""));
           if (success) {
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             resetModal();

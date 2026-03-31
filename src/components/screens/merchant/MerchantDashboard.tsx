@@ -51,13 +51,13 @@ const QUICK_ACTIONS: {
     id: "analytics",
     label: "Analytics",
     icon: BarChart2,
-    route: "/(merchant)/sales-analytics",
+    route: "merchant/sales-analytics",
   },
   {
     id: "services",
     label: "Services",
     icon: Zap,
-    route: "/(merchant)/MerchantServices",
+    route: "merchant/services",
   },
 ];
 
@@ -139,7 +139,7 @@ export default function MerchantDashboard() {
       label: "Bank Uptime",
       subtitle: "Quick Industry Status Check",
       icon: Wifi,
-      onPress: () => router.push("/(merchant)/BankUptime" as any),
+      onPress: () => router.push("merchant/bank-uptime" as any),
     },
     {
       id: "nfc",
@@ -160,7 +160,7 @@ export default function MerchantDashboard() {
       label: "Services",
       subtitle: "Card management & More",
       icon: TrendingUp,
-      onPress: () => router.push("/(merchant)/MerchantServices" as any),
+      onPress: () => router.push("merchant/services" as any),
     },
   ];
 

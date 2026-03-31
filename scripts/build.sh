@@ -51,7 +51,7 @@ set +a
 echo "🚀 Building for '$APP_ENV' on '$APP_PLATFORM'..."
 
 if [[ "$APP_PLATFORM" == "android" ]]; then
-  bunx expo prebuild --clean --platform android
+  # bunx expo prebuild --clean --platform android
   bunx expo run:android --no-build-cache --variant debug
 
 elif [[ "$APP_PLATFORM" == "ios" ]]; then

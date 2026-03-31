@@ -90,7 +90,7 @@ export default function ProfileScreen() {
         setConfirmPin("");
         return;
       }
-      await PinService.setPin(newPin);
+      await PinService.setPIN(newPin);
       ToastService.success("PIN Updated Successfully");
 
       setShowPinModal(false);

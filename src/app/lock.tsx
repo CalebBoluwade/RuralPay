@@ -67,7 +67,7 @@ const Lock = () => {
               router.back();
             }
           } catch (e) {
-            console.log("Navigation error:", e);
+            if (__DEV__) console.log("Navigation error:", e);
           }
         } else {
           ToastService.error("PIN is incorrect");

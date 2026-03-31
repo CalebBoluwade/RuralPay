@@ -5,16 +5,16 @@ import * as Sharing from "expo-sharing";
 import { Download, QrCode, Share, Store, X } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  Image,
-  Modal,
-  Pressable,
-  Share as RNShare,
-  ScrollView,
-  Text,
-  useColorScheme,
-  View,
+    ActivityIndicator,
+    Alert,
+    Image,
+    Modal,
+    Pressable,
+    Share as RNShare,
+    ScrollView,
+    Text,
+    useColorScheme,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -38,7 +38,7 @@ const MerchantQRDisplay = ({
       const QRresult = await QRCodeService.GeneratePaymentQR();
       setQRData(QRresult);
     } catch (error) {
-      console.error("Failed to generate QR code:", error);
+      if (__DEV__) console.error("Failed to generate QR code:", error);
     } finally {
       setIsLoading(false);
     }
@@ -54,7 +54,7 @@ const MerchantQRDisplay = ({
         message: `Pay ${user!.merchant?.businessName || "Us"} Easily! Scan our QR Code or Use Merchant ID: ${user!.merchant?.id}`,
       });
     } catch (error) {
-      console.error(error);
+      if (__DEV__) console.error(error);
     }
   };
 
@@ -155,7 +155,7 @@ const MerchantQRDisplay = ({
       });
     } catch (error) {
       Alert.alert("Error", "Failed to generate PDF");
-      console.error(error);
+      if (__DEV__) console.error(error);
     }
   };
 

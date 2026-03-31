@@ -111,7 +111,7 @@ class BLEService {
         message: "Terminal advertising payment request",
       };
     } catch (error: any) {
-      console.log(error.message);
+      if (__DEV__) console.log(error.message);
       return { success: false, error: error.message };
     }
   }
@@ -126,7 +126,7 @@ class BLEService {
     try {
       await BLEAdvertiser.stopBroadcast();
     } catch (error) {
-      console.warn("Error Stopping BLE Advertising:", error);
+      if (__DEV__) console.warn("Error Stopping BLE Advertising:", error);
     }
 
     return { success: true };
@@ -157,7 +157,7 @@ class BLEService {
           { allowDuplicates: false },
           async (error, device) => {
             if (error) {
-              console.error("Scan error:", error);
+              if (__DEV__) console.error("Scan error:", error);
               this.manager.stopDeviceScan();
               resolve({ success: false, error: error.message });
               return;
@@ -197,7 +197,7 @@ class BLEService {
                     terminals.push(foundDevices.get(device.id));
                   }
                 } catch (e) {
-                  console.error("Error parsing service data:", e);
+                  if (__DEV__) console.error("Error parsing service data:", e);
                 }
               }
             }
@@ -290,7 +290,7 @@ class BLEService {
         { allowDuplicates: true },
         async (error, device) => {
           if (error) {
-            console.error("Server scan error:", error);
+            if (__DEV__) console.error("Server scan error:", error);
             return;
           }
 
@@ -327,7 +327,7 @@ class BLEService {
                 }
               }
             } catch (err) {
-              console.error("Error processing payment:", err);
+              if (__DEV__) console.error("Error processing payment:", err);
             }
           }
         },

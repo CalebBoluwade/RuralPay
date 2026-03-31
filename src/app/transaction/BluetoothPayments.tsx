@@ -94,7 +94,7 @@ const BluetoothPayments = () => {
         } catch {}
         const scanResult = await BLEService.scanForPaymentTerminals();
 
-        console.log(scanResult);
+        if (__DEV__) console.log(scanResult);
 
         if (!scanResult.success || !scanResult.terminals?.length) {
           setShowDeviceModal(false);
@@ -150,7 +150,7 @@ const BluetoothPayments = () => {
       try {
         ToastService.error(errorMessage);
       } catch (toastError) {
-        console.error("Toast error:", toastError);
+        if (__DEV__) console.error("Toast error:", toastError);
       }
       setError(errorMessage);
       setStep("FAILURE");

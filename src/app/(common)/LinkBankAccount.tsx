@@ -82,7 +82,7 @@ export default function LinkBankAccount() {
         IsPrimary: false,
       });
 
-      console.log(x);
+      if (__DEV__) console.log(x);
     } catch (error) {
     } finally {
       setLoading(false);

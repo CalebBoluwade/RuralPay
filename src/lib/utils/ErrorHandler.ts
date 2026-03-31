@@ -88,7 +88,7 @@ export class ErrorHandler {
   private static getUserFriendlyMessage(error: AppError): string {
     // Network errors
     if (error.message.toLowerCase().includes("network")) {
-      return "Please check your internet connection and try again";
+      return "Please Check your internet connection and try again";
     }
 
     // Authentication errors

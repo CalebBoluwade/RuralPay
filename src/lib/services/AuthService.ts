@@ -151,12 +151,36 @@ class AuthService {
 
   async logout(): Promise<{ success: boolean; message: string }> {
     try {
-      await axiosInstance.post("/auth/logout");
+      // Only try to call logout endpoint if we have a valid token
+      // If token is missing (session already expired), skip the API call
+      const token = await SecureStore.getItemAsync(AUTH_TOKEN_KEY);
+      if (token) {
+        try {
+          await axiosInstance.post("/auth/logout");
+        } catch (error: any) {
+          // If the logout API call fails with 401, it means session already expired
+          // This is expected and not an error - proceed with local cleanup
+          if (error?.response?.status !== 401) {
+            throw error;
+          }
+          if (__DEV__) {
+            console.log(
+              "[AuthService] Logout API returned 401 (expected for expired sessions)",
+            );
+          }
+        }
+      }
+
+      // Always clear local auth data regardless of API call outcome
       await SecureStore.deleteItemAsync(AUTH_TOKEN_KEY);
       await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY);
       await SecureStore.deleteItemAsync(USER_DATA_KEY);
-      return { success: true, message: "Logged Out successfully" };
-    } catch {
+      return { success: true, message: "Logged out successfully" };
+    } catch (error) {
+      if (__DEV__) {
+        console.error("[AuthService] Logout error:", error);
+      }
+      // Even if logout fails, always clear local auth data
       await SecureStore.deleteItemAsync(AUTH_TOKEN_KEY);
       await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY);
       await SecureStore.deleteItemAsync(USER_DATA_KEY);

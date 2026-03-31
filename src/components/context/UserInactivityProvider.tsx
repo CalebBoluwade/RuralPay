@@ -21,11 +21,11 @@ export const UserInactivityProvider = ({ children }: { children: any }) => {
   };
 
   const navigateToLock = React.useCallback(() => {
-    console.log("FSZ");
+    if (__DEV__) console.log("FSZ");
     try {
       router.replace("/auth/LockScreen");
     } catch (e) {
-      console.log("Navigation not ready:", e);
+      if (__DEV__) console.log("Navigation not ready:", e);
     }
   }, []);
 
@@ -62,7 +62,7 @@ export const UserInactivityProvider = ({ children }: { children: any }) => {
     try {
       router.push("/(modal)/overlay");
     } catch (e) {
-      console.log("Navigation not ready:", e);
+      if (__DEV__) console.log("Navigation not ready:", e);
     }
   }, []);
 
@@ -71,7 +71,7 @@ export const UserInactivityProvider = ({ children }: { children: any }) => {
       try {
         router.back();
       } catch (e) {
-        console.log("Navigation not ready:", e);
+        if (__DEV__) console.log("Navigation not ready:", e);
       }
     }
   }, []);

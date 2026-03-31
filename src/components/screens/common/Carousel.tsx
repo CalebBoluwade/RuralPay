@@ -83,7 +83,7 @@ function FloatingCard() {
   return (
     <Animated.View
       style={style}
-      className="w-72 h-44 bg-lime-600 rounded-2xl p-4 justify-between shadow-2xl"
+      className="w-80 h-48 bg-lime-600 rounded-2xl p-4 justify-between shadow-2xl"
     >
       <Text className="text-white text-lg font-bold">**** **** **** 1234</Text>
 
@@ -191,7 +191,6 @@ const SlideItem = ({
     )}
 
     <View>
-      {/* Text */}
       <Text
         className={`${isDark ? "text-slate-400" : "text-slate-600"} text-3xl font-bold text-center mb-4 leading-tight`}
       >

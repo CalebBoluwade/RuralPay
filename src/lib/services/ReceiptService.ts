@@ -3,16 +3,16 @@ import * as Sharing from "expo-sharing";
 import { Alert } from "react-native";
 
 export class ReceiptService {
-  static async downloadReceipt(data: ReceiptData): Promise<void> {
+  static async DownloadTransactionReceipt(receipt: ReceiptData): Promise<void> {
     try {
-      const transactionDate = data.date
-        ? new Date(data.date).toLocaleString()
+      const transactionDate = receipt.transactionDate
+        ? new Date(receipt.transactionDate).toLocaleString()
         : new Date().toLocaleString();
-      const transactionId = `TXN${Date.now().toString().slice(-8)}`;
-      const merchantId = data.merchantId || "MID123456789";
-      const terminalId = data.terminalId || "TID987654321";
-      const cardMask = data.cardLast4
-        ? `****-****-****-${data.cardLast4}`
+
+      const merchantId = receipt.merchantName || "MID123456789";
+      const terminalId = receipt.terminalId || "TID987654321";
+      const cardMask = receipt.cardLast4
+        ? `****-****-****-${receipt.cardLast4}`
         : "****-****-****-1234";
 
       const htmlContent = `
@@ -88,7 +88,7 @@ export class ReceiptService {
             
             <div class="section">
               ${
-                data.type === "CARD"
+                receipt.paymentMode === "CARD"
                   ? `
               <div class="row">
                 <span class="label">MERCHANT ID:</span>
@@ -102,7 +102,7 @@ export class ReceiptService {
               }
               <div class="row">
                 <span class="label">TRANSACTION ID:</span>
-                <span>${transactionId}</span>
+                <span>${receipt.transactionId}</span>
               </div>
             </div>
             
@@ -111,7 +111,7 @@ export class ReceiptService {
             <div class="section">
               <div class="row">
                 <span class="label">TRANSACTION TYPE:</span>
-                <span>${data.type.toUpperCase()}</span>
+                <span>${receipt.paymentMode.toUpperCase()}</span>
               </div>
               <div class="row">
                 <span class="label">DATE/TIME:</span>
@@ -123,7 +123,7 @@ export class ReceiptService {
             
             <div class="section">
               ${
-                data.type === "CARD"
+                receipt.paymentMode === "CARD"
                   ? `
               <div class="row">
                 <span class="label">CARD NUMBER:</span>
@@ -132,7 +132,7 @@ export class ReceiptService {
                   : ""
               }
               ${
-                data.type === "QR"
+                receipt.paymentMode === "QR"
                   ? `
               <div class="row">
                 <span class="label">MERCHANT ID:</span>
@@ -141,16 +141,16 @@ export class ReceiptService {
                   : ""
               }
               ${
-                data.type === "BANK_TRANSFER" && data.senderAccount
+                receipt.paymentMode === "BANK_TRANSFER" && receipt.senderAccount
                   ? `
               <div class="row">
                 <span class="label">SENDER ACCOUNT:</span>
-                <span>${data.senderAccount}</span>
+                <span>${receipt.senderAccount}</span>
               </div>`
                   : ""
               }
               ${
-                data.type === "USSD"
+                receipt.paymentMode === "USSD"
                   ? `
               <div class="row">
                 <span class="label">USSD CODE:</span>
@@ -159,32 +159,32 @@ export class ReceiptService {
                   : ""
               }
               <div class="amount">
-                ₦${parseFloat(data.amount).toLocaleString("en-NG", { minimumFractionDigits: 2 })}
+                ₦${parseFloat(receipt.amount).toLocaleString("en-NG", { minimumFractionDigits: 2 })}
               </div>
               ${
-                data.recipient
+                receipt.toAccount
                   ? `
               <div class="row">
                 <span class="label">RECIPIENT:</span>
-                <span>${data.recipient}</span>
+                <span>${receipt.toAccount}</span>
               </div>`
                   : ""
               }
               ${
-                data.senderName
+                receipt.senderName
                   ? `
               <div class="row">
                 <span class="label">SENDER:</span>
-                <span>${data.senderName}</span>
+                <span>${receipt.senderName}</span>
               </div>`
                   : ""
               }
               ${
-                data.narration
+                receipt.narration
                   ? `
               <div class="row">
                 <span class="label">DESCRIPTION:</span>
-                <span>${data.narration}</span>
+                <span>${receipt.narration}</span>
               </div>`
                   : ""
               }
@@ -195,7 +195,7 @@ export class ReceiptService {
             <div class="section">
               <div class="row">
                 <span class="label">REFERENCE:</span>
-                <span>${data.reference}</span>
+                <span>${receipt.reference}</span>
               </div>
               <div class="row">
                 <span class="label">STATUS:</span>
@@ -237,7 +237,7 @@ export class ReceiptService {
         );
       }
     } catch (error) {
-      console.error("Error generating receipt PDF:", error);
+      if (__DEV__) console.error("Error generating receipt PDF:", error);
       Alert.alert(
         "Error",
         "Failed to generate receipt PDF. Please try again.",

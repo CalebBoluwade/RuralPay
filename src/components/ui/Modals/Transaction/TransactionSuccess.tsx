@@ -4,7 +4,7 @@ import React from "react";
 import { Pressable, Share, Text, View, useColorScheme } from "react-native";
 
 interface TransactionSuccessProps {
-  transactionResult: ReceiptData;
+  transactionResult: TransactionHistoryItem;
   onClose: () => void;
   handleDownloadReceipt: () => void;
 }
@@ -22,10 +22,10 @@ const TransactionSuccess: React.FC<TransactionSuccessProps> = ({
   const handleShare = async () => {
     try {
       await Share.share({
-        message: `Transaction Successful!\nAmount: ₦${transactionResult.amount}\nRecipient: ${transactionResult.recipient}\nReference: ${transactionResult.reference}`,
+        message: `Transaction Successful!\nAmount: ₦${transactionResult.amount}\nRecipient: ${transactionResult.toAccount}\nReference: ${transactionResult.reference}`,
       });
     } catch (error) {
-      console.error("Error sharing:", error);
+      if (__DEV__) console.error("Error sharing:", error);
     }
   };
 
@@ -46,13 +46,8 @@ const TransactionSuccess: React.FC<TransactionSuccessProps> = ({
           className={`text-base text-center px-4 ${isDark ? "text-gray-400" : "text-gray-600"}`}
         >
           Your transaction of{" "}
-          {formatAmount(
-            Number.parseFloat(transactionResult.amount),
-            "NGN",
-            true,
-            false,
-          )}{" "}
-          was completed successfully.
+          {formatAmount(transactionResult.amount, "NGN", true, false)} was
+          completed successfully.
         </Text>
       </View>
 

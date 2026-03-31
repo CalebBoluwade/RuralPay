@@ -1,5 +1,9 @@
 import { z } from "zod";
 
+// Define a reusable password regex for consistency
+const passwordRegex =
+  /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+
 export const loginSchema = z.object({
   identifier: z.string().min(3, "Enter Your Phone Number, Email, or Username"),
   password: z.string().min(6, "Password Must Be At Least 6 Characters"),
@@ -25,8 +29,12 @@ export const registerSchema = z
       .string("Enter a Phone Number")
       .min(10, "Phone number must be at least 10 digits"),
     password: z
-      .string("Enter a Password")
-      .min(6, "Password must be at least 6 characters"),
+      .string("Enter A Password")
+      .min(8, "Password Must Be At Least 8 Characters")
+      .regex(
+        passwordRegex,
+        "Password must include uppercase, lowercase, a number, and a special character",
+      ),
     confirmPassword: z.string("Confirm Password"),
     isMerchant: z.boolean().optional(),
     businessName: z.string().optional(),
@@ -34,7 +42,7 @@ export const registerSchema = z
     businessType: z.string().optional(),
   })
   .refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords don't match",
+    message: "Passwords Don't Match",
     path: ["confirmPassword"],
   });
 
@@ -46,7 +54,13 @@ export const forgotPasswordSchema = z.object({
 
 export const resetPasswordSchema = z
   .object({
-    newPassword: z.string().min(6, "Password must be at least 6 characters"),
+    newPassword: z
+      .string("Enter A Password")
+      .min(8, "Password Must Be At Least 8 Characters")
+      .regex(
+        passwordRegex,
+        "Password must include uppercase, lowercase, a number, and a special character",
+      ),
     confirmPassword: z.string(),
   })
   .refine((data) => data.newPassword === data.confirmPassword, {

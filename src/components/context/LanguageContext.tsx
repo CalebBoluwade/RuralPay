@@ -29,7 +29,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
         setLanguageState(saved as Language);
       }
     } catch (error) {
-      console.error("Failed to load language:", error);
+      if (__DEV__) console.error("Failed to load language:", error);
     }
   };
 
@@ -38,7 +38,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
       SecureStore.setItem("app_language", lang);
       setLanguageState(lang);
     } catch (error) {
-      console.error("Failed to save language:", error);
+      if (__DEV__) console.error("Failed to save language:", error);
     }
   };
 

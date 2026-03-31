@@ -5,6 +5,7 @@ import BeneficiaryModal from "@/src/components/ui/Modals/BeneficiaryModal";
 import PaymentMethodModal from "@/src/components/ui/Modals/Transaction/PaymentMethodModal";
 import TransactionPin from "@/src/components/ui/Modals/Transaction/TransactionPinModal";
 import ScreenHeader from "@/src/components/ui/ScreenHeader";
+import { useAbortable } from "@/src/hooks/useAbortable";
 import { TransferFormData, transferSchema } from "@/src/lib/schema/validations";
 import AccountService from "@/src/lib/services/AccountService";
 import { LocationService } from "@/src/lib/services/LocationService";
@@ -33,6 +34,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 const BankTransfers = () => {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
+  const { abortController } = useAbortable("bank-transfers");
   const [loading, setLoading] = useState(false);
   const [showBankModal, setShowBankModal] = useState(false);
   const [showBeneficiaryModal, setShowBeneficiaryModal] = useState(false);
@@ -42,7 +44,8 @@ const BankTransfers = () => {
   const [transferData, setTransferData] = useState<TransferFormData | null>(
     null,
   );
-  const [transactionResult, setTransactionResult] = useState<any>(null);
+  const [transactionResult, setTransactionResult] =
+    useState<TransactionHistoryItem | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
   const [accountName, setAccountName] = useState<string | null>(null);
   const [nameLoading, setNameLoading] = useState(false);
@@ -79,28 +82,44 @@ const BankTransfers = () => {
     setNameLoading(true);
     setAccountName(null);
 
-    const selectedBank = banks.find((bank) => bank.code === bankCode);
-    if (selectedBank) {
-      const account = await AccountService.ResolveAccountName(
-        selectedBank.code,
-        accountNumber,
-      );
-      setAccountName(
-        account.success
-          ? account.details.accountName!
-          : account.errorMessage || "Account Not Found",
-      );
+    try {
+      const selectedBank = banks.find((bank) => bank.code === bankCode);
+      if (selectedBank) {
+        const account = await AccountService.ResolveAccountName(
+          selectedBank.code,
+          accountNumber,
+          abortController.signal,
+        );
+        setAccountName(
+          account.success
+            ? account.details.accountName!
+            : account.errorMessage || "Account Not Found",
+        );
+      }
+    } catch (error) {
+      // AbortError is expected when user navigates away
+      if (error instanceof Error && error.name !== "AbortError") {
+        if (__DEV__) console.error("Name enquiry failed:", error);
+      }
+    } finally {
+      setNameLoading(false);
     }
-    setNameLoading(false);
   };
 
   useEffect(() => {
     const fetchBanks = async () => {
-      const banks = await PaymentService.GetBanks();
-      setBanks(banks);
+      try {
+        const banks = await PaymentService.GetBanks(abortController.signal);
+        setBanks(banks);
+      } catch (error) {
+        // Ignore AbortError
+        if (error instanceof Error && error.name !== "AbortError") {
+          if (__DEV__) console.error("Failed to fetch banks:", error);
+        }
+      }
     };
     fetchBanks();
-  }, []);
+  }, [abortController.signal]);
 
   useEffect(() => {
     performNameEnquiry();
@@ -120,8 +139,8 @@ const BankTransfers = () => {
 
   const processTransfer = async (
     TwoFA_VerificationCode: string,
-  ): Promise<ReceiptData | void> => {
-    if (!transferData) return;
+  ): Promise<TransactionHistoryItem> => {
+    if (!transferData) throw new Error("No Transfer Data Found");
 
     const selectedBank = banks.find(
       (bank) => bank.code === transferData.bankCode,
@@ -157,14 +176,7 @@ const BankTransfers = () => {
       throw new Error(payment.errorMessage);
     }
 
-    return {
-      amount: transferData.amount,
-      recipient: `${transferData.accountNumber} (${selectedBank?.name})`,
-      reference: payment.details.transactionId,
-      date: new Date().toLocaleString(),
-      narration: transferData.narration,
-      type: "BANK_TRANSFER",
-    };
+    return payment.details;
   };
 
   const handlePinSuccess = async (
@@ -217,7 +229,7 @@ const BankTransfers = () => {
 
       return !!result;
     } catch (error: any) {
-      console.log("Transfer error:", error);
+      if (__DEV__) console.log("Transfer error:", error);
       setErrorMessage(error.message || "Transfer Failed. Please Try Again.");
 
       setLoading(false);
@@ -254,7 +266,7 @@ const BankTransfers = () => {
     accountNumber?: string;
     accountName?: string;
   }) => {
-    console.log("Payment Method Data", data);
+    if (__DEV__) console.log("Payment Method Data", data);
     if (data.accountNumber) {
       setValue("fromAccount", data.accountNumber);
       setTransferData((prev) =>
@@ -447,7 +459,7 @@ const BankTransfers = () => {
             showPinModal={showPinModal}
             error={errorMessage}
             initiateTransaction={handlePinSuccess}
-            transactionResult={transactionResult}
+            transactionResult={transactionResult!}
             onCancel={handleCloseSuccess}
           />
         )}

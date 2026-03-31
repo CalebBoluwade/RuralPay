@@ -4,23 +4,23 @@ import { formatAmount } from "@/src/lib/utils/formatAmount";
 import DateTimePicker from "expo-datepicker";
 import { useRouter } from "expo-router";
 import {
-  ArrowDown,
-  ArrowUp,
-  CalendarDays,
-  FileText,
-  LucideIcon,
-  Receipt,
-  X,
+    ArrowDown,
+    ArrowUp,
+    CalendarDays,
+    FileText,
+    LucideIcon,
+    Receipt,
+    X,
 } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
 import {
-  ActivityIndicator,
-  FlatList,
-  Pressable,
-  RefreshControl,
-  Text,
-  View,
-  useColorScheme,
+    ActivityIndicator,
+    FlatList,
+    Pressable,
+    RefreshControl,
+    Text,
+    View,
+    useColorScheme,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -30,7 +30,11 @@ const TransactionHistory = () => {
   const isDark = colorScheme === "dark";
 
   const [transactions, setTransactions] = useState<TransactionHistory[]>([]);
-  const [pagination, setPagination] = useState({ page: 1, total: 0, hasMore: false });
+  const [pagination, setPagination] = useState({
+    page: 1,
+    total: 0,
+    hasMore: false,
+  });
   const [refreshing, setRefreshing] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
@@ -56,10 +60,16 @@ const TransactionHistory = () => {
         page,
         statusFilter ?? undefined,
       );
-      setTransactions((prev) => reset ? data.transactions : [...prev, ...data.transactions]);
-      setPagination({ page: data.page, total: data.total, hasMore: data.hasMore });
+      setTransactions((prev) =>
+        reset ? data.transactions : [...prev, ...data.transactions],
+      );
+      setPagination({
+        page: data.page,
+        total: data.total,
+        hasMore: data.hasMore,
+      });
     } catch (error) {
-      console.log(error);
+      if (__DEV__) console.log(error);
     } finally {
       reset ? setRefreshing(false) : setLoadingMore(false);
       isFetching.current = false;
@@ -212,7 +222,9 @@ const TransactionHistory = () => {
               <ActivityIndicator size="small" color="#a3e635" />
             </View>
           ) : pagination.total > 0 ? (
-            <Text className={`text-xs text-center py-4 ${isDark ? "text-slate-500" : "text-slate-400"}`}>
+            <Text
+              className={`text-xs text-center py-4 ${isDark ? "text-slate-500" : "text-slate-400"}`}
+            >
               Showing {transactions.length} of {pagination.total}
             </Text>
           ) : null
@@ -292,9 +304,15 @@ const TransactionHistory = () => {
                 const active = statusFilter === s;
                 const label = s ?? "All";
                 const activeColor =
-                  s === "COMPLETED" ? "bg-green-500" :
-                  s === "PENDING" ? (isDark ? "bg-yellow-400" : "bg-yellow-500") :
-                  s === "FAILED" ? "bg-red-500" : "bg-lime-500";
+                  s === "COMPLETED"
+                    ? "bg-green-500"
+                    : s === "PENDING"
+                      ? isDark
+                        ? "bg-yellow-400"
+                        : "bg-yellow-500"
+                      : s === "FAILED"
+                        ? "bg-red-500"
+                        : "bg-lime-500";
                 return (
                   <Pressable
                     key={label}
@@ -311,7 +329,9 @@ const TransactionHistory = () => {
                       className={`text-xs font-semibold ${
                         active
                           ? "text-white"
-                          : isDark ? "text-slate-300" : "text-slate-600"
+                          : isDark
+                            ? "text-slate-300"
+                            : "text-slate-600"
                       }`}
                     >
                       {label}

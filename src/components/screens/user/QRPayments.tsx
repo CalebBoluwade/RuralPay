@@ -22,7 +22,7 @@ const QRPayments = () => {
 
   const { token } = useLocalSearchParams<{ token?: string }>();
 
-  console.log(token);
+  if (__DEV__) console.log(token);
 
   const [scanned, setScanned] = useState(false);
   const processingScan = useRef(false);
@@ -82,7 +82,7 @@ const QRPayments = () => {
       setError(payment.errorMessage || "Payment processing failed");
       return false;
     } catch (error) {
-      console.error(error);
+      if (__DEV__) console.error(error);
       setError((error as Error).message || "Failed to process payment");
       return false;
     } finally {
@@ -113,7 +113,7 @@ const QRPayments = () => {
     } catch (error) {
       const errorMessage =
         (error as Error).message || "Failed to process QR code";
-      console.error("QR Scan Error:", errorMessage);
+      if (__DEV__) console.error("QR Scan Error:", errorMessage);
       setError(errorMessage);
       ToastService.error(errorMessage);
 

@@ -2,6 +2,7 @@ import { useAuth } from "@/src/components/context/AuthProvider";
 import { useLanguage } from "@/src/components/context/LanguageContext";
 import BalanceCard from "@/src/components/ui/BalanceCard";
 import ScreenHeader from "@/src/components/ui/ScreenHeader";
+import { useAbortable } from "@/src/hooks/useAbortable";
 import AccountService from "@/src/lib/services/AccountService";
 import PaymentService from "@/src/lib/services/PaymentService";
 import ToastService from "@/src/lib/services/ToastService";
@@ -102,8 +103,9 @@ export default function Index() {
   const { t } = useLanguage();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
+  const { abortController } = useAbortable("home-dashboard");
   const [recentTransactions, setRecentTransactions] = useState<
-    TransactionHistory[]
+    TransactionHistoryItem[]
   >([]);
   const [accountEnquiry, setAccountEnquiry] = useState<AccountBalanceEnquiry>();
   const [loading, setLoading] = useState(true);
@@ -136,14 +138,17 @@ export default function Index() {
     try {
       await Location.getForegroundPermissionsAsync();
       const [paginatedTransactions, balance] = await Promise.all([
-        PaymentService.FetchRecentTransactions(3),
-        AccountService.AccountBalanceEnquiry(),
+        PaymentService.FetchRecentTransactions(3, abortController.signal),
+        AccountService.AccountBalanceEnquiry(abortController.signal),
       ]);
       setRecentTransactions(paginatedTransactions.transactions);
       setAccountEnquiry(balance ?? [{} as BalanceEnquiry]);
     } catch (error) {
-      console.warn(error);
-      ToastService.error("Failed to Load Account Data");
+      // AbortError is expected when user navigates away, so don't log it
+      if (error instanceof Error && error.name !== "AbortError") {
+        if (__DEV__) console.warn(error);
+        ToastService.error("Failed to Load Account Data");
+      }
     } finally {
       setLoading(false);
       setIsInitialLoad(false);
@@ -162,7 +167,7 @@ export default function Index() {
       // (await AsyncStorage.getItem("hasSeenWelcome")) === "true";
       // if (!hasSeenWelcome) router.push("/(modal)/welcome-banner");
     } catch (error) {
-      console.warn("Error checking first visit:", error);
+      if (__DEV__) console.warn("Error checking first visit:", error);
     }
   };
 
