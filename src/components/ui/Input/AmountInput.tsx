@@ -30,7 +30,7 @@ const AmountInput = ({ onAmountChange, error }: AmountInputProps) => {
     }
 
     if (Platform.OS === "ios") {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     } else {
       Haptics.performAndroidHapticsAsync(Haptics.AndroidHaptics.Keyboard_Tap);
     }
@@ -44,8 +44,8 @@ const AmountInput = ({ onAmountChange, error }: AmountInputProps) => {
       <View
         className={`rounded-3xl p-4 mx-1 ${
           isDark
-            ? "bg-emerald-500/20 border-2 border-emerald-500/40"
-            : "bg-emerald-50 border-2 border-emerald-400"
+            ? "bg-emerald-500/20 border-2 border-lime-500/40"
+            : "bg-emerald-50 border-2 border-lime-400"
         }`}
       >
         {/* <Text

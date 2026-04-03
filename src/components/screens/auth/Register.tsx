@@ -1,11 +1,11 @@
-import { useAuth } from "@/src/components/context/AuthProvider";
+import { useAuth } from "@/src/components/context/AuthSessionProvider";
 import { useLanguage } from "@/src/components/context/LanguageContext";
 import OptimizedInput from "@/src/components/ui/Input/OptimizedInput";
 import PinSetupModal from "@/src/components/ui/Modals/PinSetupModal";
 import ScreenHeader from "@/src/components/ui/ScreenHeader";
 import { VerificationResult } from "@/src/hooks/useLiveness";
 import { RegisterFormData, registerSchema } from "@/src/lib/schema/validations";
-import { DeviceService } from "@/src/lib/services/Device";
+import AccountService from "@/src/lib/services/AccountService";
 import MerchantService from "@/src/lib/services/MerchantService";
 import ToastService from "@/src/lib/services/ToastService";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -16,7 +16,6 @@ import {
   CheckCircle,
   ChevronDown,
   ChevronUp,
-  Info,
   ShieldCheck,
 } from "lucide-react-native";
 import React, { useState } from "react";
@@ -38,7 +37,6 @@ export default function RegisterScreen() {
   const [livenessResult, setLivenessResult] =
     useState<VerificationResult | null>(null);
 
-  const [BVN, setBVN] = useState("");
   const [phoneOTP, setPhoneOTP] = useState("");
 
   // Merchant
@@ -80,7 +78,7 @@ export default function RegisterScreen() {
     if (isMerchant) {
       setStep("merchant");
     } else {
-      setStep("bvn");
+      setStep("liveness");
     }
   };
 
@@ -104,28 +102,7 @@ export default function RegisterScreen() {
       businessAddress: businessAddress,
       businessType: businessType,
     }));
-    setStep("bvn");
-  };
-
-  const HandleBvnSubmit = async () => {
-    if (BVN.length !== 11) {
-      ToastService.warning("BVN Must Be 11 Digits");
-      return;
-    }
-
-    // const BvnValidation = await AccountService.ValidateBVN({
-    //   bvn: BVN,
-    //   phoneNumber: registrationData?.phoneNumber || "",
-    //   email: registrationData?.email || "",
-    // });
-
-    // if (!BvnValidation.valid) {
-    //   ToastService.error(BvnValidation.message || "Failed to Validate BVN");
-    //   return;
-    // }
-
-    // ToastService.info("Verification Code Sent to your Registered Phone");
-    setStep("phone-verify");
+    setStep("liveness");
   };
 
   const HandlePhoneVerify = async () => {
@@ -134,7 +111,7 @@ export default function RegisterScreen() {
       return;
     }
 
-    // const OtpValidation = await AccountService.ValidateBVNOTP(BVN, phoneOTP);
+    // const OtpValidation = await AccountService.ValidateUserPhoneNumberOTP("BVN", phoneOTP);
 
     // if (!OtpValidation.valid) {
     //   ToastService.error(OtpValidation.message || "Failed to Validate OTP");
@@ -146,6 +123,7 @@ export default function RegisterScreen() {
   };
 
   const HandleLivenessSuccess = (result: VerificationResult) => {
+    if (__DEV__) console.log(result);
     setLivenessResult(result);
     setStep("pin");
     setShowPinModal(true);
@@ -159,20 +137,17 @@ export default function RegisterScreen() {
     if (!registrationData) return;
 
     try {
-      const pushToken = await DeviceService.registerForPushNotificationsAsync();
-
-      const userPayload = {
+      // Register user first
+      const userId = await register({
         firstName: registrationData.firstName,
         lastName: registrationData.lastName,
+        userName: registrationData.username,
         email: registrationData.email.toLowerCase(),
         password: registrationData.password,
         phoneNumber: registrationData.phoneNumber,
-        bvn: BVN,
-        pushToken: pushToken ?? "",
-      };
-
-      // Register user first
-      const userId = await register(userPayload);
+        bvn: registrationData.BVN,
+        identityToken: livenessResult?.identityToken ?? "",
+      });
 
       // If merchant registration, register merchant profile
       if (registrationData.isMerchant && registrationData.businessName) {
@@ -210,8 +185,8 @@ export default function RegisterScreen() {
 
   const RenderProgressBar = () => {
     const Steps: UserRegistrationStep[] = isMerchant
-      ? ["personal", "merchant", "bvn", "phone-verify", "liveness"]
-      : ["personal", "bvn", "phone-verify", "liveness"];
+      ? ["personal", "merchant", "phone-verify", "liveness"]
+      : ["personal", "phone-verify", "liveness"];
 
     const CurrentIndex = Steps.indexOf(step);
 
@@ -263,7 +238,6 @@ export default function RegisterScreen() {
   const RenderSubtitle = (): string => {
     if (step === "personal") return "Enter Your Personal Details";
     if (step === "merchant") return "Enter Your Business Information";
-    if (step === "bvn") return "Verify Your Identity";
     if (step === "phone-verify") return "Enter Phone Verification Code";
     if (step === "liveness") return "Follow The Prompts";
     return "";
@@ -280,9 +254,8 @@ export default function RegisterScreen() {
         onBack={() => {
           if (step === "personal") router.back();
           else if (step === "merchant") setStep("personal");
-          else if (step === "bvn")
+          else if (step === "phone-verify")
             setStep(isMerchant ? "merchant" : "personal");
-          else if (step === "phone-verify") setStep("bvn");
           else if (step === "liveness") setStep("phone-verify");
         }}
       />
@@ -379,6 +352,23 @@ export default function RegisterScreen() {
                 placeholder="Enter Your Phone Number"
                 keyboardType="phone-pad"
                 error={errors.phoneNumber}
+              />
+
+              <OptimizedInput
+                control={control}
+                name="BVN"
+                label={"BVN (Bank Verification Number)"}
+                placeholder="Enter Your 11-digit BVN"
+                keyboardType="numeric"
+                error={errors.BVN}
+                labelRight={
+                  <ShieldCheck
+                    size={21}
+                    color={isDark ? "#ffffff" : "#000000"}
+                  />
+                }
+                maxLength={11}
+                // editable={isSubmitting}
               />
 
               <OptimizedInput
@@ -544,11 +534,11 @@ export default function RegisterScreen() {
                             setShowBusinessTypeDropdown(false);
                           }}
                           className={`p-4 flex-row justify-between items-center ${
-                            index !== businessTypes.length - 1
-                              ? isDark
+                            index === businessTypes.length - 1
+                              ? ""
+                              : isDark
                                 ? "border-b border-white/10"
                                 : "border-b border-gray-200"
-                              : ""
                           }`}
                         >
                           <Text
@@ -583,43 +573,37 @@ export default function RegisterScreen() {
           )}
 
           {/* BVN Entry Step */}
-          {step === "bvn" && (
+          {/* {step === "bvn" && (
             <View className="flex-1">
               <View
-                className={`rounded-2xl p-6 mb-6 backdrop-blur-xl ${
-                  isDark
-                    ? "bg-white/10 border border-white/20"
-                    : "bg-white/60 border border-gray-200/50"
-                }`}
+                className={`rounded-2xl p-6 my-6 backdrop-blur-xl ${cardClass}`}
               >
-                <View className="items-center mb-4">
+                <View className="items-center mb-4 mt-2">
                   <View
                     className={`w-16 h-16 rounded-full items-center justify-center mb-4 ${
                       isDark ? "bg-lime-500/20" : "bg-lime-100"
                     }`}
                   >
-                    <ShieldCheck
-                      size={32}
-                      color={isDark ? "#ffffff" : "#000000"}
-                    />
+                    
                   </View>
+
                   <Text
-                    className={`text-2xl font-brand text-center ${isDark ? "text-white" : "text-gray-900"}`}
+                    className={`text-2xl mb-2 font-brand text-center ${isDark ? "text-white" : "text-gray-900"}`}
                   >
                     Bank Verification Number
                   </Text>
                   <Text
-                    className={`text-base text-center mt-2 ${isDark ? "text-gray-400" : "text-gray-600"}`}
+                    className={`text-base text-center my-2 ${isDark ? "text-gray-400" : "text-gray-600"}`}
                   >
-                    Enter your 11-digit BVN to verify your identity
+                    Enter your  to Verify Your Identity
                   </Text>
                 </View>
 
                 <TextInput
                   className={`p-4 rounded-2xl text-lg text-center backdrop-blur-xl mb-4 ${
                     isDark
-                      ? "bg-white/10 border border-white/20 text-white"
-                      : "bg-white/60 border border-gray-200/50 text-gray-900"
+                      ? "border-2 border-lime-500/40 text-white"
+                      : "border-2 border-lime-400 text-gray-900"
                   }`}
                   placeholder="Enter 11-digit BVN"
                   placeholderTextColor={isDark ? "#9CA3AF" : "#6B7280"}
@@ -629,16 +613,11 @@ export default function RegisterScreen() {
                   maxLength={11}
                 />
 
-                <View
-                  className={`flex-row items-center gap-2 p-3 rounded-xl ${isDark ? "bg-blue-500/10" : "bg-blue-50"}`}
+                <Text
+                  className={`text-lg my-5 font-light ${isDark ? "text-blue-300" : "text-blue-700"}`}
                 >
-                  <Info />
-                  <Text
-                    className={`text-base ${isDark ? "text-blue-300" : "text-blue-700"}`}
-                  >
-                    Your BVN Is Safe And Only Used For Verification Purposes
-                  </Text>
-                </View>
+                  Your BVN Is Only Used For Verification Purposes
+                </Text>
               </View>
 
               <Pressable
@@ -650,13 +629,13 @@ export default function RegisterScreen() {
                 </Text>
               </Pressable>
             </View>
-          )}
+          )} */}
 
           {/* Liveness Step */}
           {step === "liveness" && (
             <LivenessVerificationScreen
               userId={registrationData?.email ?? ""}
-              bvn={BVN}
+              bvn={registrationData?.BVN ?? ""}
               onSuccess={HandleLivenessSuccess}
               onFailure={HandleLivenessFailure}
             />
@@ -717,7 +696,23 @@ export default function RegisterScreen() {
                   maxLength={8}
                 />
 
-                <Pressable onPress={HandleBvnSubmit}>
+                <Pressable
+                  onPress={() => {
+                    try {
+                      AccountService.SendUserOTP(
+                        "Registration",
+                        registrationData?.phoneNumber ?? "",
+                      );
+                      ToastService.info("Verification Code Resent");
+                    } catch (error) {
+                      ToastService.error(
+                        error instanceof Error
+                          ? error.message
+                          : "Failed to resend code. Please try again.",
+                      );
+                    }
+                  }}
+                >
                   <Text
                     className={`text-center ${isDark ? "text-lime-400" : "text-lime-600"}`}
                   >

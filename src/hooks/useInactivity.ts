@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { AppState } from "react-native";
-import { useAuth } from "../components/context/AuthProvider";
+import { useAuth } from "../components/context/AuthSessionProvider";
 
 if (__DEV__)
   console.log(

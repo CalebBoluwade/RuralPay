@@ -1,4 +1,4 @@
-import { useAuth } from "@/src/components/context/AuthProvider";
+import { useAuth } from "@/src/components/context/AuthSessionProvider";
 import { isLiquidGlassAvailable } from "expo-glass-effect";
 import { Stack } from "expo-router";
 import { useColorScheme } from "react-native";

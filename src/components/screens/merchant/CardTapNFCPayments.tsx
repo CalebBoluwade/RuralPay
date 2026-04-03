@@ -1,4 +1,5 @@
 import CardPIN from "@/src/components/ui/Modals/Transaction/CardPin";
+import { useClearLoadingOnLock } from "@/src/hooks/useClearLoadingOnLock";
 import NFCService from "@/src/lib/services/NFCService";
 import PaymentService from "@/src/lib/services/PaymentService";
 import ToastService from "@/src/lib/services/ToastService";
@@ -17,7 +18,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { SvgUri } from "react-native-svg";
 
-import { useAuth } from "@/src/components/context/AuthProvider";
+import { useAuth } from "@/src/components/context/AuthSessionProvider";
 import AmountInput from "@/src/components/ui/Input/AmountInput";
 import { LocationService } from "@/src/lib/services/LocationService";
 import { useNetInfo } from "@react-native-community/netinfo";
@@ -42,6 +43,7 @@ const CardTapNFCPayments: React.FC<CardTapNFCPaymentsProps> = ({
   const [amount, setAmount] = useState("");
   const [amountError, setAmountError] = useState("");
   const [loading, setLoading] = useState(false);
+  useClearLoadingOnLock(setLoading);
   const [paymentResult, setPaymentResult] =
     useState<APIResponse<TransactionHistoryItem> | null>(null);
   const [error, setError] = useState<string>("");

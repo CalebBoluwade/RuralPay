@@ -12,7 +12,7 @@ import {
   View,
 } from "react-native";
 import { SvgUri } from "react-native-svg";
-import { useAuth } from "../context/AuthProvider";
+import { useAuth } from "../context/AuthSessionProvider";
 
 interface BalanceCardProps {
   accountEnquiry?: AccountBalanceEnquiry;

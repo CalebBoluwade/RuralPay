@@ -1,33 +1,37 @@
-import { useAuth } from "@/src/components/context/AuthProvider";
+import { useAuth } from "@/src/components/context/AuthSessionProvider";
+import { useClearLoadingOnLock } from "@/src/hooks/useClearLoadingOnLock";
 import NFCPayments from "@/src/components/screens/merchant/CardTapNFCPayments";
 import MerchantQRModal from "@/src/components/screens/merchant/MerchantQR";
 import VirtualAccounts from "@/src/components/screens/merchant/VirtualAccounts";
 import ScreenHeader from "@/src/components/ui/ScreenHeader";
 import MerchantService from "@/src/lib/services/MerchantService";
+import PaymentService from "@/src/lib/services/PaymentService";
 import { router } from "expo-router";
 import {
-  BarChart2,
-  ChevronRight,
-  CreditCard,
-  QrCode,
-  Settings,
-  TrendingUp,
-  Wifi,
-  Zap,
+    ArrowUpDown,
+    BarChart2,
+    ChevronRight,
+    CreditCard,
+    QrCode,
+    Receipt,
+    Settings,
+    TrendingUp,
+    Wifi,
+    Zap,
 } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
 import {
-  ActivityIndicator,
-  Animated,
-  Modal,
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  Text,
-  View,
-  useColorScheme,
+    Animated,
+    FlatList,
+    Pressable,
+    RefreshControl,
+    ScrollView,
+    Text,
+    View,
+    useColorScheme,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import Loading from "../../ui/Modals/Loading";
 
 const QUICK_ACTIONS: {
   id: string;
@@ -105,28 +109,41 @@ export default function MerchantDashboard() {
   const [refreshing, setRefreshing] = useState(false);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [stats, setStats] = useState<MerchantDetails | null>(null);
+  const [recentTransactions, setRecentTransactions] = useState<
+    TransactionHistoryItem[]
+  >([]);
+  useClearLoadingOnLock(setLoading, setRefreshing);
 
   const headerAnim = useFadeSlide(0);
   const statsAnim = useFadeSlide(80);
   const actionsAnim = useFadeSlide(160);
   const menuAnim = useFadeSlide(240);
+  const txAnim = useFadeSlide(320);
 
-  const fetchStats = async () => {
-    const data = await MerchantService.GetMerchantAnalytics();
-    setStats(data);
-  };
+  const FetchMerchantData = async () => {
+    try {
+      const [paginatedTransactions, stats] = await Promise.all([
+        PaymentService.FetchRecentTransactions(3),
+        MerchantService.GetMerchantAnalytics(),
+      ]);
 
-  useEffect(() => {
-    fetchStats().finally(() => {
+      setRecentTransactions(paginatedTransactions.transactions);
+      setStats(stats);
+    } catch (error) {
+      if (__DEV__) console.error("Error Fetching Merchant Data:", error);
+    } finally {
       setLoading(false);
       setIsInitialLoad(false);
-    });
-  }, []);
+    }
+  };
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await fetchStats();
-    setRefreshing(false);
+    try {
+      await FetchMerchantData();
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const cardClass = isDark
@@ -166,12 +183,17 @@ export default function MerchantDashboard() {
 
   const accentColor = isDark ? "#a3e635" : "#65a30d";
 
+  useEffect(() => {
+    FetchMerchantData();
+  }, []);
+
   return (
     <SafeAreaView
       className={isDark ? "flex-1 bg-slate-950" : "flex-1 bg-slate-50"}
     >
       <ScrollView
         className="flex-1"
+        contentContainerStyle={{ flexGrow: 1 }}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
@@ -231,7 +253,7 @@ export default function MerchantDashboard() {
           ))}
         </Animated.View>
 
-        <View className="px-5 mt-5">
+        <View className="px-5 mt-5 mb-5">
           {/* Quick Actions */}
           <Animated.View style={actionsAnim} className="mb-6">
             <View className="flex-row gap-3">
@@ -307,34 +329,129 @@ export default function MerchantDashboard() {
           </Animated.View>
         </View>
 
-        <View className="h-24" />
+        {/* Recent Transactions */}
+        <Animated.View style={txAnim} className="px-5 mb-6">
+          <Pressable
+            className="flex-row justify-between items-center mb-3"
+            onPress={() => router.push("/transaction-history")}
+          >
+            <Text
+              className={`text-base font-brand font-bold ${
+                isDark ? "text-white" : "text-slate-900"
+              }`}
+            >
+              Recent Transactions
+            </Text>
+            <View className="flex-row items-center gap-1">
+              <Text
+                className={`text-xs font-brand font-semibold ${isDark ? "text-lime-400" : "text-lime-600"}`}
+              >
+                See all
+              </Text>
+              <ChevronRight size={14} color={isDark ? "#a3e635" : "#65a30d"} />
+            </View>
+          </Pressable>
+
+          <View className={`rounded-2xl overflow-hidden ${cardClass}`}>
+            <FlatList
+              data={recentTransactions}
+              keyExtractor={(item) => item.transactionId + item.transactionDate}
+              renderItem={({ item, index }) => (
+                <Pressable
+                  className={`flex-row items-center px-4 py-4 gap-3 ${
+                    index < recentTransactions.length - 1
+                      ? isDark
+                        ? "border-b border-white/10"
+                        : "border-b border-slate-100"
+                      : ""
+                  }`}
+                  onPress={() =>
+                    router.push(`/transaction/${item.transactionId}`)
+                  }
+                >
+                  <View className="bg-lime-500/20 rounded-xl w-12 h-12 items-center justify-center">
+                    <ArrowUpDown
+                      size={26}
+                      color={isDark ? "#a3e635" : "#65a30d"}
+                    />
+                  </View>
+                  <View className="flex-1">
+                    <Text
+                      className={`text-sm font-semibold ${
+                        isDark ? "text-white" : "text-slate-900"
+                      }`}
+                      numberOfLines={1}
+                    >
+                      {item.paymentMode}
+                    </Text>
+                    <Text
+                      className={`text-xs mt-0.5 ${
+                        isDark ? "text-slate-400" : "text-slate-500"
+                      }`}
+                    >
+                      {new Date(item.transactionDate).toLocaleDateString()}
+                    </Text>
+                  </View>
+
+                  <View className="flex-col gap-2 items-end">
+                    <Text
+                      className={`text-sm font-bold ${
+                        isDark ? "text-red-400" : "text-red-500"
+                      }`}
+                    >
+                      -₦{item.amount.toLocaleString()}
+                    </Text>
+
+                    <View
+                      className={`px-3 py-1 rounded-full ${
+                        item.status === "COMPLETED"
+                          ? isDark
+                            ? "bg-green-500/20 border border-green-500/30"
+                            : "bg-green-100 border border-green-200"
+                          : isDark
+                            ? "bg-orange-500/20 border border-orange-500/30"
+                            : "bg-orange-100 border border-orange-200"
+                      }`}
+                    >
+                      <Text
+                        className={`text-sm font-bold ${
+                          item.status === "COMPLETED"
+                            ? "text-green-500"
+                            : "text-orange-500"
+                        }`}
+                      >
+                        {item.status}
+                      </Text>
+                    </View>
+                  </View>
+                </Pressable>
+              )}
+              ListEmptyComponent={
+                <View className="py-10 items-center gap-2">
+                  <Receipt size={40} color={isDark ? "#334155" : "#cbd5e1"} />
+                  <Text
+                    className={`text-sm font-medium ${
+                      isDark ? "text-slate-500" : "text-slate-400"
+                    }`}
+                  >
+                    No recent transactions
+                  </Text>
+                </View>
+              }
+              scrollEnabled={false}
+            />
+          </View>
+        </Animated.View>
       </ScrollView>
 
       {/* Initial Load Modal */}
-      <Modal
-        visible={loading && isInitialLoad}
-        transparent
-        animationType="fade"
-      >
-        <View
-          className={`flex-1 justify-center items-center ${isDark ? "bg-black/80" : "bg-black/40"}`}
-        >
-          <View
-            className={`rounded-3xl p-8 items-center ${
-              isDark
-                ? "bg-slate-900 border border-white/20"
-                : "bg-white border border-slate-200"
-            }`}
-          >
-            <ActivityIndicator size="large" color={accentColor} />
-            <Text
-              className={`mt-4 text-sm font-semibold ${isDark ? "text-slate-300" : "text-slate-700"}`}
-            >
-              Loading dashboard...
-            </Text>
-          </View>
-        </View>
-      </Modal>
+      <Loading
+        loading={isInitialLoad}
+        isDark={isDark}
+        accentColor={accentColor}
+        screenName="Merchant Dashboard"
+        isInitialLoad={isInitialLoad}
+      />
 
       <NFCPayments
         showMerchantPayModal={showMerchantPayModal}

@@ -58,7 +58,7 @@ const OptimizedInput = <T extends FieldValues>({
   };
 
   return (
-    <View className="mb-3">
+    <View className="mb-5">
       {!!label && (
         <View className="flex-row justify-between items-center mb-1">
           <Text
@@ -103,6 +103,7 @@ const OptimizedInput = <T extends FieldValues>({
                   editable={editable && !onPress}
                   pointerEvents={onPress ? "none" : "auto"}
                   autoCapitalize={autoCapitalize}
+                  allowFontScaling
                 />
                 {showPasswordToggle && (
                   <Pressable

@@ -1,4 +1,4 @@
-import { useAuth } from "@/src/components/context/AuthProvider";
+import { useAuth } from "@/src/components/context/AuthSessionProvider";
 import { formatAmount } from "@/src/lib/utils/formatAmount";
 import React from "react";
 import { Text, View, useColorScheme } from "react-native";

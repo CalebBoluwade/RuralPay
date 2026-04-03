@@ -1,4 +1,4 @@
-import { useAuth } from "@/src/components/context/AuthProvider";
+import { useAuth } from "@/src/components/context/AuthSessionProvider";
 import { useLanguage } from "@/src/components/context/LanguageContext";
 import ScreenHeader from "@/src/components/ui/ScreenHeader";
 import { useIdentityGate } from "@/src/hooks/useIdentityGate";

@@ -49,35 +49,6 @@ class AccountService {
     };
   }
 
-  async ValidateBVN({
-    bvn,
-    phoneNumber,
-    email,
-  }: {
-    bvn: string;
-    phoneNumber: string;
-    email: string;
-  }): Promise<{ valid: boolean; message?: string }> {
-    try {
-      const response = await axiosInstance.post("/account/validate-bvn", {
-        bvn: bvn,
-        phoneNumber,
-        email,
-      });
-
-      const data = response.details;
-
-      if (data.valid) {
-        return { valid: true, message: data.message };
-      } else {
-        return { valid: false, message: data.message || "Invalid BVN" };
-      }
-    } catch (error: any) {
-      const message = error.response?.data?.message || "Failed to validate BVN";
-      return { valid: false, message };
-    }
-  }
-
   async LinkAccount(
     {
       bankCode,
@@ -147,22 +118,25 @@ class AccountService {
     }
   }
 
-  // async ValidateUserOTP(action: string, otp: string): Promise<APIResponse<{}>> {
-  //   try {
-  //     const response = await axiosInstance.post<APIResponse<{}>>(
-  //       "/account/verify-otp",
-  //       {
-  //         action,
-  //         otp,
-  //       },
-  //     );
+  async ValidateUserPhoneNumberOTP(
+    action: string,
+    otp: string,
+  ): Promise<APIResponse<{}>> {
+    try {
+      const response = await axiosInstance.post<APIResponse<{}>>(
+        "/account/verify-otp",
+        {
+          action,
+          otp,
+        },
+      );
 
-  //     return response;
-  //   } catch (error: any) {
-  //     const message = error.response?.data?.message || "Failed to validate OTP";
-  //     return { success: false, message, details: {} };
-  //   }
-  // }
+      return response;
+    } catch (error: any) {
+      const message = error.response?.data?.message || "Failed to validate OTP";
+      return { success: false, message, details: {} };
+    }
+  }
 
   async ValidateIdentity({
     bvn,
@@ -170,17 +144,17 @@ class AccountService {
   }: {
     bvn: string;
     selfieBase64: string;
-  }): Promise<APIResponse<{ verified: boolean; message?: string }>> {
+  }): Promise<APIResponse<{ identityToken: string }>> {
     try {
       const response = await axiosInstance.post("/account/validate-identity", {
         bvn,
-        selfie: selfieBase64,
+        userSelfie: selfieBase64,
       });
       return response;
     } catch (error: any) {
       const message =
         error.response?.data?.message || "Identity verification failed";
-      return { success: false, message, details: { verified: false } };
+      return { success: false, message, details: { identityToken: "" } };
     }
   }
 

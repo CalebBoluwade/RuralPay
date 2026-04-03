@@ -27,13 +27,19 @@ export const registerSchema = z
     email: z.email("Invalid Email Address"),
     phoneNumber: z
       .string("Enter a Phone Number")
-      .min(10, "Phone number must be at least 10 digits"),
+      .min(10, "Phone Number Must Be At Least 10 Digits")
+      .max(11, "Phone Number Must Be At Most 11 Digits"),
+    BVN: z
+      .string("Enter Your BVN")
+      .min(11, "BVN Must Be 11 Digits")
+      .max(11, "BVN Must Be 11 Digits")
+      .regex(/^[0-9]+$/, "BVN must contain only digits"),
     password: z
       .string("Enter A Password")
       .min(8, "Password Must Be At Least 8 Characters")
       .regex(
         passwordRegex,
-        "Password must include uppercase, lowercase, a number, and a special character",
+        "Password Must Include Uppercase, Lowercase, a Number, and a Special Character",
       ),
     confirmPassword: z.string("Confirm Password"),
     isMerchant: z.boolean().optional(),

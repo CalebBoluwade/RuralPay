@@ -254,9 +254,9 @@ const VoucherSection: React.FC<VoucherSectionProps> = ({
         >
           <Tag size={20} color={isDark ? "#334155" : "#cbd5e1"} />
           <Text
-            className={`text-xs text-center ${isDark ? "text-slate-500" : "text-slate-400"}`}
+            className={`text-base text-center ${isDark ? "text-slate-500" : "text-slate-400"}`}
           >
-            No vouchers available for this purchase
+            No Vouchers Available For This Purchase
           </Text>
         </View>
       ) : (

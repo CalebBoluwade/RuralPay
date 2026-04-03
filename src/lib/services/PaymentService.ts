@@ -5,20 +5,37 @@ import { integrityService } from "./IntegrityService";
 const INTEGRITY_ERROR = "Payment blocked: device security compromised";
 
 class PaymentService {
+  generateTransactionId(mode?: PaymentMode): string {
+    const timestamp = Date.now();
+    const [b0, b1, b2] = Crypto.getRandomBytes(3);
+    const random = ((b0 << 16) | (b1 << 8) | b2)
+      .toString(16)
+      .toUpperCase()
+      .padStart(6, "0");
+    const prefix = mode ? mode.replace(/_/g, "-") : "TX";
+    return `${prefix}-${timestamp}${random}`;
+  }
+
   async MakeAirtimePurchase(
     payload: AirtimeDataPayload,
   ): Promise<APIResponse<TransactionHistoryItem>> {
-    return axiosInstance.post<APIResponse<TransactionHistoryItem>>(
-      "/payments",
-      payload,
-    );
+    const response = await axiosInstance.post<
+      APIResponse<TransactionHistoryItem>
+    >("/payment", payload);
+    if (__DEV__)
+      console.log(
+        payload,
+        "Initiating airtime purchase with payload:",
+        response,
+      );
+    return response;
   }
 
   async GetBanks(abortSignal?: AbortSignal): Promise<Bank[]> {
     const response = await axiosInstance.get<APIResponse<Bank[]>>("/banks", {
       signal: abortSignal,
     });
-    return response.details;
+    return response.details ?? [];
   }
 
   async GetCardBIN(bin: string): Promise<BINData> {
@@ -37,7 +54,9 @@ class PaymentService {
       throw new Error(INTEGRITY_ERROR);
     const response = await axiosInstance.post<
       APIResponse<TransactionHistoryItem>
-    >("/payments", payload, { signal: abortSignal });
+    >("/payment", payload, { signal: abortSignal });
+
+    if (__DEV__) console.log(response);
     return response;
   }
 
@@ -47,23 +66,20 @@ class PaymentService {
   ): Promise<APIResponse<TransactionHistoryItem>> {
     if (await integrityService.isDeviceCompromised())
       throw new Error(INTEGRITY_ERROR);
-    const response = await axiosInstance.post<
-      APIResponse<TransactionHistoryItem>
-    >("/payments", payload, { signal: abortSignal });
 
-    console.log(response);
-    return response;
-  }
+    try {
+      const response = await axiosInstance.post<
+        APIResponse<TransactionHistoryItem>
+      >("/payment", payload, { signal: abortSignal });
 
-  generateTransactionId(mode?: PaymentMode): string {
-    const timestamp = Date.now();
-    const [b0, b1, b2] = Crypto.getRandomBytes(3);
-    const random = ((b0 << 16) | (b1 << 8) | b2)
-      .toString(16)
-      .toUpperCase()
-      .padStart(6, "0");
-    const prefix = mode ? mode.replace(/_/g, "-") : "TX";
-    return `${prefix}-${timestamp}-${random}`;
+      console.log(response);
+      return response;
+    } catch (error) {
+      if (__DEV__) console.error("Payment failed:", error);
+
+      return error as APIResponse<TransactionHistoryItem>;
+      // throw error;
+    }
   }
 
   async FetchAllTransactions(
@@ -111,9 +127,10 @@ class PaymentService {
   }
 
   async GetUserBeneficiaries(): Promise<Beneficiary[]> {
-    const response =
-      await axiosInstance.get<APIResponse<Beneficiary[]>>("/beneficiaries");
-    return response.details || [];
+    const response = await axiosInstance.get<APIResponse<Beneficiary[]>>(
+      "/payment/beneficiaries",
+    );
+    return response.details ?? [];
   }
 
   async FetchAllUSSDTransactions(): Promise<USSDTransaction[]> {
@@ -122,12 +139,17 @@ class PaymentService {
   }
 
   async FetchVouchers(vasType: string): Promise<Voucher[]> {
-    const response =
-      await axiosInstance.get<APIResponse<Voucher[]>>("/vouchers");
+    try {
+      const response =
+        await axiosInstance.get<APIResponse<Voucher[]>>("/vouchers");
 
-    return response.details.filter((v) =>
-      v.voucherAllowedServices.includes(vasType as VASType),
-    );
+      return response.details.filter((v) =>
+        v.voucherAllowedServices.includes(vasType as VASType),
+      );
+    } catch (error) {
+      console.error("Error fetching vouchers:", error);
+      return [];
+    }
   }
 
   async FetchUSSDCodeById(ussdCode: string): Promise<any> {

@@ -31,9 +31,15 @@ export function useAbortable(screenName: string): UseAbortableReturn {
   const requestIdRef = useRef<string>(
     `${screenName}-${Date.now()}-${Math.random()}`,
   );
-  const controllerRef = useRef<AbortController>(
-    requestCancellationService.createAbortController(requestIdRef.current),
-  );
+  const controllerRef = useRef<AbortController | null>(null);
+
+  // Always create a fresh controller on mount (handles remounts correctly)
+  if (controllerRef.current === null || controllerRef.current.signal.aborted) {
+    requestIdRef.current = `${screenName}-${Date.now()}-${Math.random()}`;
+    controllerRef.current = requestCancellationService.createAbortController(
+      requestIdRef.current,
+    );
+  }
 
   const cancel = () => {
     requestCancellationService.cancelRequest(requestIdRef.current);

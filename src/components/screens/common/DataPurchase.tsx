@@ -1,4 +1,5 @@
-import { useAuth } from "@/src/components/context/AuthProvider";
+import { useAuth } from "@/src/components/context/AuthSessionProvider";
+import { useClearLoadingOnLock } from "@/src/hooks/useClearLoadingOnLock";
 import ContactsModal from "@/src/components/ui/Modals/ContactsModal";
 import PaymentMethodModal from "@/src/components/ui/Modals/Transaction/PaymentMethodModal";
 import TransactionPin from "@/src/components/ui/Modals/Transaction/TransactionPinModal";
@@ -97,6 +98,7 @@ const DataPurchase = () => {
   const [isContactModalVisible, setIsContactModalVisible] = useState(false);
   const [isLoadingContacts, setIsLoadingContacts] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  useClearLoadingOnLock(setIsLoading, setIsLoadingContacts);
   // const [transactionResult, setTransactionResult] = useState<
   //   ReceiptData | undefined
   // >(undefined);

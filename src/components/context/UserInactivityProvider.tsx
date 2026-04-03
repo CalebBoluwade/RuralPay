@@ -2,7 +2,7 @@ import { router } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import React from "react";
 import { AppState, AppStateStatus } from "react-native";
-import { useAuth } from "./AuthProvider";
+import { useAuth } from "./AuthSessionProvider";
 
 const LOCK_TIMEOUT_KEY = "lockTimeout";
 const DEFAULT_LOCK_TIMEOUT = 60 * 5 * 1000; // 1 Minute

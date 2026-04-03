@@ -35,7 +35,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useAuth } from "../../../context/AuthProvider";
+import { useAuth } from "../../../context/AuthSessionProvider";
 import OTPInput from "../../Input/OTPInput";
 import PinSetupModal from "../PinSetupModal";
 import TransactionFailure from "./TransactionFailure";
@@ -83,7 +83,7 @@ const TransactionPin: React.FC<TransactionPinProps> = ({
     if (transactionResult) {
       await ReceiptService.DownloadTransactionReceipt({
         ...transactionResult,
-        amount: transactionResult.amount.toString(),
+        amount: (transactionResult.amount ?? 0).toString(),
       });
     }
   };

@@ -1,4 +1,4 @@
-import { useAuth } from "@/src/components/context/AuthProvider";
+import { useAuth } from "@/src/components/context/AuthSessionProvider";
 import ToastService from "@/src/lib/services/ToastService";
 import { PinService } from "@/src/lib/utils/SecureStorage";
 import { Ionicons } from "@expo/vector-icons";

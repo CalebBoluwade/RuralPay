@@ -4,7 +4,7 @@ import { router } from "expo-router";
 import { ShieldAlert } from "lucide-react-native";
 import React from "react";
 import { Platform, Pressable, Text, View, useColorScheme } from "react-native";
-import { useAuth } from "../context/AuthProvider";
+import { useAuth } from "../context/AuthSessionProvider";
 
 interface ComplianceGuardProps {
   children?: React.ReactNode;
@@ -17,8 +17,7 @@ export default function ComplianceGuard({
   const { isCompromised, isChecking } = useDeviceIntegrity();
   const isDark = useColorScheme() === "dark";
 
-  if (isLoading || isChecking) return null;
-
+  // Don't block render — show children while checks run, gate only on results
   if (isCompromised) {
     return (
       <View

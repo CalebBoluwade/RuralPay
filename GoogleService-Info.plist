@@ -9,7 +9,7 @@
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.zegiftedtechnologies.ruralpay</string>
+	<string>com.groovetech.ruralpay</string>
 	<key>PROJECT_ID</key>
 	<string>nfc-payments-886a1</string>
 	<key>STORAGE_BUCKET</key>

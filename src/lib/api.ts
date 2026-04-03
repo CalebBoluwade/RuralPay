@@ -10,7 +10,7 @@ const AUTH_TOKEN_KEY = "auth_token";
 // Flag to prevent duplicate SESSION_EXPIRED events
 let sessionExpiredEmitted = false;
 
-// Listen for reset signal from SessionProvider
+// Listen for reset signal from AuthSessionProvider
 DeviceEventEmitter.addListener("RESET_SESSION_EXPIRY_FLAG", () => {
   sessionExpiredEmitted = false;
   if (__DEV__) {
@@ -64,6 +64,7 @@ axiosInstance.interceptors.request.use(
         config.headers.Authorization = `Bearer ${token}`;
       }
     } catch (error) {
+      if (__DEV__) console.error("Error in request interceptor:", error, "for URL:", config.url);
       await ErrorHandler.handle(
         error,
         {
@@ -125,8 +126,9 @@ axiosInstance.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    // Only log API errors, not network connectivity issues
-    if (error.response?.status && error.response.status !== 0) {
+    // Only log API errors, not network connectivity issues or expected auth failures
+    const isAuthEndpointError = originalRequest?.url?.startsWith("/auth/");
+    if (error.response?.status && error.response.status !== 0 && !isAuthEndpointError) {
       await ErrorHandler.handle(
         error,
         {
@@ -141,11 +143,14 @@ axiosInstance.interceptors.response.use(
       );
     }
 
-    // Handle 401 Unauthorized — emit event for SessionProvider instead of immediate redirect
+    // Handle 401 Unauthorized — emit event for AuthSessionProvider instead of immediate redirect
+    // Skip auth endpoints: a 401 on /auth/* means wrong credentials, not session expiry
+    const isAuthEndpoint = originalRequest?.url?.startsWith("/auth/");
     if (
       error.response?.status === 401 &&
       originalRequest &&
-      !originalRequest._retry
+      !originalRequest._retry &&
+      !isAuthEndpoint
     ) {
       originalRequest._retry = true;
 
@@ -168,19 +173,16 @@ axiosInstance.interceptors.response.use(
       return Promise.reject(new Error("Session expired. Please log in again."));
     }
 
-    // Handle 423 Expired — lock screen (Expired Session)
+    // Handle 423 Locked — show lock screen for PIN re-entry
     if (error.response?.status === 423 && !originalRequest._retry) {
-      // Capture the current location so we can come back after PIN entry
       if (isRefreshing) {
-        // If we are already showing the PIN screen, queue this request
         try {
-          // Wait for the existing refresh process to finish
           await new Promise((resolve, reject) => {
             failedQueue.push({ resolve, reject });
           });
           return axios(originalRequest);
         } catch (err) {
-          throw err; // Standard throw instead of Promise.reject
+          throw err;
         }
       }
 
@@ -188,17 +190,21 @@ axiosInstance.interceptors.response.use(
       isRefreshing = true;
 
       router.push("/auth/lock-screen");
+      DeviceEventEmitter.emit("LOCK_SCREEN_SHOWN");
 
-      // We return a promise that won't resolve until the PIN is successful
       try {
         await new Promise<void>((resolve, reject) => {
-          DeviceEventEmitter.addListener("PIN_SUCCESS", () => {
+          const successSub = DeviceEventEmitter.addListener("PIN_SUCCESS", () => {
+            successSub.remove();
+            cancelSub.remove();
             isRefreshing = false;
             processQueue(null);
             resolve();
           });
 
-          DeviceEventEmitter.addListener("PIN_CANCEL", () => {
+          const cancelSub = DeviceEventEmitter.addListener("PIN_CANCEL", () => {
+            successSub.remove();
+            cancelSub.remove();
             isRefreshing = false;
             const cancelError = new Error("User cancelled PIN");
             processQueue(cancelError);
@@ -208,6 +214,7 @@ axiosInstance.interceptors.response.use(
 
         return axios(originalRequest);
       } catch (err) {
+        isRefreshing = false;
         throw err;
       }
     }

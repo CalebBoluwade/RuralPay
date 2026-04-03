@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   FlatList,
   Modal,
   Pressable,
@@ -16,6 +17,9 @@ interface BankModalProps {
   visible: boolean;
   onClose: () => void;
   onBankSelected: (bank: Bank) => void;
+  loading?: boolean;
+  fetchError?: boolean;
+  onRetry?: () => void;
 }
 
 const getUptimeColor = (uptime: number): string => {
@@ -68,6 +72,9 @@ const BanksModal: React.FC<BankModalProps> = ({
   visible,
   onClose,
   onBankSelected,
+  loading = false,
+  fetchError = false,
+  onRetry,
 }) => {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
@@ -120,22 +127,53 @@ const BanksModal: React.FC<BankModalProps> = ({
               onChangeText={setSearchQuery}
             />
           </View>
-          <FlatList
-            data={filteredBanks}
-            keyExtractor={(item) => item.code}
-            renderItem={({ item }) =>
-              renderBankItem(item, isDark, onBankSelected)
-            }
-            ListEmptyComponent={
-              <View className="flex-1 items-center justify-center py-16">
+          {loading ? (
+            <View className="flex-1 items-center justify-center">
+              <ActivityIndicator
+                size="large"
+                color={isDark ? "#10b981" : "#059669"}
+              />
+            </View>
+          ) : fetchError ? (
+            <View className="flex-1 items-center justify-center py-16 gap-3">
+              <Text
+                className={`text-base ${isDark ? "text-gray-400" : "text-gray-500"}`}
+              >
+                Failed To Load Banks
+              </Text>
+              <Pressable
+                onPress={onRetry}
+                className={`px-5 py-2 rounded-xl ${
+                  isDark ? "bg-emerald-500/20" : "bg-emerald-100"
+                }`}
+              >
                 <Text
-                  className={`text-base ${isDark ? "text-gray-400" : "text-gray-500"}`}
+                  className={`font-semibold ${
+                    isDark ? "text-emerald-400" : "text-emerald-700"
+                  }`}
                 >
-                  No Banks Found
+                  Retry
                 </Text>
-              </View>
-            }
-          />
+              </Pressable>
+            </View>
+          ) : (
+            <FlatList
+              data={filteredBanks}
+              keyExtractor={(item) => item.code}
+              renderItem={({ item }) =>
+                renderBankItem(item, isDark, onBankSelected)
+              }
+              ListEmptyComponent={
+                <View className="flex-1 items-center justify-center py-16">
+                  <Text
+                    className={`text-base ${isDark ? "text-gray-400" : "text-gray-500"}`}
+                  >
+                    No Banks Found
+                  </Text>
+                </View>
+              }
+            />
+          )}
 
           <Pressable
             className={`p-4 m-5 rounded-2xl backdrop-blur-xl ${

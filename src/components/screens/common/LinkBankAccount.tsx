@@ -30,11 +30,23 @@ export default function LinkBankAccount() {
   const [banks, setBanks] = useState<Bank[]>([]);
 
   useEffect(() => {
+    const controller = new AbortController();
     const fetchBanks = async () => {
-      const banks = await PaymentService.GetBanks();
-      setBanks(banks);
+      try {
+        const banks = await PaymentService.GetBanks(controller.signal);
+        setBanks(banks);
+      } catch (error) {
+        if (
+          error instanceof Error &&
+          error.name !== "AbortError" &&
+          error.name !== "CanceledError"
+        ) {
+          if (__DEV__) console.error("Failed to fetch banks:", error);
+        }
+      }
     };
     fetchBanks();
+    return () => controller.abort();
   }, []);
 
   useEffect(() => {

@@ -1,4 +1,4 @@
-import { useAuth } from "@/src/components/context/AuthProvider";
+import { useAuth } from "@/src/components/context/AuthSessionProvider";
 import QRCodeService from "@/src/lib/services/QRCodeService";
 import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";

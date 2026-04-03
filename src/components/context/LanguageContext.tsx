@@ -1,4 +1,4 @@
-import { getNestedTranslation, Language, translations } from "@/i18n";
+import { getNestedTranslation, getTranslations, Language, translations } from "@/i18n";
 import * as SecureStore from "expo-secure-store";
 import React, { createContext, useContext, useEffect, useState } from "react";
 
@@ -24,9 +24,11 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
       const saved = SecureStore.getItem("app_language");
       if (
         saved &&
-        (saved === "en" || saved === "yo" || saved === "ig" || saved === "ha")
+        (saved === "en" || saved === "yo" || saved === "ig" || saved === "ha" || saved === "gZ")
       ) {
-        setLanguageState(saved as Language);
+        const lang = saved as Language;
+        await getTranslations(lang); // preload into cache before switching
+        setLanguageState(lang);
       }
     } catch (error) {
       if (__DEV__) console.error("Failed to load language:", error);
@@ -35,6 +37,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
 
   const setLanguage = async (lang: Language) => {
     try {
+      await getTranslations(lang); // ensure cached before render
       SecureStore.setItem("app_language", lang);
       setLanguageState(lang);
     } catch (error) {

@@ -1,4 +1,4 @@
-import { useAuth } from "@/src/components/context/AuthProvider";
+import { useAuth } from "@/src/components/context/AuthSessionProvider";
 import ScreenHeader from "@/src/components/ui/ScreenHeader";
 import { complianceService, ComplianceService } from "@/src/lib/services/ComplianceService";
 import { router } from "expo-router";

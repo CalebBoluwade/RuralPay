@@ -14,7 +14,7 @@ global {
   type UserRegistrationStep =
     | "personal"
     | "merchant"
-    | "bvn"
+    // | "bvn"
     | "phone-verify"
     | "liveness"
     | "pin"
@@ -111,11 +111,12 @@ global {
   interface RegisterData {
     firstName: string;
     lastName: string;
+    userName: string;
     email: string;
     password: string;
     phoneNumber: string;
     bvn: string;
-    pushToken: string;
+    identityToken: string;
   }
 
   export interface User {

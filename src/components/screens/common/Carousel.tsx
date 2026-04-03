@@ -1,23 +1,23 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
-    Dimensions,
-    FlatList,
-    Pressable,
-    Text,
-    useColorScheme,
-    View,
-    ViewToken,
+  Dimensions,
+  FlatList,
+  Pressable,
+  Text,
+  useColorScheme,
+  View,
+  ViewToken,
 } from "react-native";
 import Animated, {
-    Easing,
-    useAnimatedStyle,
-    useSharedValue,
-    withRepeat,
-    withTiming,
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withTiming,
 } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
 interface Slide {
   id: string;
@@ -26,20 +26,31 @@ interface Slide {
   subtitle: string;
   accent: string; // Tailwind bg class for icon bubble
   accentText: string; // Tailwind text class for icon
-  bg: string; // Tailwind bg class for full slide
 }
 
 interface OnboardingCarouselProps {
   onFinish: () => void; // called when user taps "Get Started" or skips
 }
 
-function NfcWave() {
-  const scale = useSharedValue(0.8);
-  const opacity = useSharedValue(0.6);
+function NfcRing({
+  size,
+  color,
+  delay,
+}: {
+  size: number;
+  color: string;
+  delay: number;
+}) {
+  const scale = useSharedValue(0.6);
+  const opacity = useSharedValue(0.8);
 
   useEffect(() => {
-    scale.value = withRepeat(withTiming(1.8, { duration: 1500 }), -1, false);
-    opacity.value = withRepeat(withTiming(0, { duration: 1500 }), -1, false);
+    const start = () => {
+      scale.value = withRepeat(withTiming(1.8, { duration: 1800 }), -1, false);
+      opacity.value = withRepeat(withTiming(0, { duration: 1800 }), -1, false);
+    };
+    const t = setTimeout(start, delay);
+    return () => clearTimeout(t);
   }, []);
 
   const style = useAnimatedStyle(() => ({
@@ -48,15 +59,31 @@ function NfcWave() {
   }));
 
   return (
-    <View className="absolute items-center justify-center">
-      <Animated.View
-        style={style}
-        className="w-40 h-40 rounded-full border border-blue-400"
-      />
-      <Animated.View
-        style={style}
-        className="absolute w-56 h-56 rounded-full border border-blue-300"
-      />
+    <Animated.View
+      style={[
+        style,
+        {
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          borderWidth: 1.5,
+          borderColor: color,
+          position: "absolute",
+        },
+      ]}
+    />
+  );
+}
+
+function NfcWave() {
+  return (
+    <View
+      style={{ width: 160, height: 160 }}
+      className="items-center justify-center"
+    >
+      <NfcRing size={100} color="#93c5fd" delay={0} />
+      <NfcRing size={140} color="#bfdbfe" delay={400} />
+      <NfcRing size={180} color="#dbeafe" delay={800} />
     </View>
   );
 }
@@ -98,10 +125,9 @@ const SLIDES: Slide[] = [
     icon: "💳",
     title: "Instant Card Payments",
     subtitle:
-      "Tap your NFC-enabled card on any RuralPay terminal and complete a payment in under two seconds — no internet required.",
+      "Tap your Contactless Card On Any RuralPay terminal and complete a payment in under two seconds — no internet required.",
     accent: "bg-emerald-100",
     accentText: "text-emerald-600",
-    bg: "bg-white",
   },
   {
     id: "2",
@@ -111,7 +137,6 @@ const SLIDES: Slide[] = [
       "Transfer funds to any bank account or wallet in Nigeria instantly. Enter an account number or scan a QR code.",
     accent: "bg-blue-100",
     accentText: "text-blue-600",
-    bg: "bg-white",
   },
   {
     id: "3",
@@ -121,7 +146,6 @@ const SLIDES: Slide[] = [
       "Every transaction is protected by biometric verification and end-to-end encryption. Your money, always safe.",
     accent: "bg-violet-100",
     accentText: "text-violet-600",
-    bg: "bg-white",
   },
   {
     id: "4",
@@ -131,7 +155,6 @@ const SLIDES: Slide[] = [
       "Understand where your money goes with automatic categorisation, monthly summaries, and savings goals.",
     accent: "bg-amber-100",
     accentText: "text-amber-600",
-    bg: "bg-white",
   },
 ];
 
@@ -147,7 +170,7 @@ const Dots = ({
   <View className="flex-row items-center justify-center gap-x-2">
     {Array.from({ length: count }).map((_, i) => (
       <View
-        key={i + 1}
+        key={i}
         className={[
           "rounded-full transition-all",
           i === activeIndex ? "w-6 h-2 bg-lime-400" : "w-2 h-2 bg-gray-300",
@@ -170,23 +193,27 @@ const SlideItem = ({
 }) => (
   <View
     style={{ width: SCREEN_WIDTH }}
-    className={`flex-1 items-center justify-evenly px-8 --${item.bg}`}
+    className="flex-1 items-center justify-evenly px-8"
   >
     {/* Center Visual */}
     {index === 0 ? (
       <View className="items-center justify-center">
-        <NfcWave />
-
-        <FloatingCard />
-
-        <Text className="text-blue-400 mt-6 text-sm">Hold Near Terminal</Text>
+        <View
+          className="items-center justify-center"
+          style={{ marginBottom: 16 }}
+        >
+          <NfcWave />
+          <View style={{ position: "absolute" }}>
+            <FloatingCard />
+          </View>
+        </View>
       </View>
     ) : (
       <View
-        className={`w-28 h-28 rounded-3xl items-center justify-center mb-10 ${item.accent}`}
+        className={`w-40 h-40 rounded-3xl items-center justify-center mb-10 ${item.accent}`}
       >
         {/* Icon bubble */}
-        <Text style={{ fontSize: 52 }}>{item.icon}</Text>
+        <Text style={{ fontSize: 120 }}>{item.icon}</Text>
       </View>
     )}
 
@@ -208,7 +235,6 @@ export default function OnboardingCarousel({
 }: Readonly<OnboardingCarouselProps>) {
   const [activeIndex, setActiveIndex] = useState(0);
   const flatListRef = useRef<FlatList<Slide>>(null);
-  //   const scrollX = useRef(new Animated.Value(0)).current;
 
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
@@ -226,7 +252,7 @@ export default function OnboardingCarousel({
   );
   const viewabilityConfig = useRef({ viewAreaCoveragePercentThreshold: 50 });
 
-  const goNext = () => {
+  const goNext = useCallback(() => {
     if (isLast) {
       onFinish();
       return;
@@ -235,7 +261,7 @@ export default function OnboardingCarousel({
       index: activeIndex + 1,
       animated: true,
     });
-  };
+  }, [isLast, activeIndex, onFinish]);
 
   return (
     <SafeAreaView
@@ -248,7 +274,7 @@ export default function OnboardingCarousel({
             onPress={onFinish}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
-            <Text className="text-lime-500 text-base font-bold">Skip</Text>
+            <Text className="text-lime-500 text-lg font-bold">Skip</Text>
           </Pressable>
         )}
       </View>
@@ -283,7 +309,7 @@ export default function OnboardingCarousel({
             onPress={goNext}
             className={`bg-lime-400 rounded-2xl py-4 shadow-lg mb-2 `}
           >
-            <Text className="ext-black text-lg font-bold text-center tracking-wide">
+            <Text className="text-black text-lg font-bold text-center tracking-wide">
               Get Started
             </Text>
           </Pressable>

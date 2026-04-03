@@ -1,4 +1,4 @@
-import { useAuth } from "@/src/components/context/AuthProvider";
+import { useAuth } from "@/src/components/context/AuthSessionProvider";
 import BalanceCard from "@/src/components/ui/BalanceCard";
 import AmountInput from "@/src/components/ui/Input/AmountInput";
 import ScreenHeader from "@/src/components/ui/ScreenHeader";

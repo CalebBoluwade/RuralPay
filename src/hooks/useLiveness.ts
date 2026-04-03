@@ -1,255 +1,256 @@
 import AccountService from "@/src/lib/services/AccountService";
-import * as blazeface from "@tensorflow-models/blazeface";
-import * as tf from "@tensorflow/tfjs";
-import "@tensorflow/tfjs-backend-cpu";
-import { CameraView } from "expo-camera";
-import * as ImageManipulator from "expo-image-manipulator";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { ImageManipulator, SaveFormat } from "expo-image-manipulator";
+import { useCallback, useRef, useState } from "react";
+import {
+  Camera,
+  useCameraDevice,
+  useCameraPermission,
+  useFrameProcessor,
+} from "react-native-vision-camera";
+import {
+  Face,
+  FrameFaceDetectionOptions,
+  useFaceDetector,
+} from "react-native-vision-camera-face-detector";
+import { useRunOnJS } from "react-native-worklets-core";
 
 export type LivenessChallenge = "look_left" | "look_right" | "blink" | "done";
 export type LivenessStatus =
   | "idle"
-  | "loading"
   | "ready"
   | "detecting"
+  | "verifying"
   | "passed"
   | "failed";
 
 export interface VerificationResult {
   selfieImageUrl: string;
   livenessJobId: string;
-  kycJobId?: string;
+  identityToken: string;
   bvnMatch: boolean;
 }
 
 const CHALLENGES: LivenessChallenge[] = ["look_left", "look_right", "blink"];
-const CHALLENGE_TIMEOUT_MS = 5000;
-const DETECTION_INTERVAL_MS = 200;
+const CHALLENGE_TIMEOUT_MS = 25000;
 
 export const CHALLENGE_LABELS: Record<LivenessChallenge | "done", string> = {
-  look_left: "Turn your head left",
-  look_right: "Turn your head right",
-  blink: "Blink your eyes",
-  done: "All done!",
+  look_left: "Turn Your head left",
+  look_right: "Turn Your head right",
+  blink: "Blink Your eyes",
+  done: "All Done!",
 };
 
-interface FaceBox {
-  topLeft: [number, number];
-  bottomRight: [number, number];
-  landmarks: number[][];
-  probability: number;
-}
+const FACE_DETECTOR_OPTIONS: FrameFaceDetectionOptions = {
+  performanceMode: "fast",
+  landmarkMode: "all",
+  classificationMode: "all",
+  trackingEnabled: true,
+};
 
-export function useLiveness(
-  cameraRef: React.RefObject<CameraView | null>,
-  bvn?: string,
-) {
+export function useLiveness(bvn?: string) {
+  const { hasPermission, requestPermission } = useCameraPermission();
+  const device = useCameraDevice("front");
+  const cameraRef = useRef<Camera>(null);
+
   const [status, setStatus] = useState<LivenessStatus>("idle");
   const [challenge, setChallenge] = useState<LivenessChallenge>("look_left");
   const [challengeIndex, setChallengeIndex] = useState(0);
   const [selfieUri, setSelfieUri] = useState<string>("");
+  const [identityToken, setIdentityToken] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
+  const [tooDark, setTooDark] = useState(false);
 
-  const modelRef = useRef<blazeface.BlazeFaceModel | null>(null);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const prevFaceRef = useRef<FaceBox | null>(null);
   const challengeIndexRef = useRef(0);
+  const isDetectingRef = useRef(false);
+  const prevYawRef = useRef<number | null>(null);
+  const prevEyeOpenRef = useRef<number | null>(null);
 
-  const clearTimers = () => {
-    if (intervalRef.current) clearInterval(intervalRef.current);
+  const { detectFaces } = useFaceDetector(FACE_DETECTOR_OPTIONS);
+
+  const clearTimeout_ = () => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
   };
 
-  const initialize = useCallback(async () => {
-    try {
-      setStatus("loading");
-      await tf.setBackend("cpu");
-
-      await tf.ready();
-      modelRef.current = await blazeface.load({
-        maxFaces: 1,
-        scoreThreshold: 0.9,
-        iouThreshold: 0.7,
-      });
-      setStatus("ready");
-    } catch (e) {
-      if (__DEV__) console.log(e);
-      setError("Failed to Load Face Detection Model.");
-      setStatus("failed");
-    }
-  }, []);
-
-  useEffect(() => {
-    initialize();
-    return () => clearTimers();
-  }, []);
+  // Passport ratio: 3 wide : 4 tall
+  const PASSPORT_W = 300;
+  const PASSPORT_H = 400;
 
   const captureSelfie = async (): Promise<{
     uri: string;
     base64: string;
   } | null> => {
     if (!cameraRef.current) return null;
-    const photo = await cameraRef.current.takePictureAsync({
-      quality: 0.6,
-      base64: false,
-      skipProcessing: true,
+    const photo = await cameraRef.current.takePhoto({ flash: "off" });
+    if (!photo?.path) return null;
+    const uri = `file://${photo.path}`;
+
+    // photo dimensions (front camera may be landscape on Android)
+    const pw = photo.width;
+    const ph = photo.height;
+    const longSide = Math.max(pw, ph);
+    const shortSide = Math.min(pw, ph);
+
+    // crop a 3:4 region centred on the frame
+    const cropH = Math.round(longSide * 0.72); // ~72 % of long side
+    const cropW = Math.round(cropH * (3 / 4));
+    const originX = Math.round((shortSide - cropW) / 2);
+    const originY = Math.round((longSide - cropH) / 2);
+
+    const ctx = ImageManipulator.manipulate(uri);
+    ctx.crop({ originX, originY, width: cropW, height: cropH });
+    ctx.resize({ width: PASSPORT_W, height: PASSPORT_H });
+    const image = await ctx.renderAsync();
+    const resized = await image.saveAsync({
+      base64: true,
+      format: SaveFormat.JPEG,
+      compress: 0.85,
     });
-    if (!photo?.uri) return null;
-    const resized = await ImageManipulator.manipulateAsync(
-      photo.uri,
-      [{ resize: { width: 512, height: 512 } }],
-      { base64: true, format: ImageManipulator.SaveFormat.JPEG },
-    );
+    ctx.release();
+    image.release();
     return resized.base64 ? { uri: resized.uri, base64: resized.base64 } : null;
   };
 
-  const detectFace = async (): Promise<FaceBox | null> => {
-    if (!cameraRef.current || !modelRef.current) return null;
-    try {
-      const photo = await cameraRef.current.takePictureAsync({
-        quality: 0.3,
-        base64: false,
-        skipProcessing: true,
-      });
-      if (!photo?.uri) return null;
+  const advanceChallenge = useCallback(
+    async (idx: number) => {
+      clearTimeout_();
 
-      const resized = await ImageManipulator.manipulateAsync(
-        photo.uri,
-        [{ resize: { width: 128, height: 128 } }],
-        { base64: true, format: ImageManipulator.SaveFormat.JPEG },
-      );
-      if (!resized.base64) return null;
-      const imageData = Uint8Array.from(atob(resized.base64), (c) =>
-        c.charCodeAt(0),
-      );
-      const imageTensor = tf.tensor3d(imageData, [128, 128, 3], "int32");
-      const predictions = await modelRef.current.estimateFaces(
-        imageTensor,
-        false,
-      );
-      tf.dispose(imageTensor);
+      if (idx >= CHALLENGES.length) {
+        isDetectingRef.current = false;
+        setStatus("verifying");
+        const selfie = await captureSelfie();
+        if (!selfie || !bvn) {
+          setError("Failed to Capture Selfie.");
+          setStatus("failed");
+          return;
+        }
 
-      if (!predictions.length) return null;
-      const p = predictions[0] as any;
-      return {
-        topLeft: p.topLeft as [number, number],
-        bottomRight: p.bottomRight as [number, number],
-        landmarks: p.landmarks as number[][],
-        probability: Array.isArray(p.probability)
-          ? p.probability[0]
-          : p.probability,
-      };
-    } catch {
-      return null;
-    }
-  };
+        const response = await AccountService.ValidateIdentity({
+          bvn,
+          selfieBase64: selfie.base64,
+        });
 
-  // Landmark indices for BlazeFace: 0=right eye, 1=left eye, 2=nose, 3=mouth, 4=right ear, 5=left ear
-  const checkChallenge = (
-    face: FaceBox,
-    current: LivenessChallenge,
-  ): boolean => {
-    const prev = prevFaceRef.current;
-    const lm = face.landmarks;
+        if (!response.success) {
+          setError(response.message ?? "Unable To Verify Identity.");
+          setStatus("failed");
+          return;
+        }
 
-    if (current === "look_left") {
-      // nose moves left relative to midpoint between ears
-      const nosX = lm[2][0];
-      const midX = (lm[4][0] + lm[5][0]) / 2;
-      return nosX < midX - 12;
-    }
+        setSelfieUri(selfie.uri);
+        setIdentityToken(response.details.identityToken ?? "");
+        setStatus("passed");
+        return;
+      }
 
-    if (current === "look_right") {
-      const nosX = lm[2][0];
-      const midX = (lm[4][0] + lm[5][0]) / 2;
-      return nosX > midX + 12;
-    }
+      challengeIndexRef.current = idx;
+      setChallengeIndex(idx);
+      setChallenge(CHALLENGES[idx]);
+      prevYawRef.current = null;
+      prevEyeOpenRef.current = null;
 
-    if (current === "blink") {
-      if (!prev) return false;
-      // eye Y landmarks move closer together (eyes close)
-      const prevEyeDist = Math.abs(prev.landmarks[0][1] - prev.landmarks[1][1]);
-      const currEyeDist = Math.abs(lm[0][1] - lm[1][1]);
-      return currEyeDist < prevEyeDist * 0.6;
-    }
+      timeoutRef.current = setTimeout(() => {
+        isDetectingRef.current = false;
+        setError("Challenge Timed Out. Please Try Again.");
+        setStatus("failed");
+      }, CHALLENGE_TIMEOUT_MS);
+    },
+    [bvn],
+  );
 
-    return false;
-  };
+  const onLightingUpdate = useRunOnJS((dark: boolean) => {
+    setTooDark(dark);
+  }, []);
 
-  const advanceChallenge = useCallback(async (idx: number) => {
-    clearTimers();
+  const onFaceDetected = useRunOnJS(
+    (faces: Face[]) => {
+      if (!isDetectingRef.current || !faces.length) return;
 
-    if (idx >= CHALLENGES.length) {
-      const selfie = await captureSelfie();
-      if (!selfie || !bvn) {
-        setError("Failed to capture selfie.");
+      const face = faces[0];
+      const current = CHALLENGES[challengeIndexRef.current];
+
+      // face.yawAngle: negative = looking left, positive = looking right
+      // face.leftEyeOpenProbability / rightEyeOpenProbability: 0 = closed, 1 = open
+      let passed = false;
+
+      if (current === "look_left") {
+        passed = (face.yawAngle ?? 0) < -20;
+      } else if (current === "look_right") {
+        passed = (face.yawAngle ?? 0) > 20;
+      } else if (current === "blink") {
+        const eyeOpen =
+          ((face.leftEyeOpenProbability ?? 1) +
+            (face.rightEyeOpenProbability ?? 1)) /
+          2;
+        if (prevEyeOpenRef.current === null) {
+          prevEyeOpenRef.current = eyeOpen;
+        } else {
+          // detect transition from open → closed
+          passed = prevEyeOpenRef.current > 0.7 && eyeOpen < 0.3;
+          prevEyeOpenRef.current = eyeOpen;
+        }
+      }
+
+      if (passed) {
+        clearTimeout_();
+        advanceChallenge(challengeIndexRef.current + 1);
+      }
+    },
+    [advanceChallenge],
+  );
+
+  const frameProcessor = useFrameProcessor(
+    (frame) => {
+      "worklet";
+      // Sample Y-plane luminance (YUV: first width*height bytes = luma)
+      const buffer = frame.toArrayBuffer();
+      const bytes = new Uint8Array(buffer);
+      const total = frame.width * frame.height;
+      const step = Math.max(1, Math.floor(total / 1000)); // sample ~1000 pixels
+      let sum = 0;
+      let count = 0;
+      for (let i = 0; i < total; i += step) {
+        sum += bytes[i];
+        count++;
+      }
+      const avgLuma = sum / count; // 0–255
+      onLightingUpdate(avgLuma < 40);
+
+      if (!isDetectingRef.current) return;
+      const faces = detectFaces(frame);
+      onFaceDetected(faces);
+    },
+    [onFaceDetected, onLightingUpdate],
+  );
+
+  const start = useCallback(async () => {
+    if (!hasPermission) {
+      const granted = await requestPermission();
+      if (!granted) {
+        setError("Camera permission denied.");
         setStatus("failed");
         return;
       }
-      const response = await AccountService.ValidateIdentity({
-        bvn,
-        selfieBase64: selfie.base64,
-      });
-      if (!response.success) {
-        setError(response.message ?? "Identity verification failed.");
-        setStatus("failed");
-        return;
-      }
-      setSelfieUri(selfie.uri);
-      setStatus("passed");
-      return;
     }
-
-    const current = CHALLENGES[idx];
-    challengeIndexRef.current = idx;
-    setChallengeIndex(idx);
-    setChallenge(current);
-    prevFaceRef.current = null;
-
-    // Timeout if user doesn't complete challenge
-    timeoutRef.current = setTimeout(() => {
-      clearTimers();
-      setError("Challenge timed out. Please try again.");
-      setStatus("failed");
-    }, CHALLENGE_TIMEOUT_MS);
-
-    intervalRef.current = setInterval(async () => {
-      const face = await detectFace();
-      if (!face || face.probability < 0.75) {
-        prevFaceRef.current = null;
-        return;
-      }
-
-      if (checkChallenge(face, CHALLENGES[challengeIndexRef.current])) {
-        clearTimers();
-        prevFaceRef.current = null;
-        // Schedule next challenge to avoid creating timers during interval callback
-        setTimeout(() => advanceChallenge(challengeIndexRef.current + 1), 0);
-      } else {
-        prevFaceRef.current = face;
-      }
-    }, DETECTION_INTERVAL_MS);
-  }, [bvn]);
-
-  const start = useCallback(() => {
-    if (__DEV__) console.log(modelRef.current);
-    if (!modelRef.current) return;
     setError(null);
-    setStatus("detecting");
     setSelfieUri("");
     challengeIndexRef.current = 0;
+    isDetectingRef.current = true;
+    setStatus("detecting");
     advanceChallenge(0);
-  }, [advanceChallenge]);
+  }, [hasPermission, requestPermission, advanceChallenge]);
 
   const reset = useCallback(() => {
-    clearTimers();
-    setStatus("ready");
+    clearTimeout_();
+    isDetectingRef.current = false;
+    setStatus("idle");
     setChallenge("look_left");
     setChallengeIndex(0);
     setSelfieUri("");
     setError(null);
-    prevFaceRef.current = null;
+    setTooDark(false);
+    setIdentityToken("");
+    prevYawRef.current = null;
+    prevEyeOpenRef.current = null;
     challengeIndexRef.current = 0;
   }, []);
 
@@ -258,17 +259,22 @@ export function useLiveness(
       ? {
           selfieImageUrl: selfieUri,
           livenessJobId: `liveness_${Date.now()}`,
+          identityToken,
           bvnMatch: !!bvn,
         }
       : null;
 
   return {
+    cameraRef,
+    device,
+    frameProcessor,
     status,
     challenge,
     challengeIndex,
     totalChallenges: CHALLENGES.length,
     selfieUri,
     result,
+    tooDark,
     error,
     start,
     reset,

@@ -45,9 +45,9 @@ const TransactionSuccess: React.FC<TransactionSuccessProps> = ({
         <Text
           className={`text-base text-center px-4 ${isDark ? "text-gray-400" : "text-gray-600"}`}
         >
-          Your transaction of{" "}
-          {formatAmount(transactionResult.amount, "NGN", true, false)} was
-          completed successfully.
+          Your Transaction Of{" "}
+          {formatAmount(transactionResult.amount, "NGN", true, false)} Was
+          Completed Successfully.
         </Text>
       </View>
 
@@ -64,6 +64,23 @@ const TransactionSuccess: React.FC<TransactionSuccessProps> = ({
             className={`text-base font-semibold ${isDark ? "text-white" : "text-gray-900"}`}
           >
             {transactionResult?.reference}
+          </Text>
+        </View>
+        <View className="flex-row justify-between items-center mb-4">
+          <Text
+            // Keep this as is, or add a small right margin
+            className={`text-base font-medium mr-2 ${isDark ? "text-gray-400" : "text-gray-600"}`}
+          >
+            Transaction ID
+          </Text>
+          <Text
+            numberOfLines={1} // CRITICAL: Ellipses won't show without this
+            ellipsizeMode="head"
+            className={`flex-1 text-right text-base font-semibold ${
+              isDark ? "text-white" : "text-gray-900"
+            }`}
+          >
+            {transactionResult?.transactionId}
           </Text>
         </View>
         <View className="flex-row justify-between items-center mb-4">
@@ -101,7 +118,7 @@ const TransactionSuccess: React.FC<TransactionSuccessProps> = ({
             Download Receipt
           </Text>
         </Pressable>
-        <Pressable
+        {/* <Pressable
           className={`flex-1 rounded-2xl py-5 px-1 items-center backdrop-blur-xl ${
             isDark
               ? "bg-white/10 border border-white/20"
@@ -114,150 +131,18 @@ const TransactionSuccess: React.FC<TransactionSuccessProps> = ({
           >
             Share
           </Text>
+        </Pressable> */}
+
+        <Pressable
+          onPress={() => onClose()}
+          className={`flex-1 p-5 rounded-2xl border border-red-400`}
+        >
+          <Text className="text-center text-xl text-red-500 font-bold">
+            Close
+          </Text>
         </Pressable>
       </View>
-
-      <Pressable
-        onPress={() => onClose()}
-        className={`p-5 rounded-2xl ${isDark ? "bg-lime-600" : "bg-lime-500"}`}
-      >
-        <Text className="text-white text-center text-xl font-bold">Close</Text>
-      </Pressable>
     </View>
-
-    // <Modal
-    //   visible={visible}
-    //   animationType="slide"
-    //   presentationStyle="fullScreen"
-    //   onRequestClose={onClose}
-    // >
-    //   <View
-    //     className={`flex-1 justify-center items-center px-5 ${isDark ? "bg-black/80" : "bg-black/40"}`}
-    //   >
-    //     <View
-    //       className={`rounded-2xl p-6 w-full max-w-sm backdrop-blur-xl ${
-    //         isDark
-    //           ? "bg-white/10 border border-white/20"
-    //           : "bg-white/80 border border-gray-200/50"
-    //       }`}
-    //     >
-    //       <View className="items-center mb-6">
-    //         <View className="w-16 h-16 bg-green-500/20 rounded-full items-center justify-center mb-4">
-    //           <Ionicons name="checkmark" size={32} color="#22c55e" />
-    //         </View>
-    //         <Text
-    //           className={`text-2xl font-bold mb-2 ${isDark ? "text-white" : "text-gray-800"}`}
-    //         >
-    //           Transaction Successful
-    //         </Text>
-    //         <Text
-    //           className={`text-center ${isDark ? "text-gray-400" : "text-gray-600"}`}
-    //         >
-    //           Your {data.type} has been completed successfully
-    //         </Text>
-    //       </View>
-
-    //       <View
-    //         className={`rounded-2xl p-4 mb-6 backdrop-blur-xl ${
-    //           isDark
-    //             ? "bg-white/5 border border-white/10"
-    //             : "bg-gray-50/80 border border-gray-200/30"
-    //         }`}
-    //       >
-    //         <View className="flex-row justify-between mb-3">
-    //           <Text className={isDark ? "text-gray-400" : "text-gray-600"}>
-    //             Amount
-    //           </Text>
-    //           <Text
-    //             className={`font-semibold ${isDark ? "text-white" : "text-gray-800"}`}
-    //           >
-    //             ₦{data.amount}
-    //           </Text>
-    //         </View>
-    //         <View className="flex-row justify-between mb-3">
-    //           <Text className={isDark ? "text-gray-400" : "text-gray-600"}>
-    //             Recipient
-    //           </Text>
-    //           <Text
-    //             className={`font-semibold flex-1 text-right ${isDark ? "text-white" : "text-gray-800"}`}
-    //           >
-    //             {data.recipient}
-    //           </Text>
-    //         </View>
-    //         <View className="flex-row justify-between mb-3">
-    //           <Text className={isDark ? "text-gray-400" : "text-gray-600"}>
-    //             Reference
-    //           </Text>
-    //           <Text
-    //             className={`font-mono text-sm ${isDark ? "text-white" : "text-gray-800"}`}
-    //           >
-    //             {data.reference}
-    //           </Text>
-    //         </View>
-    //         <View className="flex-row justify-between mb-3">
-    //           <Text className={isDark ? "text-gray-400" : "text-gray-600"}>
-    //             Date
-    //           </Text>
-    //           <Text className={isDark ? "text-white" : "text-gray-800"}>
-    //             {data.date}
-    //           </Text>
-    //         </View>
-    //         {data.narration && (
-    //           <View className="flex-row justify-between">
-    //             <Text className={isDark ? "text-gray-400" : "text-gray-600"}>
-    //               Narration
-    //             </Text>
-    //             <Text
-    //               className={`flex-1 text-right ${isDark ? "text-white" : "text-gray-800"}`}
-    //             >
-    //               {data.narration}
-    //             </Text>
-    //           </View>
-    //         )}
-    //       </View>
-
-    //       <View className="flex-row space-x-2 gap-2 mb-4">
-    //         <Pressable
-    //           className={`flex-1 rounded-2xl py-3 px-1 items-center ${isDark ? "bg-emerald-600" : "bg-emerald-700"}`}
-    //           onPress={onDownloadReceipt}
-    //         >
-    //           <Text className="text-white text-base font-semibold break-words text-wrap">
-    //             Download Receipt
-    //           </Text>
-    //         </Pressable>
-    //         <Pressable
-    //           className={`flex-1 rounded-2xl py-3 px-1 items-center backdrop-blur-xl ${
-    //             isDark
-    //               ? "bg-white/10 border border-white/20"
-    //               : "bg-gray-200 border border-gray-300"
-    //           }`}
-    //           onPress={handleShare}
-    //         >
-    //           <Text
-    //             className={`font-semibold ${isDark ? "text-white" : "text-gray-800"}`}
-    //           >
-    //             Share
-    //           </Text>
-    //         </Pressable>
-    //       </View>
-
-    //       <Pressable
-    //         className={`rounded-2xl p-3 items-center backdrop-blur-xl ${
-    //           isDark
-    //             ? "bg-white/5 border border-white/10"
-    //             : "bg-gray-100 border border-gray-200"
-    //         }`}
-    //         onPress={onClose}
-    //       >
-    //         <Text
-    //           className={`font-semibold ${isDark ? "text-white" : "text-gray-800"}`}
-    //         >
-    //           Done
-    //         </Text>
-    //       </Pressable>
-    //     </View>
-    //   </View>
-    // </Modal>
   );
 };
 

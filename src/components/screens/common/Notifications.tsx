@@ -1,13 +1,17 @@
 import AccountService from "@/src/lib/services/AccountService";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { BanknoteArrowUp, CreditCard, ShieldAlert } from "lucide-react-native";
+import {
+  BanknoteArrowUp,
+  Bell,
+  CreditCard,
+  ShieldAlert,
+} from "lucide-react-native";
 import { useEffect, useState } from "react";
 import {
   FlatList,
   Pressable,
   RefreshControl,
-  ScrollView,
   Text,
   useColorScheme,
   View,
@@ -74,19 +78,15 @@ export default function Notifications() {
           </Text>
         </View>
 
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          refreshControl={
-            <RefreshControl
-              refreshing={loading}
-              onRefresh={handleRefresh}
-              // tintColor={accentColor}
-              // colors={[accentColor]}
-            />
-          }
-        >
           <FlatList
             data={notifications}
+            showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl
+                refreshing={loading}
+                onRefresh={handleRefresh}
+              />
+            }
             renderItem={({ item }) => {
               const NotificationIcon = getNotificationIcon(item.type);
 
@@ -144,8 +144,26 @@ export default function Notifications() {
                 </Pressable>
               );
             }}
+            ListEmptyComponent={
+              <View className="flex-1 items-center justify-center py-24 gap-4">
+                <View
+                  className={`rounded-full p-5 ${isDark ? "bg-slate-800" : "bg-slate-100"}`}
+                >
+                  <Bell size={32} color={isDark ? "#475569" : "#94a3b8"} />
+                </View>
+                <Text
+                  className={`text-lg font-semibold ${isDark ? "text-slate-300" : "text-slate-700"}`}
+                >
+                  No Notifications Yet
+                </Text>
+                <Text
+                  className={`text-sm text-center ${isDark ? "text-slate-500" : "text-slate-400"}`}
+                >
+                  You&apos;re all caught up! Check back later for updates.
+                </Text>
+              </View>
+            }
           />
-        </ScrollView>
       </View>
     </SafeAreaView>
   );

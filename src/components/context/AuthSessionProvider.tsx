@@ -1,9 +1,11 @@
+import { SessionExpiryModal } from "@/src/components/ui/Modals/SessionExpiryModal";
 import { authService } from "@/src/lib/services/AuthService";
 import { complianceService } from "@/src/lib/services/ComplianceService";
 import { biometricService } from "@/src/lib/utils/SecureStorage";
 import { router } from "expo-router";
 import { jwtDecode } from "jwt-decode";
 import React, { createContext, useContext, useEffect, useState } from "react";
+import { DeviceEventEmitter } from "react-native";
 
 interface AuthContextType {
   user: User | null;
@@ -33,7 +35,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({
+export function AuthSessionProvider({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   const [user, setUser] = useState<User | null>(null);
@@ -44,16 +46,13 @@ export function AuthProvider({
   const [hasBiometricCredentials, setHasBiometricCredentials] = useState(false);
   const [hasRequiredConsents, setHasRequiredConsents] = useState(false);
   const [consentOutdated, setConsentOutdated] = useState(false);
-
   const [token, setToken] = useState<string | null>(null);
   const [isLocked, setIsLocked] = useState(false);
+  const [showSessionExpiredModal, setShowSessionExpiredModal] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const lock = () => setIsLocked(true);
   const unlock = () => setIsLocked(false);
-
-  //   const timerRef = useRef<NodeJS.Timeout>();
-  // const interactionListenerRef = useRef<any>();
-  // const appStateRef = useRef<AppStateStatus>(appState);
 
   useEffect(() => {
     checkAuthState();
@@ -61,19 +60,22 @@ export function AuthProvider({
 
   const checkAuthState = async () => {
     try {
-      const authData = await authService.getStoredAuthData();
+      const [authData, hasBiometric, hasConsents, outdated] = await Promise.all(
+        [
+          authService.getStoredAuthData(),
+          biometricService.hasBiometricCredentials(),
+          complianceService.hasRequiredConsents(),
+          complianceService.isConsentOutdated(),
+        ],
+      );
+
       if (authData) {
         setUser(authData.details.user);
+        setToken(authData.details.token);
       }
-
-      const hasBiometric = await biometricService.hasBiometricCredentials();
       setHasBiometricCredentials(hasBiometric);
       if (hasBiometric) setNativeAuthLogin(true);
-
-      const hasConsents = await complianceService.hasRequiredConsents();
       setHasRequiredConsents(hasConsents);
-
-      const outdated = await complianceService.isConsentOutdated();
       setConsentOutdated(outdated);
     } catch (error) {
       if (__DEV__) console.error("Auth check failed:", error);
@@ -86,17 +88,56 @@ export function AuthProvider({
   useEffect(() => {
     if (!token) return;
 
-    const decoded: any = jwtDecode(token);
-    const expiry = decoded.exp * 1000;
+    try {
+      const decoded: any = jwtDecode(token);
+      const expiry = decoded.exp * 1000;
+      const currentTime = Date.now();
+      const timeUntilExpiry = expiry - currentTime;
 
-    if (__DEV__) console.log("Az Expired: " + expiry, expiry - Date.now());
+      if (__DEV__) {
+        console.log("Token expiry time:", new Date(expiry).toLocaleString());
+        console.log(
+          "Time until expiry:",
+          Math.floor(timeUntilExpiry / 1000),
+          "seconds",
+        );
+      }
 
-    const timeout = setTimeout(() => {
+      // If token is already expired, logout immediately
+      if (timeUntilExpiry <= 0) {
+        if (__DEV__) console.log("Token already expired, logging out");
+        logout();
+        return;
+      }
+
+      const timeout = setTimeout(
+        () => {
+          logout();
+        },
+        Math.min(timeUntilExpiry, 2147483647),
+      );
+
+      return () => clearTimeout(timeout);
+    } catch (error) {
+      console.error("Error decoding token:", error);
+      // Optionally logout if token is invalid
       logout();
-    }, expiry - Date.now());
-
-    return () => clearTimeout(timeout);
+    }
   }, [token]);
+
+  // SESSION_EXPIRED event listener — always active for the lifetime of the provider
+  useEffect(() => {
+    const subscription = DeviceEventEmitter.addListener(
+      "SESSION_EXPIRED",
+      () => {
+        if (__DEV__)
+          console.log("[AuthSessionProvider] Session expired event received");
+        setShowSessionExpiredModal((prev) => (prev ? prev : true));
+      },
+    );
+
+    return () => subscription.remove();
+  }, []);
 
   const checkConsents = async () => {
     const hasConsents = await complianceService.hasRequiredConsents();
@@ -124,9 +165,9 @@ export function AuthProvider({
     setNativeAuthLogin(true);
 
     if (authResponse.details.user.role === "merchant") {
-      return router.push("/merchant");
+      return router.replace("/merchant");
     } else if (authResponse.details.user.role === "consumer") {
-      return router.push("/user");
+      return router.replace("/user");
     }
   };
 
@@ -153,26 +194,20 @@ export function AuthProvider({
     setUser(authResponse.details.user);
 
     if (authResponse.details.user.role === "merchant") {
-      return router.push("/merchant");
+      return router.replace("/merchant");
     } else if (authResponse.details.user.role === "consumer") {
-      return router.push("/user");
+      return router.replace("/user");
     }
   };
 
   const register = async (data: RegisterData) => {
     const authResponse = await authService.register(data);
 
-    // if (authResponse.user.role === "merchant") {
-    //   await complianceService.createMerchantConsents(authResponse.user.id);
-    // } else if (authResponse.user.role === "consumer") {
-    //   await complianceService.createConsumerConsents(authResponse.user.id);
-    // }
-
     if (!authResponse?.success) {
       throw new Error("Registration failed. Please try again.");
     }
 
-    router.push("/auth/login");
+    router.replace("/auth/login");
     return authResponse.details.userId;
   };
 
@@ -180,8 +215,30 @@ export function AuthProvider({
     await authService.logout();
     setUser(null);
     setToken(null);
+  };
 
-    router.replace("/auth/login");
+  const handleSessionExpiry = async () => {
+    if (isLoggingOut) return;
+
+    setIsLoggingOut(true);
+    try {
+      await logout();
+      setShowSessionExpiredModal(false);
+      DeviceEventEmitter.emit("RESET_SESSION_EXPIRY_FLAG");
+      router.replace("/auth/login");
+    } catch (error) {
+      if (__DEV__) {
+        console.error(
+          "[AuthSessionProvider] Error during session expiry logout:",
+          error,
+        );
+      }
+      setShowSessionExpiredModal(false);
+      DeviceEventEmitter.emit("RESET_SESSION_EXPIRY_FLAG");
+      router.replace("/auth/login");
+    } finally {
+      setIsLoggingOut(false);
+    }
   };
 
   const updateNativeAuthSettings = async (
@@ -191,7 +248,6 @@ export function AuthProvider({
     setNativeAuthLogin(login);
     setNativeAuthTransactions(transactions);
 
-    // Clear biometric credentials if biometric login is disabled
     if (!login && hasBiometricCredentials) {
       await biometricService.clearBiometricCredentials();
       setHasBiometricCredentials(false);
@@ -228,6 +284,12 @@ export function AuthProvider({
       }}
     >
       {children}
+
+      <SessionExpiryModal
+        visible={showSessionExpiredModal}
+        onConfirm={handleSessionExpiry}
+        isLoading={isLoggingOut}
+      />
     </AuthContext.Provider>
   );
 }
@@ -235,7 +297,7 @@ export function AuthProvider({
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider");
+    throw new Error("useAuth must be used within an AuthSessionProvider");
   }
   return context;
 }

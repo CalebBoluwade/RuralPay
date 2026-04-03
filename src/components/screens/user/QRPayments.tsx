@@ -1,6 +1,7 @@
 import PaymentMethodModal from "@/src/components/ui/Modals/Transaction/PaymentMethodModal";
 import TransactionPin from "@/src/components/ui/Modals/Transaction/TransactionPinModal";
 import ScreenHeader from "@/src/components/ui/ScreenHeader";
+import { useClearLoadingOnLock } from "@/src/hooks/useClearLoadingOnLock";
 import PaymentService from "@/src/lib/services/PaymentService";
 import QRCodeService from "@/src/lib/services/QRCodeService";
 import ToastService from "@/src/lib/services/ToastService";
@@ -35,6 +36,7 @@ const QRPayments = () => {
   const [showPaymentMethodModal, setShowPaymentMethodModal] = useState(false);
   const [showPinModal, setShowPinModal] = useState(false);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  useClearLoadingOnLock(setLoading, setIsProcessingPayment);
   const [pendingPaymentData, setPendingPaymentData] = useState<{
     method: PaymentMethod;
     accountNumber?: string;
@@ -191,17 +193,15 @@ const QRPayments = () => {
           ) : !permission?.granted ? (
             <View className="items-center gap-4">
               <Text
-                className={`text-center ${isDark ? "text-gray-300" : "text-gray-700"}`}
+                className={`text-center mb-2 ${isDark ? "text-gray-300" : "text-gray-700"}`}
               >
-                Camera access is required to scan QR codes.
+                Camera Access Is Required To Scan QR Codes.
               </Text>
               <Pressable
-                className={`px-6 py-3 rounded-2xl ${isDark ? "bg-violet-600" : "bg-violet-700"}`}
+                className={`bg-lime-400 rounded-2xl py-4 shadow-lg px-6`}
                 onPress={requestPermission}
               >
-                <Text className="text-white font-semibold">
-                  Grant Permission
-                </Text>
+                <Text className="font-semibold">Grant Permission</Text>
               </Pressable>
             </View>
           ) : (

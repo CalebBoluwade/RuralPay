@@ -1,8 +1,10 @@
-import { useAuth } from "@/src/components/context/AuthProvider";
+import { useAuth } from "@/src/components/context/AuthSessionProvider";
 import { useLanguage } from "@/src/components/context/LanguageContext";
 import BalanceCard from "@/src/components/ui/BalanceCard";
+import PinSetupModal from "@/src/components/ui/Modals/PinSetupModal";
 import ScreenHeader from "@/src/components/ui/ScreenHeader";
 import { useAbortable } from "@/src/hooks/useAbortable";
+import { useClearLoadingOnLock } from "@/src/hooks/useClearLoadingOnLock";
 import AccountService from "@/src/lib/services/AccountService";
 import PaymentService from "@/src/lib/services/PaymentService";
 import ToastService from "@/src/lib/services/ToastService";
@@ -112,7 +114,9 @@ export default function Index() {
   const [refreshing, setRefreshing] = useState(false);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [hasPIN, setHasPIN] = useState(true);
+  const [showPinModal, setShowPinModal] = useState(false);
   const { user } = useAuth();
+  useClearLoadingOnLock(setLoading, setRefreshing);
 
   const headerAnim = useFadeSlide(0);
   const balanceAnim = useFadeSlide(80);
@@ -138,13 +142,12 @@ export default function Index() {
     try {
       await Location.getForegroundPermissionsAsync();
       const [paginatedTransactions, balance] = await Promise.all([
-        PaymentService.FetchRecentTransactions(3, abortController.signal),
+        PaymentService.FetchRecentTransactions(5, abortController.signal),
         AccountService.AccountBalanceEnquiry(abortController.signal),
       ]);
       setRecentTransactions(paginatedTransactions.transactions);
       setAccountEnquiry(balance ?? [{} as BalanceEnquiry]);
     } catch (error) {
-      // AbortError is expected when user navigates away, so don't log it
       if (error instanceof Error && error.name !== "AbortError") {
         if (__DEV__) console.warn(error);
         ToastService.error("Failed to Load Account Data");
@@ -157,8 +160,11 @@ export default function Index() {
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await loadAccountData();
-    setRefreshing(false);
+    try {
+      await loadAccountData();
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const checkFirstVisit = async () => {
@@ -177,16 +183,16 @@ export default function Index() {
       show: true,
       icon: <Store size={28} color={isDark ? "#a3e635" : "#65a30d"} />,
       title: "Link Account",
-      subtitle: "Add accounts. Start transacting today!",
-      route: "/common/LinkBankAccount",
+      subtitle: "Add Accounts. Start Transacting Today!",
+      route: "/link-account",
     },
     {
       key: "pin",
       show: !hasPIN,
       icon: <KeyRound size={28} color={isDark ? "#a3e635" : "#65a30d"} />,
       title: "Setup Your PIN",
-      subtitle: "Create a 6-digit PIN to protect your account.",
-      route: "/common/LinkBankAccount",
+      subtitle: "Create a 6-Digit PIN to Protect your Account.",
+      route: null,
     },
     {
       key: "transact",
@@ -194,7 +200,7 @@ export default function Index() {
       icon: <Zap size={28} color={isDark ? "#a3e635" : "#65a30d"} />,
       title: "Start Transacting Today",
       subtitle: "Make your first payment.",
-      route: "/Payments",
+      route: "/bankTransfers",
     },
   ].filter((t) => t.show);
 
@@ -287,7 +293,11 @@ export default function Index() {
                           : "border-b border-slate-100"
                         : ""
                     }`}
-                    onPress={() => router.push(todo.route as any)}
+                    onPress={() =>
+                      todo.key === "pin"
+                        ? setShowPinModal(true)
+                        : router.push(todo.route as any)
+                    }
                   >
                     <View
                       className={`w-12 h-12 rounded-xl items-center justify-center ${
@@ -326,7 +336,7 @@ export default function Index() {
           <Animated.View style={txAnim} className="mb-6">
             <Pressable
               className="flex-row justify-between items-center mb-3"
-              onPress={() => router.push("/transaction/TransactionHistory")}
+              onPress={() => router.push("/transaction-history")}
             >
               <Text
                 className={`text-base font-brand font-bold ${
@@ -444,6 +454,15 @@ export default function Index() {
 
         <View className="h-24" />
       </ScrollView>
+
+      <PinSetupModal
+        visible={showPinModal}
+        onComplete={() => {
+          setShowPinModal(false);
+          setHasPIN(true);
+        }}
+        onCancel={() => setShowPinModal(false)}
+      />
 
       {/* Initial Load Modal */}
       <Modal

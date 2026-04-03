@@ -1,4 +1,5 @@
-import { useAuth } from "@/src/components/context/AuthProvider";
+import { useAuth } from "@/src/components/context/AuthSessionProvider";
+import { useClearLoadingOnLock } from "@/src/hooks/useClearLoadingOnLock";
 import AmountInput from "@/src/components/ui/Input/AmountInput";
 import ContactsModal from "@/src/components/ui/Modals/ContactsModal";
 import PaymentMethodModal from "@/src/components/ui/Modals/Transaction/PaymentMethodModal";
@@ -89,6 +90,7 @@ const AirtimePurchase = () => {
   const [contactNumbers, setContactNumbers] = useState<PhoneNumber[]>([]);
   const [isContactModalVisible, setIsContactModalVisible] = useState(false);
   const [isLoadingContacts, setIsLoadingContacts] = useState(false);
+  useClearLoadingOnLock(setIsLoading, setIsLoadingContacts);
 
   const networkAnim = useFadeSlide(0);
   const phoneAnim = useFadeSlide(80);

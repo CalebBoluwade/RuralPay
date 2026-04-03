@@ -51,16 +51,34 @@ set +a
 echo "🚀 Building for '$APP_ENV' on '$APP_PLATFORM'..."
 
 if [[ "$APP_PLATFORM" == "android" ]]; then
-  # bunx expo prebuild --clean --platform android
-  bunx expo run:android --no-build-cache --variant debug
+  bunx expo prebuild --clean --platform android
+  bunx expo run:android --no-build-cache --variant Release
+
+  # Clean up build artifacts to save space -PreactNativeArchitectures=arm64-v8a,armeabi-v7a
+  echo "🧹 Cleaning up Android build artifacts..."
+  rm -rf android/.gradle
+  rm -rf ~/.gradle/caches
+  rm -rf ~/.gradle/daemon
+  rm -rf ~/.gradle/buildOutputCleanup
+  rm -rf android/build
+  rm -rf android/app/build
+  rm -rf .expo
 
 elif [[ "$APP_PLATFORM" == "ios" ]]; then
-  bunx expo prebuild --clean --platform ios
-  if [[ "$APP_ENV" == "development" ]]; then
-    bunx expo run:ios --no-build-cache
-  else
-    bunx expo run:ios --device --no-build-cache
-  fi
+  # Wait for physical device to be ready
+  echo "⏳ Waiting for iOS device to be available..."
+  for i in {1..12}; do
+    DEVICE_STATE=$(xcrun xctrace list devices 2>/dev/null | grep -v "Simulator" | grep -v "^==" | grep -v "^$" | head -5)
+    if [[ -n "$DEVICE_STATE" ]]; then
+      echo "📱 Device detected, proceeding..."
+      break
+    fi
+    echo "   Attempt $i/12 — device not ready, waiting 5s..."
+    sleep 5
+  done
+
+  # bunx expo prebuild --clean --platform ios
+  bunx expo run:ios --device --no-build-cache
 fi
 
 echo "✅ Build complete."

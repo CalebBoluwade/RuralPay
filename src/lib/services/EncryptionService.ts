@@ -1,6 +1,6 @@
 import * as Crypto from "expo-crypto";
+import forge from "node-forge";
 import * as Keychain from "react-native-keychain";
-import { RSA } from "react-native-rsa-native";
 import nacl from "tweetnacl";
 import { axiosInstance } from "../api";
 
@@ -8,6 +8,18 @@ interface UserKey {
   publicKey: string;
   hash: string;
   algorithm: string;
+}
+
+function uint8ToBase64(bytes: Uint8Array): string {
+  return btoa(String.fromCharCode(...bytes));
+}
+
+function concatUint8Arrays(arrays: Uint8Array[]): Uint8Array {
+  const total = arrays.reduce((sum, a) => sum + a.byteLength, 0);
+  const result = new Uint8Array(total);
+  let offset = 0;
+  for (const arr of arrays) { result.set(arr, offset); offset += arr.byteLength; }
+  return result;
 }
 
 class EncryptionService {
@@ -65,12 +77,15 @@ class EncryptionService {
       const aesKey = Crypto.getRandomBytes(32); // 256-bit AES key as Uint8Array
       const iv = Crypto.getRandomBytes(12); // 12-byte IV for AES-GCM
 
-      // 3. Convert AES key to Base64 string for RSA encryption
-      const aesKeyBase64 = Buffer.from(aesKey).toString("base64");
-
-      // 4. Encrypt AES key with RSA public key
-      const encryptedAesKeyBase64 = await RSA.encrypt(aesKeyBase64, publicKey);
-      const encryptedAesKey = Buffer.from(encryptedAesKeyBase64, "base64");
+      // 4. Encrypt AES key with RSA public key (OAEP + SHA-256)
+      const rsakey = forge.pki.publicKeyFromPem(publicKey);
+      const encryptedAesKey = Uint8Array.from(
+        forge.util.binary.raw.decode(
+          rsakey.encrypt(forge.util.binary.raw.encode(aesKey), "RSA-OAEP", {
+            md: forge.md.sha256.create(),
+          }),
+        ),
+      );
 
       // 5. Encrypt PII data with authenticated encryption
       const encryptedData = this.encryptWithSecretBox(data, aesKey, iv);
@@ -82,7 +97,7 @@ class EncryptionService {
         encryptedData,
       );
 
-      return payload.toString("base64");
+      return uint8ToBase64(payload);
     } catch (error) {
       if (__DEV__) console.error("PII encryption failed:", error);
       throw new Error("Failed To Secure Sensitive Data");
@@ -122,20 +137,14 @@ class EncryptionService {
    * Format: [2 bytes: RSA key length] + [RSA encrypted key] + [12 bytes: IV] + [ciphertext + auth tag]
    */
   private buildEncryptionPayload(
-    encryptedAesKey: Buffer,
+    encryptedAesKey: Uint8Array,
     iv: Uint8Array,
     encryptedData: Uint8Array,
-  ): Buffer {
-    const rsaKeyLength = encryptedAesKey.byteLength;
-    const lengthBuffer = Buffer.allocUnsafe(2);
-    lengthBuffer.writeUInt16LE(rsaKeyLength, 0);
+  ): Uint8Array {
+    const lengthBuffer = new Uint8Array(2);
+    new DataView(lengthBuffer.buffer).setUint16(0, encryptedAesKey.byteLength, true);
 
-    return Buffer.concat([
-      lengthBuffer,
-      encryptedAesKey,
-      Buffer.from(iv),
-      Buffer.from(encryptedData),
-    ]);
+    return concatUint8Arrays([lengthBuffer, encryptedAesKey, iv, encryptedData]);
   }
 }
 

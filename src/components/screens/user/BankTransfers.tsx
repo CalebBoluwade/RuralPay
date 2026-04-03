@@ -6,6 +6,7 @@ import PaymentMethodModal from "@/src/components/ui/Modals/Transaction/PaymentMe
 import TransactionPin from "@/src/components/ui/Modals/Transaction/TransactionPinModal";
 import ScreenHeader from "@/src/components/ui/ScreenHeader";
 import { useAbortable } from "@/src/hooks/useAbortable";
+import { useClearLoadingOnLock } from "@/src/hooks/useClearLoadingOnLock";
 import { TransferFormData, transferSchema } from "@/src/lib/schema/validations";
 import AccountService from "@/src/lib/services/AccountService";
 import { LocationService } from "@/src/lib/services/LocationService";
@@ -51,6 +52,9 @@ const BankTransfers = () => {
   const [nameLoading, setNameLoading] = useState(false);
   const [selectedBankName, setSelectedBankName] = useState<string>("");
   const [banks, setBanks] = useState<Bank[]>([]);
+  const [banksLoading, setBanksLoading] = useState(false);
+  const [banksError, setBanksError] = useState(false);
+  useClearLoadingOnLock(setLoading, setNameLoading, setBanksLoading);
   const [saveBeneficiary, setSaveBeneficiary] = useState(false);
 
   const {
@@ -106,20 +110,35 @@ const BankTransfers = () => {
     }
   };
 
-  useEffect(() => {
-    const fetchBanks = async () => {
-      try {
-        const banks = await PaymentService.GetBanks(abortController.signal);
-        setBanks(banks);
-      } catch (error) {
-        // Ignore AbortError
-        if (error instanceof Error && error.name !== "AbortError") {
-          if (__DEV__) console.error("Failed to fetch banks:", error);
-        }
+  const fetchBanks = async () => {
+    setBanksError(false);
+    setBanksLoading(true);
+    try {
+      const result = await PaymentService.GetBanks(abortController.signal);
+      if (Array.isArray(result) && result.length > 0) {
+        setBanks(result);
+      } else {
+        if (__DEV__)
+          console.warn("GetBanks returned empty or invalid:", result);
+        setBanksError(true);
       }
-    };
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        error.name !== "AbortError" &&
+        error.name !== "CanceledError"
+      ) {
+        if (__DEV__) console.error("Failed to fetch banks:", error);
+        setBanksError(true);
+      }
+    } finally {
+      setBanksLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchBanks();
-  }, [abortController.signal]);
+  }, []);
 
   useEffect(() => {
     performNameEnquiry();
@@ -198,6 +217,10 @@ const BankTransfers = () => {
 
     try {
       const result = await processTransfer(TwoFA_VerificationCode);
+
+      result.amount = Number(transferData.amount);
+      result.narration = transferData.narration;
+
       setTransactionResult(result);
 
       setLoading(false);
@@ -279,7 +302,7 @@ const BankTransfers = () => {
 
   return (
     <SafeAreaView
-      className={isDark ? "flex-1 bg-[#0a0a0f]" : "flex-1 bg-[#f5f5fa]"}
+      className={`flex-1 ${isDark ? "bg-slate-950" : "bg-slate-50"}`}
     >
       <ScreenHeader
         title="Bank Transfers"
@@ -314,7 +337,7 @@ const BankTransfers = () => {
           </Text>
           <Pressable onPress={() => setShowBeneficiaryModal(true)}>
             <Text
-              className={`text-sm font-semibold ${isDark ? "text-emerald-400" : "text-emerald-700"}`}
+              className={`text-sm font-semibold ${isDark ? "text-lime-400" : "text-lime-700"}`}
             >
               Beneficiaries
             </Text>
@@ -341,7 +364,7 @@ const BankTransfers = () => {
             <View className="flex-row items-center">
               <ActivityIndicator
                 size="small"
-                color={isDark ? "#a78bfa" : "#7c3aed"}
+                color={isDark ? "#a3e635" : "#7c3aed"}
               />
               <Text
                 className={`ml-2 ${isDark ? "text-white" : "text-gray-900"}`}
@@ -390,12 +413,12 @@ const BankTransfers = () => {
               key={preset}
               onPress={() => setValue("narration", preset)}
               className={`px-3 py-2 rounded-full ${
-                isDark ? "bg-emerald-500/30" : "bg-emerald-100"
+                isDark ? "bg-lime-500/30" : "bg-lime-100"
               }`}
             >
               <Text
                 className={`font-semibold ${
-                  isDark ? "text-emerald-300" : "text-emerald-700"
+                  isDark ? "text-lime-300" : "text-lime-700"
                 }`}
               >
                 {preset} {categoryEmojis[preset]}{" "}
@@ -429,7 +452,7 @@ const BankTransfers = () => {
 
         <Pressable
           className={`p-6 rounded-2xl mb-4 ${
-            isDark ? "bg-emerald-600" : "bg-emerald-700"
+            isDark ? "bg-lime-400" : "bg-emerald-700"
           } ${loading ? "opacity-50" : ""}`}
           onPress={handleSubmit(onSubmit)}
           disabled={loading}
@@ -438,7 +461,7 @@ const BankTransfers = () => {
           {loading ? (
             <ActivityIndicator color={isDark ? "#a78bfa" : "#7c3aed"} />
           ) : (
-            <Text className={`text-xl font-bold text-center text-white`}>
+            <Text className={`text-xl font-bold text-center`}>
               💸 Send Money
             </Text>
           )}
@@ -463,7 +486,6 @@ const BankTransfers = () => {
             onCancel={handleCloseSuccess}
           />
         )}
-        {/* </View> */}
 
         <BeneficiaryModal
           visible={showBeneficiaryModal}
@@ -476,6 +498,9 @@ const BankTransfers = () => {
           visible={showBankModal}
           onClose={() => setShowBankModal(false)}
           onBankSelected={handleBankSelection}
+          loading={banksLoading}
+          fetchError={banksError}
+          onRetry={fetchBanks}
         />
 
         <PaymentMethodModal

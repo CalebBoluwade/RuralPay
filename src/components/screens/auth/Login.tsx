@@ -1,6 +1,7 @@
-import { useAuth } from "@/src/components/context/AuthProvider";
+import { useAuth } from "@/src/components/context/AuthSessionProvider";
 import { useLanguage } from "@/src/components/context/LanguageContext";
 import OptimizedInput from "@/src/components/ui/Input/OptimizedInput";
+import Loading from "@/src/components/ui/Modals/Loading";
 import SelectLanguageModal from "@/src/components/ui/Modals/SelectLanguageModal";
 import { LoginFormData, loginSchema } from "@/src/lib/schema/validations";
 import ToastService from "@/src/lib/services/ToastService";
@@ -19,7 +20,6 @@ import {
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import {
-  ActivityIndicator,
   Image,
   Pressable,
   ScrollView,
@@ -147,6 +147,13 @@ export default function LoginScreen() {
     <SafeAreaView
       className={`flex-1 ${isDark ? "bg-slate-950" : "bg-slate-50"}`}
     >
+      <Loading
+        loading={isLoading}
+        isInitialLoad={isLoading}
+        accentColor={isDark ? "#a3e635" : "#65a30d"}
+        isDark={isDark}
+        screenName="Login"
+      />
       <KeyboardAwareScrollView
         contentContainerStyle={{ flexGrow: 1 }}
         enableOnAndroid
