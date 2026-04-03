@@ -65,7 +65,7 @@ export default function CardManagement() {
       // Read card info
       const cardInfo = await NFCService.readCard();
 
-      console.log(cardInfo);
+      if (__DEV__) console.log(cardInfo);
 
       // Prompt for credentials
       Alert.prompt(

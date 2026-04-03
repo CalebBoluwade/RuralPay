@@ -1,15 +1,19 @@
 import { useEffect, useRef } from "react";
 import { AppState } from "react-native";
-import { useAuth } from "../components/context/AuthProvider";
+import { useAuth } from "../components/context/AuthSessionProvider";
 
-console.log("INACTIVITY_TIMEOUT:", process.env.EXPO_PUBLIC_INACTIVITY_TIMEOUT);
+if (__DEV__)
+  console.log(
+    "INACTIVITY_TIMEOUT:",
+    process.env.EXPO_PUBLIC_INACTIVITY_TIMEOUT,
+  );
 const INACTIVITY_TIMEOUT = process.env.EXPO_PUBLIC_INACTIVITY_TIMEOUT
   ? Number.parseInt(process.env.EXPO_PUBLIC_INACTIVITY_TIMEOUT)
   : 5 * 60 * 1000; // 5 Minutes
 
 export const useInactivity = () => {
   const { lock } = useAuth();
-  const timer = useRef<number | null>(null);
+  const timer = useRef<NodeJS.Timeout | null>(null);
   const lastBackgroundTime = useRef<number | null>(null);
 
   const resetTimer = () => {
@@ -40,7 +44,7 @@ export const useInactivity = () => {
       if (timer.current) clearTimeout(timer.current);
       subscription.remove();
     };
-  }, []);
+  }, [lock]);
 
   return { resetTimer };
 };

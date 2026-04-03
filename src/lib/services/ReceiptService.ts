@@ -3,218 +3,163 @@ import * as Sharing from "expo-sharing";
 import { Alert } from "react-native";
 
 export class ReceiptService {
-  static async downloadReceipt(data: ReceiptData): Promise<void> {
+  static async DownloadTransactionReceipt(receipt: ReceiptData): Promise<void> {
     try {
-      const transactionDate = data.date
-        ? new Date(data.date).toLocaleString()
+      const transactionDate = receipt.transactionDate
+        ? new Date(receipt.transactionDate).toLocaleString()
         : new Date().toLocaleString();
-      const transactionId = `TXN${Date.now().toString().slice(-8)}`;
-      const merchantId = data.merchantId || "MID123456789";
-      const terminalId = data.terminalId || "TID987654321";
-      const cardMask = data.cardLast4
-        ? `****-****-****-${data.cardLast4}`
+
+      const merchantId = receipt.merchantName || "MID123456789";
+      const terminalId = receipt.terminalId || "TID987654321";
+      const cardMask = receipt.cardLast4
+        ? `****-****-****-${receipt.cardLast4}`
         : "****-****-****-1234";
 
       const htmlContent = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="utf-8">
-          <title>Transaction Receipt</title>
-          <style>
-            body {
-              font-family: 'Courier New', monospace;
-              margin: 20px;
-              background: white;
-              color: black;
-            }
-            .receipt {
-              max-width: 400px;
-              margin: 0 auto;
-              border: 2px solid #000;
-              padding: 20px;
-            }
-            .header {
-              text-align: center;
-              border-bottom: 2px solid #000;
-              padding-bottom: 15px;
-              margin-bottom: 15px;
-            }
-            .title {
-              font-size: 18px;
-              font-weight: bold;
-              margin-bottom: 5px;
-            }
-            .subtitle {
-              font-size: 14px;
-              margin-bottom: 10px;
-            }
-            .section {
-              margin: 15px 0;
-            }
-            .row {
-              display: flex;
-              justify-content: space-between;
-              margin: 5px 0;
-            }
-            .label {
-              font-weight: bold;
-            }
-            .amount {
-              font-size: 20px;
-              font-weight: bold;
-              text-align: center;
-              margin: 15px 0;
-            }
-            .footer {
-              text-align: center;
-              border-top: 2px solid #000;
-              padding-top: 15px;
-              margin-top: 15px;
-              font-size: 12px;
-            }
-            .divider {
-              border-top: 1px dashed #000;
-              margin: 10px 0;
-            }
-          </style>
-        </head>
-        <body>
-          <div class="receipt">
-            <div class="header">
-              <div class="title">RURAL PAYMENTS</div>
-              <div class="subtitle">TRANSACTION RECEIPT</div>
-            </div>
-            
-            <div class="section">
-              ${
-                data.type === "CARD"
-                  ? `
-              <div class="row">
-                <span class="label">MERCHANT ID:</span>
-                <span>${merchantId}</span>
-              </div>
-              <div class="row">
-                <span class="label">TERMINAL ID:</span>
-                <span>${terminalId}</span>
-              </div>`
-                  : ""
-              }
-              <div class="row">
-                <span class="label">TRANSACTION ID:</span>
-                <span>${transactionId}</span>
-              </div>
-            </div>
-            
-            <div class="divider"></div>
-            
-            <div class="section">
-              <div class="row">
-                <span class="label">TRANSACTION TYPE:</span>
-                <span>${data.type.toUpperCase()}</span>
-              </div>
-              <div class="row">
-                <span class="label">DATE/TIME:</span>
-                <span>${transactionDate}</span>
-              </div>
-            </div>
-            
-            <div class="divider"></div>
-            
-            <div class="section">
-              ${
-                data.type === "CARD"
-                  ? `
-              <div class="row">
-                <span class="label">CARD NUMBER:</span>
-                <span>${cardMask}</span>
-              </div>`
-                  : ""
-              }
-              ${
-                data.type === "QR"
-                  ? `
-              <div class="row">
-                <span class="label">MERCHANT ID:</span>
-                <span>${merchantId}</span>
-              </div>`
-                  : ""
-              }
-              ${
-                data.type === "BANK_TRANSFER" && data.senderAccount
-                  ? `
-              <div class="row">
-                <span class="label">SENDER ACCOUNT:</span>
-                <span>${data.senderAccount}</span>
-              </div>`
-                  : ""
-              }
-              ${
-                data.type === "USSD"
-                  ? `
-              <div class="row">
-                <span class="label">USSD CODE:</span>
-                <span>*123#</span>
-              </div>`
-                  : ""
-              }
-              <div class="amount">
-                ₦${parseFloat(data.amount).toLocaleString("en-NG", { minimumFractionDigits: 2 })}
-              </div>
-              ${
-                data.recipient
-                  ? `
-              <div class="row">
-                <span class="label">RECIPIENT:</span>
-                <span>${data.recipient}</span>
-              </div>`
-                  : ""
-              }
-              ${
-                data.senderName
-                  ? `
-              <div class="row">
-                <span class="label">SENDER:</span>
-                <span>${data.senderName}</span>
-              </div>`
-                  : ""
-              }
-              ${
-                data.narration
-                  ? `
-              <div class="row">
-                <span class="label">DESCRIPTION:</span>
-                <span>${data.narration}</span>
-              </div>`
-                  : ""
-              }
-            </div>
-            
-            <div class="divider"></div>
-            
-            <div class="section">
-              <div class="row">
-                <span class="label">REFERENCE:</span>
-                <span>${data.reference}</span>
-              </div>
-              <div class="row">
-                <span class="label">STATUS:</span>
-                <span style="color: green; font-weight: bold;">APPROVED</span>
-              </div>
-              <div class="row">
-                <span class="label">RESPONSE CODE:</span>
-                <span>00</span>
-              </div>
-            </div>
-            
-            <div class="footer">
-              <div style="font-weight: bold; margin-bottom: 10px;">TRANSACTION SUCCESSFUL</div>
-              <div style="margin-bottom: 10px;">PLEASE KEEP THIS RECEIPT</div>
-              <div>Generated: ${new Date().toLocaleString()}</div>
-            </div>
-          </div>
-        </body>
-        </html>
+      <!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Transaction Receipt</title>
+  <style>
+    body { font-family: Arial, sans-serif; background:#f4f4f4; margin:0; padding:0; }
+    .container { max-width:600px; margin:40px auto; background:#fff; border-radius:8px; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,.08); }
+    .header { background:#000; padding:24px 32px; display:flex; align-items:center; gap:12px; }
+    .header h1 { color:#a3e635; margin:0; font-size:20px; }
+    .body { padding:32px; color:#111; }
+    .amount-box { background:#f0fdf4; border-left:4px solid #a3e635; padding:16px 20px; border-radius:4px; margin:20px 0; }
+    .amount-box .amount { font-size:28px; font-weight:700; color:#4d7c0f; }
+    .detail-row { display:flex; justify-content:space-between; width:100%; padding:8px 0; border-bottom:1px solid #f0f0f0; font-size:14px; }
+    .detail-row:last-child { border-bottom:none; }
+    .label { color:#6b7280; margin-right:6px; }
+    .value { font-weight:600; color:#111; }
+    .status-badge { display:inline-block; padding:4px 12px; border-radius:20px; font-size:12px; font-weight:700; text-transform:uppercase; background:#ecfccb; color:#3f6212; }
+    .footer { background:#f9fafb; padding:20px 32px; text-align:center; font-size:12px; color:#4b5563; border-top:1px solid #e5e7eb; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>RuralPay</h1>
+  </div>
+  <div class="body">
+    <h2 style="font-size:22px;margin:0 0 4px;">Transaction Receipt ✅</h2>
+    <p style="color:#4b5563;margin:0 0 20px;">Here's a Summary Of Your Transaction.</p>
+
+    <div class="amount-box">
+      <p style="margin:0 0 2px;font-size:12px;color:#4d7c0f;font-weight:600;text-transform:uppercase;letter-spacing:.5px;">Amount</p>
+      <div class="amount">₦${parseFloat(receipt.amount).toLocaleString("en-NG", { minimumFractionDigits: 2 })}</div>
+      <div style="margin-top:6px;"><span class="status-badge">Approved</span></div>
+    </div>
+
+    <div style="margin-bottom:24px;">
+      ${
+        receipt.paymentMode === "CARD"
+          ? `
+      <div class="detail-row">
+        <span class="label">Merchant ID</span>
+        <span class="value">${merchantId}</span>
+      </div>
+      <div class="detail-row">
+        <span class="label">Terminal ID</span>
+        <span class="value">${terminalId}</span>
+      </div>
+      <div class="detail-row">
+        <span class="label">Card Number</span>
+        <span class="value">${cardMask}</span>
+      </div>`
+          : ""
+      }
+
+      ${
+        receipt.paymentMode === "QR"
+          ? `
+      <div class="detail-row">
+        <span class="label">Merchant ID</span>
+        <span class="value">${merchantId}</span>
+      </div>`
+          : ""
+      }
+
+      ${
+        receipt.paymentMode === "BANK_TRANSFER" && receipt.senderAccount
+          ? `
+      <div class="detail-row">
+        <span class="label">Sender Account</span>
+        <span class="value">${receipt.senderAccount}</span>
+      </div>`
+          : ""
+      }
+
+      ${
+        receipt.paymentMode === "USSD"
+          ? `
+      <div class="detail-row">
+        <span class="label">USSD Code</span>
+        <span class="value">*123#</span>
+      </div>`
+          : ""
+      }
+
+      ${
+        receipt.toAccount
+          ? `
+      <div class="detail-row">
+        <span class="label">Recipient</span>
+        <span class="value">${receipt.toAccount}</span>
+      </div>`
+          : ""
+      }
+
+      ${
+        receipt.senderName
+          ? `
+      <div class="detail-row">
+        <span class="label">Sender</span>
+        <span class="value">${receipt.senderName}</span>
+      </div>`
+          : ""
+      }
+
+      <div class="detail-row">
+        <span class="label">Payment Type</span>
+        <span class="value">${receipt.paymentMode.toUpperCase()}</span>
+      </div>
+      <div class="detail-row">
+        <span class="label">Date / Time</span>
+        <span class="value">${transactionDate}</span>
+      </div>
+      <div class="detail-row">
+        <span class="label">Reference</span>
+        <span class="value">${receipt.reference}</span>
+      </div>
+      <div class="detail-row">
+        <span class="label">Transaction ID</span>
+        <span class="value" style="font-size:12px;word-break:break-all;">${receipt.transactionId}</span>
+      </div>
+      <div class="detail-row">
+        <span class="label">Response Code</span>
+        <span class="value">00</span>
+      </div>
+
+      ${
+        receipt.narration
+          ? `
+      <div class="detail-row">
+        <span class="label">Description</span>
+        <span class="value">${receipt.narration}</span>
+      </div>`
+          : ""
+      }
+    </div>
+  </div>
+  <div class="footer">
+    &copy; RuralPay. This is an Automated Notification — Please do not reply.
+  </div>
+</div>
+</body>
+</html>
       `;
 
       // Generate PDF
@@ -237,7 +182,7 @@ export class ReceiptService {
         );
       }
     } catch (error) {
-      console.error("Error generating receipt PDF:", error);
+      if (__DEV__) console.error("Error generating receipt PDF:", error);
       Alert.alert(
         "Error",
         "Failed to generate receipt PDF. Please try again.",

@@ -86,7 +86,7 @@ class NFCService {
 
   TapToPayShareAndroid = async (content: string) => {
     if (Platform.OS !== "android") {
-      console.warn("HCE is Only Supported on Android");
+      if (__DEV__) console.warn("HCE is Only Supported on Android");
       return;
     }
     try {
@@ -106,9 +106,10 @@ class NFCService {
       const hceSession = new HCEDefault.HCESession();
       hceSession.setApplication(tag);
       hceSession.setEnabled(true);
-      console.log("HCE Session Active: Phone is now acting as a tag");
+      if (__DEV__)
+        console.log("HCE Session Active: Phone is now acting as a tag");
     } catch (error) {
-      console.error("HCE Error:", error);
+      if (__DEV__) console.error("HCE Error:", error);
     }
   };
 
@@ -124,7 +125,7 @@ class NFCService {
 
       if (tag.ndefMessage) {
         const rawData = tag.ndefMessage[0].payload;
-        console.log(rawData);
+        if (__DEV__) console.log(rawData);
         const sessionUrl = this.decodeSharedDataPayload(rawData); // e.g., "my-app://transfer/12345"
 
         // Extract ID and call your API
@@ -213,7 +214,7 @@ class NFCService {
   //           break;
   //         }
   //       } catch (e) {
-  //         console.error("AID failed:", name, e);
+  //        if (__DEV__) console.error("AID failed:", name, e);
   //       }
   //     }
 
@@ -395,26 +396,28 @@ class NFCService {
       const cardInfo = await this.readCard();
 
       if (!cardInfo.success || !cardInfo?.PAN || !cardInfo?.BIN) {
-        ToastService.error("Failed to Read Card");
-        throw new Error("Failed to Read Card");
+        ToastService.error("Failed to Read Card 1");
+        throw new Error("Failed to Read Card 1");
       }
 
-      // Format PIN block (ISO Format 0)
-      const pinBlock = this.formatISO0Block(cardPIN, cardInfo.PAN);
+      // Format PIN block (ISO Format 0) only if PIN is provided
+      let pinBlock = "";
+      if (cardPIN) {
+        pinBlock = this.formatISO0Block(cardPIN, cardInfo.PAN);
+      }
 
       // ENCRYPT BEFORE SAVING TO DB
-      const securePAN = await EncryptionService.EncryptDataForBackend(
-        cardInfo.PAN,
-      );
-      const securePIN = await EncryptionService.EncryptDataForBackend(pinBlock);
+      const securePAN = await EncryptionService.EncryptPII(cardInfo.PAN);
+      const securePIN = cardPIN
+        ? await EncryptionService.EncryptPII(pinBlock)
+        : "";
 
       cardInfo.PAN = securePAN;
       cardInfo.PIN = securePIN;
 
       const transaction: NFCCardTransaction = {
-        transactionID: PaymentService.generateTransactionId(),
+        transactionID: PaymentService.generateTransactionId("CARD"),
         transactionDate: Math.floor(Date.now() / 1000),
-        // transactionDate: new Date().toISOString(),
         merchantId,
         amount,
         paymentMode: "CARD",
@@ -454,12 +457,141 @@ class NFCService {
       try {
         await NfcManager.cancelTechnologyRequest();
       } catch (e) {
-        console.log(e);
+        if (__DEV__) console.log(e);
       }
     }
   }
 
-  // private async executeDbTransaction<T>(
+  /**
+   * Reads card data without requiring PIN - used for initial card tap
+   */
+  async ReadNFCCardOnly(): Promise<CardDetailsResult> {
+    try {
+      const compromised = await integrityService.isDeviceCompromised();
+      if (compromised) {
+        return {
+          success: false,
+          BIN: "",
+          message: "Payment Rejected: device security compromised",
+        };
+      }
+
+      ToastService.info("Hold Card Near Device...");
+
+      const isSupported = await NfcManager.isSupported();
+      if (!isSupported) {
+        return {
+          BIN: "",
+          success: false,
+          message: "NFC is Not Supported on this Device",
+        };
+      }
+
+      const isEnabled = await NfcManager.isEnabled();
+      if (!isEnabled) {
+        throw new Error(
+          "NFC is Disabled. Please Enable NFC in Device Settings",
+        );
+      }
+
+      const cardInfo = await this.readCard();
+
+      if (!cardInfo.success || !cardInfo?.PAN || !cardInfo?.BIN) {
+        ToastService.error("Failed to Read Card 3");
+        throw new Error("Failed to Read Card 4");
+      }
+
+      // Just return the card info without PIN processing
+      return {
+        success: true,
+        BIN: cardInfo.BIN,
+        message: "Card Read Successfully",
+        cardInfo: cardInfo, // Return raw card info for later use with PIN
+      };
+    } catch (error) {
+      await ErrorHandler.handle(error as Error, {
+        action: "Read_NFC_Card",
+      });
+
+      return {
+        success: false,
+        BIN: "",
+        message:
+          error instanceof Error ? error.message : "An unknown error occurred",
+      };
+    } finally {
+      try {
+        await NfcManager.cancelTechnologyRequest();
+      } catch (e) {
+        if (__DEV__) console.log(e);
+      }
+    }
+  }
+
+  /**
+   * Processes card with PIN using previously read card data
+   * No additional NFC tap needed
+   */
+  async ProcessCardWithPIN({
+    merchantId,
+    amount,
+    cardPIN,
+    cardInfo,
+  }: {
+    merchantId: string;
+    amount: number;
+    cardPIN: string;
+    cardInfo: CardInfo;
+  }): Promise<CardDetailsResult> {
+    try {
+      if (amount <= 0) {
+        throw new Error("Invalid amount");
+      }
+
+      if (!cardPIN) {
+        throw new Error("PIN is required");
+      }
+
+      // Format PIN block (ISO Format 0)
+      const pinBlock = this.formatISO0Block(cardPIN, cardInfo.PAN);
+
+      // ENCRYPT BEFORE SAVING TO DB
+      const securePAN = await EncryptionService.EncryptPII(cardInfo.PAN);
+      const securePIN = await EncryptionService.EncryptPII(pinBlock);
+
+      cardInfo.PAN = securePAN;
+      cardInfo.PIN = securePIN;
+
+      const transaction: NFCCardTransaction = {
+        transactionID: PaymentService.generateTransactionId("CARD"),
+        transactionDate: Math.floor(Date.now() / 1000),
+        merchantId,
+        amount,
+        paymentMode: "CARD",
+        cardInfo: cardInfo,
+        txType: "DEBIT",
+      };
+
+      return {
+        success: true,
+        BIN: cardInfo.BIN,
+        message: "Card Processed Successfully",
+        transaction: transaction,
+      };
+    } catch (error) {
+      await ErrorHandler.handle(error as Error, {
+        action: "Process_Card_PIN",
+        metadata: { merchantId, amount },
+      });
+
+      return {
+        success: false,
+        BIN: "",
+        message:
+          error instanceof Error ? error.message : "An unknown error occurred",
+      };
+    }
+  }
   //   callback: (db: any) => Promise<T>
   // ): Promise<T | undefined> {
   //   const db = await getDatabase(null);
@@ -669,41 +801,55 @@ class NFCService {
       // Ensure cleanup before starting
       await this.stopNFC();
 
-      // Request NFC technology
-      await NfcManager.requestTechnology(NfcTech.IsoDep);
+      // Request NFC technology with timeout
+      await Promise.race([
+        NfcManager.requestTechnology(NfcTech.IsoDep),
+        new Promise<never>((_, reject) =>
+          setTimeout(
+            () => reject(new Error("NFC timeout - no card detected")),
+            8000,
+          ),
+        ),
+      ]);
 
       ToastService.info("Card Detected, Reading...");
 
-      // Step 1: Try PPSE first
+      // Step 1: Try direct AID selection first (fast)
       let applications: { aid: number[]; label: string }[] = [];
 
-      const ppseResponse = await this.sendAPDU(APDU_COMMANDS.SELECT_PPSE);
-      applications = this.parsePPSE(ppseResponse);
+      const CARD_AIDS = this.getCardAIDs();
 
-      // Step 2: If PPSE failed, try direct AID selection
-      if (!applications || applications.length === 0) {
-        const CARD_AIDS = this.getCardAIDs();
+      for (const { name, aid } of CARD_AIDS) {
+        try {
+          // Small delay to give card time to respond
+          await new Promise((resolve) => setTimeout(resolve, 50));
 
-        for (const { name, aid } of CARD_AIDS) {
-          try {
-            // Small delay between attempts
-            await new Promise((resolve) => setTimeout(resolve, 100));
+          const aidBytes = aid.slice(5); // Remove SELECT command prefix
+          const selectResponse = await this.selectApplication(aidBytes);
 
-            const aidBytes = aid.slice(5); // Remove SELECT command prefix
-            const selectResponse = await this.selectApplication(aidBytes);
+          const sw1 = selectResponse?.at(-2);
+          const sw2 = selectResponse?.at(-1);
 
-            const sw1 = selectResponse?.at(-2);
-            const sw2 = selectResponse?.at(-1);
-
-            if (sw1 === 0x90 && sw2 === 0x00) {
-              applications.push({ aid: aidBytes, label: name });
-              ToastService.info(`Found ${name} Processor`);
-              break;
-            }
-          } catch (error: any) {
-            console.log(`${name} AID failed:`, error?.message || error);
-            // Continue trying other AIDs
+          if (sw1 === 0x90 && sw2 === 0x00) {
+            applications.push({ aid: aidBytes, label: name });
+            ToastService.info(`Found ${name} Processor`);
+            break; // Use first successful AID
           }
+        } catch (error: any) {
+          if (__DEV__)
+            console.log(`${name} AID failed:`, error?.message || error);
+          // Continue trying other AIDs
+        }
+      }
+
+      // Step 1B: If no AID worked, try PPSE as fallback
+      if (!applications || applications.length === 0) {
+        if (__DEV__) console.log("No AIDs detected, trying PPSE...");
+        try {
+          const ppseResponse = await this.sendAPDU(APDU_COMMANDS.SELECT_PPSE);
+          applications = this.parsePPSE(ppseResponse);
+        } catch (ppseError) {
+          if (__DEV__) console.log("PPSE also failed:", ppseError);
         }
       }
 
@@ -715,30 +861,39 @@ class NFCService {
       const selectedApp = applications[0];
       const selectAppResponse = await this.selectApplication(selectedApp.aid);
 
-      // Step 4: Get Processing Options
-      let gpoResponse;
+      // Step 4: Get Processing Options (optional - can fail and we still get data from SELECT response)
       let processingOptions: { afl?: string; aip?: string } = {};
+      let cardData: number[][] = [selectAppResponse];
 
-      gpoResponse = await this.sendAPDU(APDU_COMMANDS.GPO);
-      processingOptions = this.parseGPO(gpoResponse);
+      try {
+        const gpoResponse = await this.sendAPDU(APDU_COMMANDS.GPO);
+        processingOptions = this.parseGPO(gpoResponse);
 
-      // Step 5: Read application data
-      const cardData = await this.readApplicationData(processingOptions);
-
-      // Step 6: Parse card information from select response if no records
-      let cardInfo;
-      if (cardData.length === 0) {
-        cardInfo = this.parseCardData([selectAppResponse]);
-      } else {
-        cardInfo = this.parseCardData(cardData);
+        // Step 5: Try to read application data if AFL is available
+        if (processingOptions.afl) {
+          const aflData = await this.readApplicationData(processingOptions);
+          if (aflData.length > 0) {
+            cardData = aflData;
+          }
+        }
+      } catch (gpoError) {
+        if (__DEV__)
+          console.log(
+            "GPO/AFL reading skipped, using SELECT response:",
+            gpoError,
+          );
+        // Continue with SELECT response data
       }
 
-      console.log(">>>>>", cardData, cardInfo);
+      // Step 6: Parse card information
+      const cardInfo = this.parseCardData(cardData);
+
+      // if (__DEV__) console.log(">>>>>", cardData, cardInfo);
       this.currentCard = cardInfo;
 
       return cardInfo;
     } catch (error) {
-      console.log(error);
+      if (__DEV__) console.log(error);
       // await ErrorHandler.handleAsync("Error Reading Card", {
       //   action: "Read User Card",
       //   // metadata: error,
@@ -778,7 +933,8 @@ class NFCService {
 
       return response;
     } catch (error: any) {
-      console.error("APDU command error:", error?.message || error);
+      if (__DEV__)
+        console.error("APDU command error:", error?.message || error);
       throw error;
     }
   }
@@ -853,7 +1009,7 @@ class NFCService {
         }
       }
     } catch (error) {
-      console.error("PPSE parsing error:", error);
+      if (__DEV__) console.error("PPSE parsing error:", error);
     }
 
     return applications;
@@ -1070,7 +1226,7 @@ class NFCService {
 
       return {};
     } catch (error: any) {
-      console.error("GPO parsing error:", error?.message || error);
+      if (__DEV__) console.error("GPO parsing error:", error?.message || error);
       return {};
     }
   }
@@ -1349,7 +1505,7 @@ class NFCService {
         transactionAmount: amount.toString(),
       };
     } catch (e) {
-      console.error("GENERATE AC Failed", e);
+      if (__DEV__) console.error("GENERATE AC Failed", e);
       throw e;
     }
   }

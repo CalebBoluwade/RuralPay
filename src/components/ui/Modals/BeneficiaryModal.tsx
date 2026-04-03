@@ -2,7 +2,6 @@ import PaymentService from "@/src/lib/services/PaymentService";
 import * as SecureStore from "expo-secure-store";
 import React, { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
   FlatList,
   Modal,
   Pressable,
@@ -10,9 +9,10 @@ import {
   Text,
   TextInput,
   useColorScheme,
-  View,
+  View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import Loading from "./Loading";
 
 const FREQ_KEY = "frequent_beneficiaries";
 const FREQ_LIMIT = 5;
@@ -30,6 +30,8 @@ const BeneficiaryModal: React.FC<Props> = ({ visible, onClose, onSelect }) => {
   const [all, setAll] = useState<Beneficiary[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
+  const [allFetched, setAllFetched] = useState(false);
+  const [fetchError, setFetchError] = useState(false);
 
   useEffect(() => {
     if (!visible) return;
@@ -38,42 +40,54 @@ const BeneficiaryModal: React.FC<Props> = ({ visible, onClose, onSelect }) => {
   }, [visible]);
 
   useEffect(() => {
-    if (!showFrequent && all.length === 0) fetchAll();
+    if (!showFrequent && !allFetched) fetchAll();
   }, [showFrequent]);
 
   const loadFrequent = async () => {
-    const raw = await SecureStore.getItemAsync(FREQ_KEY);
-    setFrequent(raw ? JSON.parse(raw) : []);
+    try {
+      const raw = await SecureStore.getItemAsync(FREQ_KEY);
+      setFrequent(raw ? JSON.parse(raw) : []);
+    } catch {
+      setFrequent([]);
+    }
   };
 
   const fetchAll = async () => {
     setLoading(true);
+    setFetchError(false);
     try {
       const data = await PaymentService.GetUserBeneficiaries();
       setAll(data);
+      setAllFetched(true);
+    } catch {
+      setFetchError(true);
     } finally {
       setLoading(false);
     }
   };
 
   const handleSelect = async (item: Beneficiary) => {
-    // Update frequent list
-    const raw = await SecureStore.getItemAsync(FREQ_KEY);
-    const list: Beneficiary[] = raw ? JSON.parse(raw) : [];
-    const idx = list.findIndex(
-      (b) =>
-        b.accountNumber === item.accountNumber && b.bankCode === item.bankCode,
-    );
-    if (idx >= 0) {
-      list[idx].useCount += 1;
-      list[idx].lastUsed = new Date().toISOString();
-    } else {
-      list.push({ ...item, useCount: 1, lastUsed: new Date().toISOString() });
+    try {
+      const raw = await SecureStore.getItemAsync(FREQ_KEY);
+      const list: Beneficiary[] = raw ? JSON.parse(raw) : [];
+      const idx = list.findIndex(
+        (b) =>
+          b.accountNumber === item.accountNumber &&
+          b.bankCode === item.bankCode,
+      );
+      if (idx >= 0) {
+        list[idx].useCount += 1;
+        list[idx].lastUsed = new Date().toISOString();
+      } else {
+        list.push({ ...item, useCount: 1, lastUsed: new Date().toISOString() });
+      }
+      const sorted = list
+        .sort((a, b) => b.useCount - a.useCount)
+        .slice(0, FREQ_LIMIT);
+      await SecureStore.setItemAsync(FREQ_KEY, JSON.stringify(sorted));
+    } catch {
+      // Don't block selection if frequency tracking fails
     }
-    const sorted = list
-      .sort((a, b) => b.useCount - a.useCount)
-      .slice(0, FREQ_LIMIT);
-    await SecureStore.setItemAsync(FREQ_KEY, JSON.stringify(sorted));
     onSelect(item);
   };
 
@@ -138,11 +152,32 @@ const BeneficiaryModal: React.FC<Props> = ({ visible, onClose, onSelect }) => {
 
           {/* List */}
           {loading ? (
-            <View className="flex-1 items-center justify-center">
-              <ActivityIndicator
-                size="large"
-                color={isDark ? "#10b981" : "#059669"}
-              />
+            <Loading
+              accentColor=""
+              loading={loading}
+              isInitialLoad={false}
+              isDark={isDark}
+              screenName="Beneficiaries"
+            />
+          ) : fetchError ? (
+            <View className="flex-1 items-center justify-center py-16 gap-3">
+              <Text className={`text-base ${textSecondary}`}>
+                Failed To Load Beneficiaries
+              </Text>
+              <Pressable
+                onPress={fetchAll}
+                className={`px-5 py-2 rounded-xl ${
+                  isDark ? "bg-emerald-500/20" : "bg-emerald-100"
+                }`}
+              >
+                <Text
+                  className={`font-semibold ${
+                    isDark ? "text-emerald-400" : "text-emerald-700"
+                  }`}
+                >
+                  Retry
+                </Text>
+              </Pressable>
             </View>
           ) : (
             <FlatList
@@ -183,8 +218,8 @@ const BeneficiaryModal: React.FC<Props> = ({ visible, onClose, onSelect }) => {
                 <View className="flex-1 items-center justify-center py-16">
                   <Text className={`text-base ${textSecondary}`}>
                     {showFrequent
-                      ? "No frequent beneficiaries yet"
-                      : "No beneficiaries found"}
+                      ? "No Frequent Beneficiaries Yet"
+                      : "No Beneficiaries Found"}
                   </Text>
                 </View>
               }

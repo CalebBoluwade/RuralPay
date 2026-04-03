@@ -1,10 +1,11 @@
+import PaymentService from "@/src/lib/services/PaymentService";
 import { ReceiptService } from "@/src/lib/services/ReceiptService";
 import * as Haptics from "expo-haptics";
 import { ArrowBigLeftDashIcon, CreditCard, Lock, X } from "lucide-react-native";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Modal,
+  Image,
   Pressable,
   Text,
   View,
@@ -20,13 +21,12 @@ interface CardPinProps {
   showPinModal: boolean;
   isLoading: boolean;
   merchantBusinessName: string;
+  amount: number;
   setIsLoading: React.Dispatch<React.SetStateAction<boolean>>;
   onPinEntered: (pin: string) => void;
   error: string;
-  cardTransaction?: CardDetailsResult;
-  BINData?: BINData;
-  // amount: string;
-  transactionResult?: ReceiptData; // TransactionData
+  cardTransaction: CardDetailsResult;
+  transactionResult?: TransactionHistoryItem; // TransactionData
   onCancel?: () => void;
   HandleCardTapPayment: () => Promise<void>;
 }
@@ -37,17 +37,18 @@ const CardPIN: React.FC<CardPinProps> = ({
   onPinEntered,
   onCancel,
   merchantBusinessName,
+  amount,
   isLoading,
   setIsLoading,
   error,
   cardTransaction,
-  BINData,
   transactionResult,
   HandleCardTapPayment,
 }) => {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const [code, setCode] = React.useState<number[]>([]);
+  const [BINData, setBINData] = useState<BINData | null>(null);
 
   const [currentStep, setCurrentStep] = React.useState<AuthStep>("PIN");
 
@@ -57,6 +58,24 @@ const CardPIN: React.FC<CardPinProps> = ({
     if (code.length < 4) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       setCode((prev) => [...prev, num]);
+    }
+  };
+
+  const fetchBin = async () => {
+    setIsLoading(true);
+    try {
+      const cardBIN = cardTransaction?.BIN || "";
+      if (!cardBIN) {
+        if (__DEV__) console.log("Card BIN not available");
+        return;
+      }
+      const data = await PaymentService.GetCardBIN(cardBIN.slice(0, 6));
+
+      setBINData(data);
+    } catch (error) {
+      if (__DEV__) console.log("Failed to Fetch BIN", error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -75,7 +94,7 @@ const CardPIN: React.FC<CardPinProps> = ({
     if (source) {
       return (
         <SvgUri
-          uri={source}
+          uri={Image.resolveAssetSource(source).uri}
           style={{ width: 32, height: 32, borderRadius: 16 }}
         />
       );
@@ -84,9 +103,29 @@ const CardPIN: React.FC<CardPinProps> = ({
     return <CreditCard size={24} color={isDark ? "#fff" : "#000"} />;
   };
 
+  useEffect(() => {
+    fetchBin();
+  }, []);
+
+  useEffect(() => {
+    // If transaction result is available and has a receipt reference, show success
+    if (transactionResult?.amount && currentStep === "Confirm") {
+      setCurrentStep("Success");
+    }
+    // If there's an error, show failure
+    if (error && currentStep === "Confirm") {
+      setCurrentStep("Failure");
+    }
+  }, [transactionResult, error, currentStep]);
+
   const handleDownloadReceipt = async () => {
     if (transactionResult) {
-      await ReceiptService.downloadReceipt(transactionResult);
+      await ReceiptService.DownloadTransactionReceipt({
+        ...transactionResult,
+        reference: transactionResult.reference,
+        amount: transactionResult.amount.toString(),
+        toAccount: transactionResult.toAccount,
+      });
     }
   };
 
@@ -227,135 +266,161 @@ const CardPIN: React.FC<CardPinProps> = ({
     </View>
   );
 
-  const RenderConfirmPaymentDetails = () => (
-    <SafeAreaView
-      className={`flex-1 ${isDark ? "bg-[#0a0a0f]" : "bg-[#f5f5fa]"}`}
-    >
-      <View className="flex-1 px-6 pt-6">
-        <Text
-          className={`text-2xl font-bold mb-6 ${
-            isDark ? "text-white" : "text-gray-900"
-          }`}
-        >
-          Confirm Payment
-        </Text>
-
+  const RenderConfirmPaymentDetails = () => {
+    // Check if data is available
+    if (!cardTransaction?.success || !BINData || isLoading) {
+      return (
         <View
-          className={`p-6 rounded-2xl mb-6 ${
-            isDark
-              ? "bg-white/10 border border-white/20"
-              : "bg-white border border-gray-200"
-          }`}
+          className={`flex-1 justify-center items-center ${isDark ? "bg-[#0a0a0f]" : "bg-[#f5f5fa]"}`}
         >
-          <Text
-            className={`text-sm mb-2 ${
-              isDark ? "text-gray-400" : "text-gray-500"
-            }`}
-          >
-            Card PAN
-          </Text>
-          <Text
-            className={`text-xl font-bold leading-7 ml-3 ${
-              isDark ? "text-white" : "text-gray-900"
-            }`}
-          >
-            {cardTransaction?.success
-              ? cardTransaction?.transaction?.cardInfo.BIN! +
-                "****" +
-                cardTransaction?.transaction?.cardInfo.last4!
-              : ""}
-          </Text>
-
-          <View className="h-[1px] bg-gray-200/20 my-4" />
-
-          <Text
-            className={`text-sm mb-2 ${
-              isDark ? "text-gray-400" : "text-gray-500"
-            }`}
-          >
-            Card Issuer
-          </Text>
-          {isLoading ? (
-            <ActivityIndicator
-              size="small"
-              color={isDark ? "#a78bfa" : "#7c3aed"}
-            />
-          ) : (
-            <View className="flex-row items-center">
-              {renderCardSchemeLogo()}
-              <Text
-                className={`text-xl font-bold ml-3 ${
-                  isDark ? "text-white" : "text-gray-900"
-                }`}
-              >
-                {BINData?.bankName || "Unknown Bank"}
-              </Text>
-            </View>
-          )}
-
-          <View className="h-[1px] bg-gray-200/20 my-4" />
-
-          <Text
-            className={`text-sm mb-2 ${
-              isDark ? "text-gray-400" : "text-gray-500"
-            }`}
-          >
-            Merchant
-          </Text>
-          <Text
-            className={`text-xl font-bold ml-3 ${
-              isDark ? "text-white" : "text-gray-900"
-            }`}
-          >
-            {merchantBusinessName}
-          </Text>
-
-          <View className="h-[1px] bg-gray-200/20 my-4" />
-
-          <Text
-            className={`text-sm mb-2 ${
-              isDark ? "text-gray-400" : "text-gray-500"
-            }`}
-          >
-            Amount
-          </Text>
-          <Text className="text-3xl font-bold text-emerald-500">
-            ₦
-            {cardTransaction?.transaction
-              ? cardTransaction.transaction.amount.toFixed(2)
-              : ""}
+          <ActivityIndicator
+            size="large"
+            color={isDark ? "#a78bfa" : "#7c3aed"}
+          />
+          <Text className={`mt-4 ${isDark ? "text-white" : "text-gray-900"}`}>
+            Loading Payment Details...
           </Text>
         </View>
+      );
+    }
 
-        <View className="flex-1" />
-
-        <Pressable
-          disabled={isLoading || !BINData}
-          className={`p-6 rounded-2xl mb-4 ${
-            isDark ? "bg-emerald-600" : "bg-emerald-700"
-          } ${isLoading || !BINData ? "opacity-50" : ""}`}
-          onPress={HandleCardTapPayment}
-        >
-          <Text className="text-white text-lg font-bold text-center">
-            {isLoading ? "Verifying Card..." : "Confirm & Pay"}
-          </Text>
-        </Pressable>
-
-        <Pressable
-          className={`p-4 rounded-2xl ${isDark ? "bg-white/5" : "bg-gray-100"}`}
-          onPress={onCancel}
-        >
+    return (
+      <View className={`${isDark ? "bg-[#0a0a0f]" : "bg-[#f5f5fa]"}`}>
+        <View className="px-4 pt-6">
           <Text
-            className={`text-lg font-semibold text-center ${
-              isDark ? "text-gray-300" : "text-gray-700"
+            className={`text-2xl font-bold mb-6 ${
+              isDark ? "text-white" : "text-gray-900"
             }`}
           >
-            Cancel
+            Confirm Payment
           </Text>
-        </Pressable>
+
+          <View className="items-center mb-6">
+            <SvgUri
+              uri={
+                Image.resolveAssetSource(
+                  require("@/assets/images/ScanToPay.svg"),
+                ).uri
+              }
+              width={240}
+              height={240}
+            />
+          </View>
+
+          <View
+            className={`p-6 rounded-2xl mb-6 ${
+              isDark
+                ? "bg-white/10 border border-white/20"
+                : "bg-white border border-gray-200"
+            }`}
+          >
+            <Text
+              className={`text-lg mb-2 ${
+                isDark ? "text-gray-400" : "text-gray-500"
+              }`}
+            >
+              Card PAN
+            </Text>
+            <Text
+              className={`text-xl font-bold leading-relaxed ${
+                isDark ? "text-white" : "text-gray-900"
+              }`}
+            >
+              {cardTransaction?.success
+                ? cardTransaction?.BIN +
+                  "****" +
+                  cardTransaction?.cardInfo?.last4
+                : ""}
+            </Text>
+
+            <View className="h-[1px] bg-gray-200/20 my-4" />
+
+            <Text
+              className={`text-sm mb-2 ${
+                isDark ? "text-gray-400" : "text-gray-500"
+              }`}
+            >
+              Card Issuer
+            </Text>
+            {isLoading ? (
+              <ActivityIndicator
+                size="small"
+                color={isDark ? "#a78bfa" : "#7c3aed"}
+              />
+            ) : (
+              <View className="flex-row items-center">
+                {renderCardSchemeLogo()}
+                <Text
+                  className={`text-xl font-bold ml-3 ${
+                    isDark ? "text-white" : "text-gray-900"
+                  }`}
+                >
+                  {BINData?.issuerBank || "Unknown Bank"}
+                </Text>
+              </View>
+            )}
+
+            <View className="h-[1px] bg-gray-200/20 my-4" />
+
+            <Text
+              className={`text-sm mb-2 ${
+                isDark ? "text-gray-400" : "text-gray-500"
+              }`}
+            >
+              Merchant
+            </Text>
+            <Text
+              className={`text-xl font-bold ${
+                isDark ? "text-white" : "text-gray-900"
+              }`}
+            >
+              {merchantBusinessName}
+            </Text>
+
+            <View className="h-[1px] bg-gray-200/20 my-4" />
+
+            <Text
+              className={`text-sm mb-2 ${
+                isDark ? "text-gray-400" : "text-gray-500"
+              }`}
+            >
+              Amount
+            </Text>
+            <Text className="text-3xl font-bold text-emerald-500">
+              ₦{amount ? amount.toFixed(2) : "0.00"}
+            </Text>
+
+            <View className="h-[1px] bg-gray-200/20 my-4" />
+
+            <View className="flex-row items-center justify-between">
+              <Pressable
+                disabled={isLoading || !BINData}
+                className={`bg-lime-400 rounded-2xl px-3 py-4 shadow-lg mb-2 ${isLoading || !BINData ? "opacity-50" : ""}`}
+                onPress={HandleCardTapPayment}
+              >
+                <Text className="text-white text-lg font-bold text-center">
+                  {isLoading ? "Verifying Card..." : "Confirm & Pay"}
+                </Text>
+              </Pressable>
+
+              <Pressable
+                className={`p-4 rounded-2xl ${isDark ? "bg-white/5" : "bg-gray-100"}`}
+                onPress={onCancel}
+              >
+                <Text
+                  className={`text-lg font-semibold text-center ${
+                    isDark ? "text-gray-300" : "text-gray-700"
+                  }`}
+                >
+                  Cancel
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
       </View>
-    </SafeAreaView>
-  );
+    );
+  };
 
   const RenderSuccess = () => (
     <TransactionSuccess
@@ -381,8 +446,11 @@ const CardPIN: React.FC<CardPinProps> = ({
   useEffect(() => {
     if (code.length === 4) {
       const pin = code.join("");
-      setCode([]);
       onPinEntered(pin);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setCode([]);
+
+      setCurrentStep("Confirm");
     }
   }, [code, onPinEntered]);
 
@@ -402,20 +470,18 @@ const CardPIN: React.FC<CardPinProps> = ({
   };
 
   return (
-    <Modal
-      visible={
-        showPinModal || currentStep === "Success" || currentStep === "Failure"
-      }
-      animationType="slide"
-      presentationStyle="pageSheet"
-      onRequestClose={onCancel}
+    // <Modal
+    //   visible={showPinModal}
+    //   animationType="slide"
+    //   presentationStyle={Platform.OS === "ios" ? "pageSheet" : "formSheet"}
+    //   onRequestClose={onCancel}
+    // >
+    <SafeAreaView
+      className={`flex-1 justify-center items-center ${isDark ? "bg-[#0a0a0f]" : "bg-[#e7efe7]"}`}
     >
-      <SafeAreaView
-        className={`flex-1 justify-center items-center ${isDark ? "bg-[#0a0a0f]" : "bg-[#e7efe7]"}`}
-      >
-        {getCurrentStepContent()}
-      </SafeAreaView>
-    </Modal>
+      {getCurrentStepContent()}
+    </SafeAreaView>
+    // {/* </Modal> */}
   );
 };
 

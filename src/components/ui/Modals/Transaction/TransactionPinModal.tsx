@@ -19,7 +19,14 @@ import {
   X,
 } from "lucide-react-native";
 import React, { useEffect } from "react";
-import { Modal, Pressable, Text, View, useColorScheme, Keyboard } from "react-native";
+import {
+  Keyboard,
+  Modal,
+  Pressable,
+  Text,
+  View,
+  useColorScheme,
+} from "react-native";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -28,7 +35,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useAuth } from "../../../context/AuthProvider";
+import { useAuth } from "../../../context/AuthSessionProvider";
 import OTPInput from "../../Input/OTPInput";
 import PinSetupModal from "../PinSetupModal";
 import TransactionFailure from "./TransactionFailure";
@@ -44,7 +51,7 @@ interface TransactionPinProps {
   isLoading: boolean;
   setIsLoading: React.Dispatch<React.SetStateAction<boolean>>;
 
-  transactionResult?: ReceiptData; // TransactionData
+  transactionResult?: TransactionHistoryItem; // TransactionData
 }
 
 const TransactionPin: React.FC<TransactionPinProps> = ({
@@ -74,7 +81,10 @@ const TransactionPin: React.FC<TransactionPinProps> = ({
 
   const handleDownloadReceipt = async () => {
     if (transactionResult) {
-      await ReceiptService.downloadReceipt(transactionResult);
+      await ReceiptService.DownloadTransactionReceipt({
+        ...transactionResult,
+        amount: (transactionResult.amount ?? 0).toString(),
+      });
     }
   };
 
@@ -202,7 +212,10 @@ const TransactionPin: React.FC<TransactionPinProps> = ({
     if (lockSeconds <= 0) return;
     const timer = setInterval(() => {
       setLockSeconds((s) => {
-        if (s <= 1) { clearInterval(timer); return 0; }
+        if (s <= 1) {
+          clearInterval(timer);
+          return 0;
+        }
         return s - 1;
       });
     }, 1000);
@@ -256,7 +269,9 @@ const TransactionPin: React.FC<TransactionPinProps> = ({
         <Text
           className={`text-base font-semibold text-center ${isDark ? "text-gray-400" : "text-gray-600"}`}
         >
-          {isLocked ? `Too many attempts. Try again in ${lockSeconds}s` : paymentMessage}
+          {isLocked
+            ? `Too many attempts. Try again in ${lockSeconds}s`
+            : paymentMessage}
         </Text>
       </View>
 
@@ -525,7 +540,6 @@ const TransactionPin: React.FC<TransactionPinProps> = ({
       const validatePin = async () => {
         try {
           const isValid = await PinService.ValidatePin(code.join(""));
-          // console.log(isValid);
 
           if (isValid) {
             ToastService.success("PIN Is Correct");
@@ -545,7 +559,7 @@ const TransactionPin: React.FC<TransactionPinProps> = ({
             setCode([]);
           }
         } catch (error) {
-          console.error("PIN validation error:", error);
+          if (__DEV__) console.error("PIN Validation Error:", error);
           ToastService.error("PIN validation failed");
 
           offset.value = withSequence(

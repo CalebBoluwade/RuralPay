@@ -1,4 +1,4 @@
-import { useAuth } from "@/src/components/context/AuthProvider";
+import { useAuth } from "@/src/components/context/AuthSessionProvider";
 import ToastService from "@/src/lib/services/ToastService";
 import { PinService } from "@/src/lib/utils/SecureStorage";
 import { Ionicons } from "@expo/vector-icons";
@@ -67,7 +67,7 @@ const Lock = () => {
               router.back();
             }
           } catch (e) {
-            console.log("Navigation error:", e);
+            if (__DEV__) console.log("Navigation error:", e);
           }
         } else {
           ToastService.error("PIN is incorrect");

@@ -13,7 +13,10 @@ interface DecryptedCredentials {
 export async function SetupHardwareSecurity(merchantId: string) {
   try {
     if (!Keychain || !Keychain.setGenericPassword) {
-      console.warn("Keychain not available, skipping hardware security setup");
+      if (__DEV__)
+        console.warn(
+          "Keychain not available, skipping hardware security setup",
+        );
       return;
     }
 
@@ -27,7 +30,7 @@ export async function SetupHardwareSecurity(merchantId: string) {
       securityLevel: Keychain.SECURITY_LEVEL.ANY,
     });
   } catch (error) {
-    console.warn("Failed to setup hardware security:", error);
+    if (__DEV__) console.warn("Failed to setup hardware security:", error);
   }
 }
 
@@ -38,7 +41,7 @@ export class BiometricService {
     isBiometricSupported: boolean,
   ): Promise<boolean> => {
     try {
-      console.log("Face ID button pressed");
+      if (__DEV__) console.log("Face ID button pressed");
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
       if (!isBiometricSupported) {
@@ -52,7 +55,7 @@ export class BiometricService {
         disableDeviceFallback: true,
       });
 
-      console.log("Biometric result:", result);
+      if (__DEV__) console.log("Biometric result:", result);
 
       if (result.success) {
         ToastService.success("Biometric Authentication Successful");
@@ -60,12 +63,13 @@ export class BiometricService {
 
         return true;
       } else {
-        console.log("Biometric Authentication Failed:", result.error);
+        if (__DEV__)
+          console.log("Biometric Authentication Failed:", result.error);
 
         return false;
       }
     } catch (error) {
-      console.error("Biometric Authentication Error:", error);
+      if (__DEV__) console.error("Biometric Authentication Error:", error);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
 
       return false;
@@ -78,9 +82,10 @@ export class BiometricService {
   ): Promise<void> {
     try {
       if (!Keychain || !Keychain.setGenericPassword) {
-        console.warn(
-          "Keychain not available, cannot store biometric credentials",
-        );
+        if (__DEV__)
+          console.warn(
+            "Keychain not available, cannot store biometric credentials",
+          );
         return;
       }
 
@@ -92,14 +97,15 @@ export class BiometricService {
         securityLevel: Keychain.SECURITY_LEVEL.ANY,
       });
     } catch (error) {
-      console.warn("Failed to store biometric credentials:", error);
+      if (__DEV__)
+        console.warn("Failed to store biometric credentials:", error);
     }
   }
 
   async getBiometricCredentials(): Promise<DecryptedCredentials | null> {
     try {
       if (!Keychain || !Keychain.getGenericPassword) {
-        console.warn("Keychain not available");
+        if (__DEV__) console.warn("Keychain not available");
         return null;
       }
 
@@ -121,7 +127,7 @@ export class BiometricService {
         return JSON.parse(credentials.password);
       }
     } catch (error) {
-      console.error("Failed to get biometric credentials:", error);
+      if (__DEV__) console.error("Failed to get biometric credentials:", error);
       throw error;
     }
 
@@ -150,7 +156,8 @@ export class BiometricService {
         });
       }
     } catch (error) {
-      console.warn("Failed to clear biometric credentials:", error);
+      if (__DEV__)
+        console.warn("Failed to clear biometric credentials:", error);
     }
   }
 
@@ -215,7 +222,7 @@ export class PinService {
     return 0;
   }
 
-  static async setPin(pin: string): Promise<boolean> {
+  static async setPIN(pin: string): Promise<boolean> {
     try {
       const salt = await PinService.generateSalt();
       const hashedPin = await Crypto.digestStringAsync(
@@ -236,7 +243,7 @@ export class PinService {
       return true;
     } catch (error) {
       ToastService.error("Failed to Set PIN");
-      console.error("Error setting PIN:", error);
+      if (__DEV__) console.error("Error setting PIN:", error);
       return false;
     }
   }
@@ -250,7 +257,9 @@ export class PinService {
       }
 
       if (!(await PinService.hasPin())) {
-        ToastService.warning("No PIN has Been Set. Please Set Up your PIN first.");
+        ToastService.warning(
+          "No PIN has Been Set. Please Set Up your PIN first.",
+        );
         return false;
       }
 
@@ -282,14 +291,21 @@ export class PinService {
           count: newCount,
           lockedUntil: Date.now() + backoffMs,
         });
-        ToastService.error(`Too many attempts. Locked for ${Math.ceil(backoffMs / 1000)}s`);
+        ToastService.error(
+          `Too many attempts. Locked for ${Math.ceil(backoffMs / 1000)}s`,
+        );
       } else {
-        await PinService.saveAttemptState({ count: newCount, lockedUntil: null });
-        ToastService.warning(`Incorrect PIN. ${PinService.MAX_ATTEMPTS - newCount} attempt(s) remaining`);
+        await PinService.saveAttemptState({
+          count: newCount,
+          lockedUntil: null,
+        });
+        ToastService.warning(
+          `Incorrect PIN. ${PinService.MAX_ATTEMPTS - newCount} attempt(s) remaining`,
+        );
       }
       return false;
     } catch (error) {
-      console.error("Error validating PIN:", error);
+      if (__DEV__) console.error("Error validating PIN:", error);
       ToastService.error("PIN Validation Failed.");
       return false;
     }

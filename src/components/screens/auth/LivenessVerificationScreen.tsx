@@ -3,14 +3,13 @@ import {
   VerificationResult,
   useLiveness,
 } from "@/src/hooks/useLiveness";
-import { CameraView, useCameraPermissions } from "expo-camera";
 import {
   Fingerprint,
   RotateCcw,
   ScanFace,
   ShieldCheck,
 } from "lucide-react-native";
-import { useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -19,6 +18,7 @@ import {
   useColorScheme,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Camera } from "react-native-vision-camera";
 
 interface LivenessVerificationProps {
   userId: string;
@@ -38,51 +38,49 @@ export default function LivenessVerificationScreen({
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const [screenStep, setScreenStep] = useState<ScreenStep>("idle");
-  const [permission, requestPermission] = useCameraPermissions();
-  const cameraRef = useRef<CameraView>(null);
 
   const {
+    cameraRef,
+    device,
+    frameProcessor,
     status,
     challenge,
     challengeIndex,
     totalChallenges,
     result,
+    tooDark,
     error,
     start,
     reset,
-  } = useLiveness(cameraRef, bvn);
+  } = useLiveness(bvn);
 
   const cardClass = isDark
     ? "bg-white/10 border border-white/20"
     : "bg-white border border-slate-200 shadow-sm";
 
   const handleBegin = async () => {
-    if (!permission?.granted) {
-      const result = await requestPermission();
-      if (!result.granted) {
-        onFailure("Camera Permission Denied.");
-        return;
-      }
-    }
     setScreenStep("camera");
+    await start();
   };
-
-  const handleStart = () => start();
 
   const handleRetry = () => {
     reset();
     setScreenStep("idle");
   };
 
-  // Watch liveness status and transition screen steps
-  if (status === "passed" && screenStep === "camera" && result) {
-    onSuccess(result);
-    setScreenStep("success");
-  }
+  useEffect(() => {
+    if (status === "passed" && screenStep === "camera" && result) {
+      setScreenStep("success");
+      onSuccess(result);
+    }
+  }, [status, result]);
 
-  if (status === "failed" && screenStep === "camera") {
-    setScreenStep("failed");
-  }
+  useEffect(() => {
+    if (status === "failed" && screenStep === "camera") {
+      setScreenStep("failed");
+      if (error) onFailure(error);
+    }
+  }, [status, error]);
 
   return (
     <SafeAreaView
@@ -93,12 +91,12 @@ export default function LivenessVerificationScreen({
         <View className="flex-1 px-5 mt-6 gap-6">
           <View>
             <Text
-              className={`text-2xl font-brand font-bold ${isDark ? "text-white" : "text-slate-900"}`}
+              className={`text-3xl text-center font-brand font-bold ${isDark ? "text-white" : "text-slate-900"}`}
             >
               Identity Verification
             </Text>
             <Text
-              className={`text-sm mt-1 ${isDark ? "text-slate-400" : "text-slate-500"}`}
+              className={`text-lg mt-1 ${isDark ? "text-slate-400" : "text-slate-500"}`}
             >
               Verify your identity using your face and BVN to proceed.
             </Text>
@@ -129,13 +127,13 @@ export default function LivenessVerificationScreen({
             className="w-full rounded-2xl py-4 items-center bg-lime-500"
             onPress={handleBegin}
           >
-            <Text className="text-sm font-brand font-bold text-white">
+            <Text className="text-lg font-brand font-bold text-white">
               Begin Verification
             </Text>
           </Pressable>
 
           <Text
-            className={`text-xs text-center ${isDark ? "text-slate-500" : "text-slate-400"}`}
+            className={`text-lg text-center ${isDark ? "text-slate-500" : "text-slate-400"}`}
           >
             Your Biometric Data is processed securely and never stored on this
             device.
@@ -144,20 +142,36 @@ export default function LivenessVerificationScreen({
       )}
 
       {/* ── CAMERA / LIVENESS ── */}
-      {screenStep === "camera" && (
+      {screenStep === "camera" && device && (
         <View className="flex-1">
-          {/* Camera feed */}
-          <CameraView ref={cameraRef} style={{ flex: 1 }} facing="front" />
+          <Camera
+            ref={cameraRef}
+            style={{ flex: 1 }}
+            device={device}
+            isActive
+            photo
+            frameProcessor={frameProcessor}
+            pixelFormat="yuv"
+          />
 
           {/* Overlay */}
           <View className="absolute inset-0 items-center justify-between py-16 px-5">
-            {/* Face oval guide */}
-            <View className="w-56 h-72 rounded-full border-4 border-lime-400 opacity-70" />
+            {/* Passport-ratio face guide (3:4) */}
+            <View className="w-56 h-[298px] rounded-3xl border-4 border-lime-400 opacity-70" />
 
             {/* Challenge card */}
             <View
               className={`w-full rounded-2xl p-5 gap-3 ${isDark ? "bg-slate-900/90" : "bg-white/90"}`}
             >
+              {/* Too dark warning */}
+              {tooDark && (
+                <View className="w-full rounded-xl px-4 py-2 bg-yellow-500/90 items-center">
+                  <Text className="text-lg font-brand font-bold text-white">
+                    💡 Too dark — move to a brighter area
+                  </Text>
+                </View>
+              )}
+
               {/* Progress dots */}
               <View className="flex-row gap-2 justify-center">
                 {Array.from({ length: totalChallenges }).map((_, i) => (
@@ -176,41 +190,14 @@ export default function LivenessVerificationScreen({
                 ))}
               </View>
 
-              {status === "loading" && (
-                <View className="items-center gap-2">
-                  <ActivityIndicator size="large" color="#a3e635" />
-                  <Text
-                    className={`text-sm font-brand font-semibold ${isDark ? "text-slate-300" : "text-slate-700"}`}
-                  >
-                    Loading face detection...
-                  </Text>
-                </View>
-              )}
-
-              {status === "ready" && (
-                <View className="items-center gap-3">
-                  <Text
-                    className={`text-base font-brand font-bold text-center ${isDark ? "text-white" : "text-slate-900"}`}
-                  >
-                    Position Your Face In The Oval
-                  </Text>
-                  <Pressable
-                    className="w-full rounded-2xl py-3 items-center bg-lime-500"
-                    onPress={handleStart}
-                  >
-                    <Text className="text-sm font-brand font-bold text-white">
-                      Start
-                    </Text>
-                  </Pressable>
-                </View>
-              )}
-
-              {status === "detecting" && (
+              {(status === "detecting" || status === "verifying") && (
                 <View className="items-center gap-2">
                   <Text
-                    className={`text-base font-brand font-bold text-center ${isDark ? "text-white" : "text-slate-900"}`}
+                    className={`text-lg font-brand font-bold text-center ${isDark ? "text-white" : "text-slate-900"}`}
                   >
-                    {CHALLENGE_LABELS[challenge]}
+                    {status === "verifying"
+                      ? "Verifying your identity…"
+                      : CHALLENGE_LABELS[challenge]}
                   </Text>
                   <ActivityIndicator size="small" color="#a3e635" />
                 </View>
@@ -256,9 +243,9 @@ export default function LivenessVerificationScreen({
               Verification Failed
             </Text>
             <Text
-              className={`text-sm text-center ${isDark ? "text-slate-400" : "text-slate-500"}`}
+              className={`text-lg text-center ${isDark ? "text-slate-400" : "text-slate-500"}`}
             >
-              {error ?? "We couldn't verify your identity. Please try again."}
+              {error ?? "We Couldn't verify your identity. Please try again."}
             </Text>
             <Pressable
               className="mt-2 w-full rounded-2xl py-4 items-center bg-lime-500"
@@ -281,13 +268,13 @@ function StepItem({
   description,
   isDark,
   isLast,
-}: {
+}: Readonly<{
   icon: React.ReactNode;
   title: string;
   description: string;
   isDark: boolean;
   isLast: boolean;
-}) {
+}>) {
   return (
     <View
       className={`flex-row items-center px-4 py-4 gap-4 ${
@@ -305,12 +292,12 @@ function StepItem({
       </View>
       <View className="flex-1">
         <Text
-          className={`text-sm font-brand font-bold ${isDark ? "text-white" : "text-slate-900"}`}
+          className={`text-lg font-brand font-bold ${isDark ? "text-white" : "text-slate-900"}`}
         >
           {title}
         </Text>
         <Text
-          className={`text-xs mt-0.5 ${isDark ? "text-slate-400" : "text-slate-500"}`}
+          className={`text-lg mt-0.5 ${isDark ? "text-slate-400" : "text-slate-500"}`}
         >
           {description}
         </Text>

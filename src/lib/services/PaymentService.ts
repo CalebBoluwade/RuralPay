@@ -5,51 +5,6 @@ import { integrityService } from "./IntegrityService";
 const INTEGRITY_ERROR = "Payment blocked: device security compromised";
 
 class PaymentService {
-  async MakeAirtimePurchase(
-    payload: AirtimeDataPayload,
-  ): Promise<APIResponse<TransactionHistory>> {
-    return axiosInstance.post<APIResponse<TransactionHistory>>(
-      "/payments",
-      payload,
-    );
-  }
-
-  async GetBanks(): Promise<Bank[]> {
-    const response = await axiosInstance.get<APIResponse<Bank[]>>("/banks");
-    return response.details;
-  }
-
-  async GetCardBIN(bin: string): Promise<any> {
-    const response = await axiosInstance.get<APIResponse<Bank[]>>(
-      `/cards/bin?bin=${bin}`,
-    );
-    return response.details;
-  }
-
-  async B2BTransfer(
-    payload: TransferPayload,
-  ): Promise<APIResponse<TransactionHistory>> {
-    if (await integrityService.isDeviceCompromised())
-      throw new Error(INTEGRITY_ERROR);
-    const response = await axiosInstance.post<APIResponse<TransactionHistory>>(
-      "/payments",
-      payload,
-    );
-    return response;
-  }
-
-  async MakeNFCCardPayment(
-    payload: NFCCardTransaction,
-  ): Promise<APIResponse<TransactionHistory>> {
-    if (await integrityService.isDeviceCompromised())
-      throw new Error(INTEGRITY_ERROR);
-    const response = await axiosInstance.post<APIResponse<TransactionHistory>>(
-      "/payments",
-      payload,
-    );
-    return response;
-  }
-
   generateTransactionId(mode?: PaymentMode): string {
     const timestamp = Date.now();
     const [b0, b1, b2] = Crypto.getRandomBytes(3);
@@ -58,7 +13,73 @@ class PaymentService {
       .toUpperCase()
       .padStart(6, "0");
     const prefix = mode ? mode.replace(/_/g, "-") : "TX";
-    return `${prefix}-${timestamp}-${random}`;
+    return `${prefix}-${timestamp}${random}`;
+  }
+
+  async MakeAirtimePurchase(
+    payload: AirtimeDataPayload,
+  ): Promise<APIResponse<TransactionHistoryItem>> {
+    const response = await axiosInstance.post<
+      APIResponse<TransactionHistoryItem>
+    >("/payment", payload);
+    if (__DEV__)
+      console.log(
+        payload,
+        "Initiating airtime purchase with payload:",
+        response,
+      );
+    return response;
+  }
+
+  async GetBanks(abortSignal?: AbortSignal): Promise<Bank[]> {
+    const response = await axiosInstance.get<APIResponse<Bank[]>>("/banks", {
+      signal: abortSignal,
+    });
+    return response.details ?? [];
+  }
+
+  async GetCardBIN(bin: string): Promise<BINData> {
+    const response = await axiosInstance.get<APIResponse<BINData>>(
+      `/card/bin?bin=${bin}`,
+    );
+
+    return response.details;
+  }
+
+  async B2BTransfer(
+    payload: TransferPayload,
+    abortSignal?: AbortSignal,
+  ): Promise<APIResponse<TransactionHistoryItem>> {
+    if (await integrityService.isDeviceCompromised())
+      throw new Error(INTEGRITY_ERROR);
+    const response = await axiosInstance.post<
+      APIResponse<TransactionHistoryItem>
+    >("/payment", payload, { signal: abortSignal });
+
+    if (__DEV__) console.log(response);
+    return response;
+  }
+
+  async MakeNFCCardPayment(
+    payload: NFCCardTransaction,
+    abortSignal?: AbortSignal,
+  ): Promise<APIResponse<TransactionHistoryItem>> {
+    if (await integrityService.isDeviceCompromised())
+      throw new Error(INTEGRITY_ERROR);
+
+    try {
+      const response = await axiosInstance.post<
+        APIResponse<TransactionHistoryItem>
+      >("/payment", payload, { signal: abortSignal });
+
+      console.log(response);
+      return response;
+    } catch (error) {
+      if (__DEV__) console.error("Payment failed:", error);
+
+      return error as APIResponse<TransactionHistoryItem>;
+      // throw error;
+    }
   }
 
   async FetchAllTransactions(
@@ -67,6 +88,7 @@ class PaymentService {
     limit?: number,
     page?: number,
     status?: string,
+    abortSignal?: AbortSignal,
   ): Promise<PaginatedTransactions> {
     const urlParams = new URLSearchParams();
     if (page !== undefined) urlParams.append("page", page.toString());
@@ -77,31 +99,38 @@ class PaymentService {
 
     const response = await axiosInstance.get<
       APIResponse<PaginatedTransactions>
-    >(`/transaction${urlParams.toString() ? "?" + urlParams.toString() : ""}`);
+    >(`/transaction${urlParams.toString() ? "?" + urlParams.toString() : ""}`, {
+      signal: abortSignal,
+    });
 
     return response.details || [];
   }
 
   async FetchRecentTransactions(
     limit: number = 5,
+    abortSignal?: AbortSignal,
   ): Promise<PaginatedTransactions> {
     const response = await axiosInstance.get<
       APIResponse<PaginatedTransactions>
-    >(`/transaction?limit=${limit}`);
+    >(`/transaction?limit=${limit}`, { signal: abortSignal });
     return response.details || [];
   }
 
-  async FetchTransactionById(txId: string): Promise<TransactionHistory> {
-    const response = await axiosInstance.get<APIResponse<TransactionHistory>>(
-      `/transaction/${txId}`,
-    );
+  async FetchTransactionById(
+    txId: string,
+    abortSignal?: AbortSignal,
+  ): Promise<TransactionHistoryItem> {
+    const response = await axiosInstance.get<
+      APIResponse<TransactionHistoryItem>
+    >(`/transaction/${txId}`, { signal: abortSignal });
     return response.details;
   }
 
   async GetUserBeneficiaries(): Promise<Beneficiary[]> {
-    const response =
-      await axiosInstance.get<APIResponse<Beneficiary[]>>("/beneficiaries");
-    return response.details || [];
+    const response = await axiosInstance.get<APIResponse<Beneficiary[]>>(
+      "/payment/beneficiaries",
+    );
+    return response.details ?? [];
   }
 
   async FetchAllUSSDTransactions(): Promise<USSDTransaction[]> {
@@ -110,12 +139,17 @@ class PaymentService {
   }
 
   async FetchVouchers(vasType: string): Promise<Voucher[]> {
-    const response =
-      await axiosInstance.get<APIResponse<Voucher[]>>("/vouchers");
+    try {
+      const response =
+        await axiosInstance.get<APIResponse<Voucher[]>>("/vouchers");
 
-    return response.details.filter((v) =>
-      v.voucherAllowedServices.includes(vasType as VASType),
-    );
+      return response.details.filter((v) =>
+        v.voucherAllowedServices.includes(vasType as VASType),
+      );
+    } catch (error) {
+      console.error("Error fetching vouchers:", error);
+      return [];
+    }
   }
 
   async FetchUSSDCodeById(ussdCode: string): Promise<any> {

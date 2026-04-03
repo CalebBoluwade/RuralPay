@@ -3,6 +3,7 @@ import {
   FontAwesome5,
   FontAwesome6,
   MaterialCommunityIcons,
+  SimpleLineIcons,
 } from "@expo/vector-icons";
 import { VectorIcon } from "expo-router";
 import { NativeTabs } from "expo-router/unstable-native-tabs";
@@ -32,7 +33,7 @@ export default function MerchantTabs() {
         <NativeTabs.Trigger.Label hidden>Bank Uptime</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
           selectedColor={iconColor.iconColor}
-          src={<VectorIcon family={FontAwesome} name="pie-chart" />}
+          src={<VectorIcon family={SimpleLineIcons} name="organization" />}
           renderingMode="template"
         />
       </NativeTabs.Trigger>
@@ -56,7 +57,7 @@ export default function MerchantTabs() {
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="services">
-        <NativeTabs.Trigger.Label hidden>VAS</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label>VAS</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
           selectedColor={iconColor.iconColor}
           src={<VectorIcon family={FontAwesome6} name="plug-circle-bolt" />}
@@ -65,7 +66,7 @@ export default function MerchantTabs() {
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="profile">
-        <NativeTabs.Trigger.Label hidden>Profile</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label>Profile</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
           selectedColor={iconColor.iconColor}
           src={<VectorIcon family={FontAwesome5} name="user-circle" />}

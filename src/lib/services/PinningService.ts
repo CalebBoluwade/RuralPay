@@ -16,7 +16,10 @@ class PinningService {
     if (compromised) return;
 
     if (!isSslPinningAvailable()) {
-      if (__DEV__) console.warn("[PinningService] SSL pinning module not available (Expo Go?)");
+      if (__DEV__)
+        console.warn(
+          "[PinningService] SSL pinning module not available (Expo Go?)",
+        );
       return;
     }
 
@@ -24,7 +27,10 @@ class PinningService {
     const hashesRaw = process.env.EXPO_PUBLIC_SSL_PIN_HASHES;
 
     if (!domain || !hashesRaw) {
-      if (__DEV__) console.warn("[PinningService] SSL pin env vars not set — pinning skipped");
+      if (__DEV__)
+        console.warn(
+          "[PinningService] SSL pin env vars not set — pinning skipped",
+        );
       return;
     }
 
@@ -40,11 +46,15 @@ class PinningService {
     });
 
     addSslPinningErrorListener((error) => {
-      console.error(`[PinningService] Pin validation failed for ${error.serverHostname}: ${error.message}`);
+      if (__DEV__)
+        console.error(
+          `[PinningService] Pin validation failed for ${error.serverHostname}: ${error.message}`,
+        );
     });
 
     this._initialized = true;
-    if (__DEV__) console.info(`[PinningService] SSL pinning active for ${domain}`);
+    if (__DEV__)
+      console.info(`[PinningService] SSL pinning active for ${domain}`);
   }
 }
 

@@ -1,5 +1,13 @@
+import * as Haptics from "expo-haptics";
 import React, { useState } from "react";
-import { Pressable, Text, TextInput, useColorScheme, View } from "react-native";
+import {
+  Platform,
+  Pressable,
+  Text,
+  TextInput,
+  useColorScheme,
+  View,
+} from "react-native";
 
 interface AmountInputProps {
   onAmountChange: (amount: string) => void;
@@ -21,6 +29,12 @@ const AmountInput = ({ onAmountChange, error }: AmountInputProps) => {
       numericValue = parts[0] + "." + parts.slice(1).join("");
     }
 
+    if (Platform.OS === "ios") {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    } else {
+      Haptics.performAndroidHapticsAsync(Haptics.AndroidHaptics.Keyboard_Tap);
+    }
+
     setAmount(numericValue);
     onAmountChange(numericValue);
   };
@@ -30,8 +44,8 @@ const AmountInput = ({ onAmountChange, error }: AmountInputProps) => {
       <View
         className={`rounded-3xl p-4 mx-1 ${
           isDark
-            ? "bg-emerald-500/20 border-2 border-emerald-500/40"
-            : "bg-emerald-50 border-2 border-emerald-400"
+            ? "bg-emerald-500/20 border-2 border-lime-500/40"
+            : "bg-emerald-50 border-2 border-lime-400"
         }`}
       >
         {/* <Text

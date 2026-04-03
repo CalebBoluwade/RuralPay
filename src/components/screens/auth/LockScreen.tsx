@@ -5,9 +5,18 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import * as LocalAuthentication from "expo-local-authentication";
 import { router } from "expo-router";
-import React, { useEffect } from "react";
-import { Pressable, Text, useColorScheme, View } from "react-native";
+import { Fingerprint, ScanFace, ScanLine } from "lucide-react-native";
+import React, { useEffect, useRef } from "react";
+import {
+  DeviceEventEmitter,
+  Pressable,
+  Text,
+  useColorScheme,
+  View,
+} from "react-native";
 import Animated, {
+  FadeIn,
+  FadeInDown,
   useAnimatedStyle,
   useSharedValue,
   withRepeat,
@@ -36,6 +45,11 @@ const LockScreen = () => {
     };
   });
 
+  // Refs to track mounted state and intervals - FIXED: Added initial values
+  const isMounted = useRef<boolean>(true);
+  const timerRef = useRef<NodeJS.Timeout | undefined>(undefined);
+  const validationInProgress = useRef<boolean>(false);
+
   const OFFSET = 20;
   const TIME = 80;
 
@@ -47,53 +61,97 @@ const LockScreen = () => {
 
   // Check biometric support and initial lock state
   useEffect(() => {
-    (async () => {
-      const [compatible, remaining] = await Promise.all([
-        biometricService.isBiometricAvailable(),
-        PinService.getLockSecondsRemaining(),
-      ]);
-      setIsBiometricSupported(compatible);
-      setLockSeconds(remaining);
+    let isActive = true;
 
-      if (compatible) {
-        const biometricTypes =
-          await LocalAuthentication.supportedAuthenticationTypesAsync();
-        if (
-          biometricTypes.includes(
-            LocalAuthentication.AuthenticationType.FINGERPRINT,
-          )
-        ) {
-          setBiometricType("fingerprint");
-        } else if (
-          biometricTypes.includes(
-            LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION,
-          )
-        ) {
-          setBiometricType("facial");
-        } else {
-          setBiometricType("biometric");
+    (async () => {
+      try {
+        const [compatible, remaining] = await Promise.all([
+          biometricService.isBiometricAvailable(),
+          PinService.getLockSecondsRemaining(),
+        ]);
+
+        if (isActive) {
+          setIsBiometricSupported(compatible);
+          setLockSeconds(remaining);
         }
+
+        if (compatible && isActive) {
+          const biometricTypes =
+            await LocalAuthentication.supportedAuthenticationTypesAsync();
+          if (
+            biometricTypes.includes(
+              LocalAuthentication.AuthenticationType.FINGERPRINT,
+            )
+          ) {
+            setBiometricType("fingerprint");
+          } else if (
+            biometricTypes.includes(
+              LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION,
+            )
+          ) {
+            setBiometricType("facial");
+          } else {
+            setBiometricType("biometric");
+          }
+        }
+      } catch (error) {
+        if (__DEV__) console.error("Biometric check error:", error);
       }
     })();
+
+    return () => {
+      isActive = false;
+    };
   }, []);
 
   // Countdown timer when locked
   useEffect(() => {
-    if (lockSeconds <= 0) return;
-    const timer = setInterval(() => {
+    if (lockSeconds <= 0) {
+      // Clear timer if lockSeconds becomes 0
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = undefined;
+      }
+      return;
+    }
+
+    // Clear existing timer before creating a new one
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+    }
+
+    timerRef.current = setInterval(() => {
       setLockSeconds((s) => {
-        if (s <= 1) { clearInterval(timer); return 0; }
+        if (s <= 1) {
+          // Clear timer when reaching 0
+          if (timerRef.current) {
+            clearInterval(timerRef.current);
+            timerRef.current = undefined;
+          }
+          return 0;
+        }
         return s - 1;
       });
     }, 1000);
-    return () => clearInterval(timer);
-  }, [lockSeconds > 0]);
+
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = undefined;
+      }
+    };
+  }, [lockSeconds]);
 
   useEffect(() => {
-    if (code.length === 6) {
+    // Prevent multiple validations from running simultaneously
+    if (code.length === 6 && !validationInProgress.current) {
+      validationInProgress.current = true;
+
       const validatePin = async () => {
         try {
           const isValid = await PinService.ValidatePin(code.join(""));
+
+          if (!isMounted.current) return;
 
           if (isValid) {
             ToastService.success("PIN Is Correct");
@@ -102,7 +160,7 @@ const LockScreen = () => {
             await GetUserRefreshToken();
           } else {
             const remaining = await PinService.getLockSecondsRemaining();
-            if (remaining > 0) setLockSeconds(remaining);
+            if (remaining > 0 && isMounted.current) setLockSeconds(remaining);
 
             offset.value = withSequence(
               withTiming(-OFFSET, { duration: TIME / 2 }),
@@ -110,10 +168,12 @@ const LockScreen = () => {
               withTiming(0, { duration: TIME / 2 }),
             );
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-            setCode([]);
+            if (isMounted.current) setCode([]);
           }
         } catch (error) {
-          console.error("PIN validation error:", error);
+          if (!isMounted.current) return;
+
+          if (__DEV__) console.error("PIN validation error:", error);
           ToastService.error("PIN validation failed");
 
           offset.value = withSequence(
@@ -123,6 +183,8 @@ const LockScreen = () => {
           );
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
           setCode([]);
+        } finally {
+          validationInProgress.current = false;
         }
       };
 
@@ -138,19 +200,48 @@ const LockScreen = () => {
   };
 
   const GetUserRefreshToken = async () => {
+    // Prevent multiple simultaneous refresh token calls
+    if (isLoading) return;
+
     try {
       setIsLoading(true);
 
       const user = await authService.refreshToken();
 
-      user ? router.back() : router.replace("/auth/login");
-      setIsLoading(false);
-    } catch {
-      //   router.replace("/auth/Login");
+      if (!isMounted.current) return;
+
+      if (user) {
+        router.canGoBack() ? router.back() : null;
+        DeviceEventEmitter.emit("PIN_SUCCESS");
+      } else {
+        router.replace("/auth/login");
+      }
+    } catch (error) {
+      if (!isMounted.current) return;
+      if (__DEV__) console.error("Refresh token error:", error);
+      router.replace("/auth/login");
     } finally {
-      setIsLoading(false);
+      if (isMounted.current) {
+        setIsLoading(false);
+      }
     }
   };
+
+  // Cleanup on unmount
+  useEffect(() => {
+    isMounted.current = true;
+
+    return () => {
+      isMounted.current = false;
+      // Clear any pending timers
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = undefined;
+      }
+      // Reset validation flag
+      validationInProgress.current = false;
+    };
+  }, []);
 
   return (
     <SafeAreaView
@@ -158,7 +249,7 @@ const LockScreen = () => {
     >
       <View className="flex-1 px-6 justify-between py-12">
         <Animated.View
-          // entering={FadeIn.duration(600)}
+          entering={FadeIn.duration(600)}
           className="items-center mt-8"
         >
           <View
@@ -191,12 +282,14 @@ const LockScreen = () => {
           // entering={FadeInDown.delay(200).duration(600)}
           >
             <Text
-              className={`text-sm mb-6 ${isDark ? "text-gray-500" : "text-gray-500"}`}
+              className={`text-sm mb-6 ${isDark ? "text-gray-200" : "text-gray-500"}`}
             >
-              {isLocked ? `Too many attempts. Try again in ${lockSeconds}s` : "Enter your PIN"}
+              {isLocked
+                ? `Too Many Attempts. Try Again In ${lockSeconds}s`
+                : "Enter your PIN"}
             </Text>
             <Animated.View
-              // style={style}
+              style={style}
               className="flex-row justify-center mb-12"
             >
               {codeLength.map((_, index) => (
@@ -221,7 +314,7 @@ const LockScreen = () => {
           </Animated.View>
 
           <Animated.View
-            // entering={FadeInDown.delay(400).duration(600)}
+            entering={FadeInDown.delay(400).duration(600)}
             className="w-full max-w-sm"
           >
             <View className="gap-4 p-6">
@@ -270,11 +363,23 @@ const LockScreen = () => {
                       isDark ? "bg-lime-500/20" : "bg-lime-100"
                     }`}
                   >
-                    <Ionicons
-                      name="finger-print"
-                      size={32}
-                      color={isDark ? "#a3e635" : "#7c3aed"}
-                    />
+                    {isBiometricSupported &&
+                      (biometricType === "facial" ? (
+                        <ScanFace
+                          size={24}
+                          color={isDark ? "#a3e635" : "#65a30d"}
+                        />
+                      ) : biometricType === "fingerprint" ? (
+                        <Fingerprint
+                          size={24}
+                          color={isDark ? "#a3e635" : "#65a30d"}
+                        />
+                      ) : (
+                        <ScanLine
+                          size={24}
+                          color={isDark ? "#a3e635" : "#65a30d"}
+                        />
+                      ))}
                   </View>
                 </Pressable>
 

@@ -4,6 +4,7 @@ import { axiosInstance } from "../api";
 import { config } from "../config";
 import { ErrorHandler } from "../utils/ErrorHandler";
 import { DeviceService } from "./Device";
+import EncryptionService from "./EncryptionService";
 import ToastService from "./ToastService";
 
 const AUTH_TOKEN_KEY = "auth_token";
@@ -12,13 +13,30 @@ const USER_DATA_KEY = "user_data";
 
 class AuthService {
   async login(identifier: string, password: string): Promise<AuthResponse> {
+    let pushToken: string | undefined;
+
+    try {
+      pushToken = await DeviceService.registerForPushNotificationsAsync();
+    } catch (error) {
+      if (__DEV__) {
+        console.warn(
+          "[AuthService] Failed to register for push notifications. Continuing without push token.",
+          error,
+        );
+      }
+      pushToken = undefined;
+    }
+
     try {
       const deviceInfo = await DeviceService.getDeviceInfo();
 
+      if (__DEV__) console.log(deviceInfo, pushToken);
+
       const response = await axiosInstance.post<AuthResponse>("/auth/login", {
         identifier: identifier,
-        password: password,
+        password: await EncryptionService.EncryptPII(password),
         deviceInfo: deviceInfo,
+        pushToken: pushToken ?? undefined,
       });
 
       ToastService.success(response.message);
@@ -43,9 +61,11 @@ class AuthService {
         (error.error ?? "").includes("Credentials") ||
         error.response?.status === 401
           ? "Invalid Credentials"
-          : error.response?.status === 429
-            ? "Too Many Login Attempts. Please Try Again Later"
-            : "Login Failed. Please Check Your Connection And Try Again";
+          : error.response?.status === 400
+            ? "Something Went Wrong"
+            : error.response?.status === 429
+              ? "Too Many Login Attempts. Please Try Again Later"
+              : "Login Failed. Please Check Your Connection And Try Again";
 
       throw new Error(message);
     }
@@ -54,15 +74,30 @@ class AuthService {
   async register(
     data: RegisterData,
   ): Promise<APIResponse<{ userId: string }> | null> {
+    let pushToken: string | undefined;
+
+    try {
+      pushToken = await DeviceService.registerForPushNotificationsAsync();
+    } catch (error) {
+      if (__DEV__) {
+        console.warn(
+          "[AuthService] Failed to register for push notifications. Continuing without push token.",
+          error,
+        );
+      }
+    }
+
     try {
       const payload = {
         FirstName: String(data.firstName).trim(),
         LastName: String(data.lastName).trim(),
+        Username: String(data.userName).trim(),
         Email: String(data.email).trim(),
         Password: String(data.password),
         PhoneNumber: String(data.phoneNumber).trim(),
         BVN: String(data.bvn).trim(),
-        pushToken: data.pushToken, // Placeholder for push token, to be set after registration
+        IdentityToken: String(data.identityToken),
+        pushToken: pushToken,
       };
 
       const response = await axiosInstance.post<
@@ -151,12 +186,22 @@ class AuthService {
 
   async logout(): Promise<{ success: boolean; message: string }> {
     try {
-      await axiosInstance.post("/auth/logout");
+      const token = await SecureStore.getItemAsync(AUTH_TOKEN_KEY);
+      if (token) {
+        // Fire-and-forget — don't let a failed logout API call block local cleanup
+        axiosInstance.post("/auth/logout").catch(() => {});
+      }
+
+      // Always clear local auth data regardless of API call outcome
       await SecureStore.deleteItemAsync(AUTH_TOKEN_KEY);
       await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY);
       await SecureStore.deleteItemAsync(USER_DATA_KEY);
-      return { success: true, message: "Logged Out successfully" };
-    } catch {
+      return { success: true, message: "Logged out successfully" };
+    } catch (error) {
+      if (__DEV__) {
+        console.error("[AuthService] Logout error:", error);
+      }
+      // Even if logout fails, always clear local auth data
       await SecureStore.deleteItemAsync(AUTH_TOKEN_KEY);
       await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY);
       await SecureStore.deleteItemAsync(USER_DATA_KEY);

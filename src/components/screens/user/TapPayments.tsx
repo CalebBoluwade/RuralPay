@@ -1,3 +1,4 @@
+import { useClearLoadingOnLock } from "@/src/hooks/useClearLoadingOnLock";
 import { axiosInstance } from "@/src/lib/api";
 import { useStripe } from "@stripe/stripe-react-native";
 import { useStripeTerminal } from "@stripe/stripe-terminal-react-native";
@@ -8,14 +9,15 @@ export const PaymentScreen = () => {
   const { initPaymentSheet, presentPaymentSheet } = useStripe();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  useClearLoadingOnLock(setLoading);
 
   const initializePayment = async () => {
     setLoading(true);
     setError(null);
     try {
-      const { clientSecret } = await axiosInstance.post<{ clientSecret: string }>(
-        "/payments/create-intent"
-      );
+      const { clientSecret } = await axiosInstance.post<{
+        clientSecret: string;
+      }>("/payment/create-intent");
 
       const { error: initError } = await initPaymentSheet({
         paymentIntentClientSecret: clientSecret,
@@ -49,13 +51,16 @@ export const PaymentScreen = () => {
 };
 
 export const TapToPayScreen = () => {
-  const [discoveredReaders, setDiscoveredReaders] = useState<import("@stripe/stripe-terminal-react-native").Reader.Type[]>([]);
+  const [discoveredReaders, setDiscoveredReaders] = useState<
+    import("@stripe/stripe-terminal-react-native").Reader.Type[]
+  >([]);
   const { discoverReaders, connectReader } = useStripeTerminal({
     onUpdateDiscoveredReaders: (readers) => setDiscoveredReaders(readers),
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
+  useClearLoadingOnLock(setLoading);
 
   const startTapToPay = async () => {
     setLoading(true);
@@ -66,7 +71,8 @@ export const TapToPayScreen = () => {
       });
 
       if (discoverError) throw new Error(discoverError.message);
-      if (!discoveredReaders.length) throw new Error("No Tap to Pay reader found");
+      if (!discoveredReaders.length)
+        throw new Error("No Tap to Pay reader found");
 
       const { error: connectError } = await connectReader({
         discoveryMethod: "tapToPay",
@@ -90,7 +96,11 @@ export const TapToPayScreen = () => {
       {loading ? (
         <ActivityIndicator />
       ) : (
-        <Button title="Start Tap to Pay" onPress={startTapToPay} disabled={ready} />
+        <Button
+          title="Start Tap to Pay"
+          onPress={startTapToPay}
+          disabled={ready}
+        />
       )}
     </View>
   );

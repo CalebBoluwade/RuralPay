@@ -4,14 +4,14 @@ import { router } from "expo-router";
 import { Activity, Search, X } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  Text,
-  TextInput,
-  View,
-  useColorScheme,
+    ActivityIndicator,
+    Pressable,
+    RefreshControl,
+    ScrollView,
+    Text,
+    TextInput,
+    View,
+    useColorScheme,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { SvgUri } from "react-native-svg";
@@ -30,7 +30,7 @@ const BankUptime = () => {
       const data = await PaymentService.GetBanks();
       setBanks(data);
     } catch (error) {
-      console.error("Failed to fetch banks", error);
+      if (__DEV__) console.error("Failed to fetch banks", error);
     } finally {
       setLoading(false);
     }

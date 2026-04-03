@@ -1,7 +1,6 @@
 import { axiosInstance } from "@/src/lib/api";
 import { useStripe } from "@stripe/stripe-react-native";
-import { Reader } from "@stripe/stripe-terminal-react-native";
-import { useStripeTerminal } from "@stripe/stripe-terminal-react-native";
+import { Reader, useStripeTerminal } from "@stripe/stripe-terminal-react-native";
 import { router } from "expo-router";
 import { CreditCard, Smartphone } from "lucide-react-native";
 import { useState } from "react";
@@ -34,7 +33,7 @@ const WalletPaySection = () => {
     try {
       const { clientSecret } = await axiosInstance.post<{
         clientSecret: string;
-      }>("/payments/create-intent");
+      }>("/payment/create-intent");
 
       const { error: initError } = await initPaymentSheet({
         paymentIntentClientSecret: clientSecret,

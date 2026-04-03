@@ -3,18 +3,18 @@ import MerchantService from "@/src/lib/services/MerchantService";
 import { formatNaira } from "@/src/lib/utils";
 import React, { useEffect, useState } from "react";
 import {
-  Dimensions,
-  RefreshControl,
-  ScrollView,
-  Text,
-  useColorScheme,
-  View,
+    Dimensions,
+    RefreshControl,
+    ScrollView,
+    Text,
+    useColorScheme,
+    View,
 } from "react-native";
 import { BarChart, PieChart } from "react-native-gifted-charts";
 import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
+    useAnimatedStyle,
+    useSharedValue,
+    withTiming,
 } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -37,13 +37,13 @@ const MerchantStatsGraph = () => {
     try {
       const MerchantAnalyticsData =
         await MerchantService.GetMerchantAnalytics();
-      console.log(MerchantAnalyticsData);
+      if (__DEV__) console.log(MerchantAnalyticsData);
 
       if (MerchantAnalyticsData) {
         setMerchant(MerchantAnalyticsData);
       }
     } catch (error) {
-      console.warn("Failed to load merchant data", error);
+      if (__DEV__) console.warn("Failed to load merchant data", error);
     } finally {
       setLoading(false);
     }

@@ -8,7 +8,7 @@ import {
 } from "lucide-react-native";
 import React from "react";
 import { Pressable, Text, View, useColorScheme } from "react-native";
-import { useAuth } from "../context/AuthProvider";
+import { useAuth } from "../context/AuthSessionProvider";
 import SelectLanguageModal from "./Modals/SelectLanguageModal";
 
 export interface MenuItem extends MenuItemBase {

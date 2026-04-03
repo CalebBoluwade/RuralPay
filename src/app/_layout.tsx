@@ -5,6 +5,7 @@ import {
   DefaultTheme,
   ThemeProvider,
 } from "@react-navigation/native";
+import { useAssets } from 'expo-asset';
 import { useFonts } from "expo-font";
 import { isLiquidGlassAvailable } from "expo-glass-effect";
 import * as Notifications from "expo-notifications";
@@ -13,7 +14,7 @@ import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
 import { useColorScheme } from "react-native";
 import "react-native-reanimated";
-import { AuthProvider } from "../components/context/AuthProvider";
+import { AuthSessionProvider } from "../components/context/AuthSessionProvider";
 import { LanguageProvider } from "../components/context/LanguageContext";
 import { ToastProvider } from "../components/context/ToastProvider";
 import ComplianceGuard from "../components/ui/ComplianceGuard";
@@ -25,6 +26,13 @@ export default function RootLayout() {
   const [loaded, error] = useFonts({
     AutourOne: require("@/assets/fonts/AutourOne-Regular.ttf"),
   });
+
+  const [assets, assetError] = useAssets([
+    require("@/assets/images/CreditCard.svg"),
+    require("@/assets/images/CBN.svg"),
+    require("@/assets/images/ScanToPay.svg"),
+  ]);
+
   const colorScheme = useColorScheme();
 
   useEffect(() => {
@@ -51,7 +59,7 @@ export default function RootLayout() {
     <ErrorBoundary>
       <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
         <ToastProvider>
-          <AuthProvider>
+          <AuthSessionProvider>
             <LanguageProvider>
               <ComplianceGuard>
                 {/* <Slot /> */}
@@ -60,7 +68,7 @@ export default function RootLayout() {
                 <StatusBar style="auto" />
               </ComplianceGuard>
             </LanguageProvider>
-          </AuthProvider>
+          </AuthSessionProvider>
         </ToastProvider>
       </ThemeProvider>
     </ErrorBoundary>
@@ -70,7 +78,7 @@ export default function RootLayout() {
 function RootNavigator() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
-  const colorTheme = isDark ? "#f8fafc" : "#020617";
+  const colorTheme = isDark ? "#020617" : "#f8fafc";
 
   return (
     <Stack screenOptions={{ headerShown: false }}>
@@ -121,7 +129,7 @@ function RootNavigator() {
         options={{
           presentation: "formSheet",
           sheetGrabberVisible: true,
-          sheetAllowedDetents: [0.65],
+          sheetAllowedDetents: [0.5],
           contentStyle: {
             backgroundColor: isLiquidGlassAvailable()
               ? "transparent"

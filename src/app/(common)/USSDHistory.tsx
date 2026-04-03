@@ -23,7 +23,7 @@ const USSDHistory = () => {
 
       setTransactions(transactions);
     } catch (error) {
-      console.log(error);
+      if (__DEV__) console.log(error);
     } finally {
       setRefreshing(false);
     }

@@ -20,7 +20,7 @@
 //     try {
 //       this.db = await SQLite.openDatabaseAsync("offline_payments.db");
 //     } catch (error) {
-//       console.warn("SQLite not available:", error);
+//       if (__DEV__) console.warn("SQLite not available:", error);
 //       return;
 //     }
 //     await this.db.execAsync(
@@ -96,10 +96,10 @@
 //   //         new Date().toISOString(),
 //   //       ]
 //   //     );
-//   //     console.log("Transaction saved offline");
+//   //     if (__DEV__) console.log("Transaction saved offline");
 //   //     return true;
 //   //   } catch (error) {
-//   //     console.error("DB Save Error:", error);
+//   //     if (__DEV__) console.error("DB Save Error:", error);
 //   //     return false;
 //   //   }
 //   // }
@@ -113,9 +113,9 @@
 //         "SELECT * FROM transactions WHERE synced = 0 ORDER BY timestamp ASC",
 //       );
 //       this.offlineQueue = queue;
-//       console.log(`Loaded ${this.offlineQueue.length} offline transactions`);
+//       if (__DEV__) console.log(`Loaded ${this.offlineQueue.length} offline transactions`);
 //     } catch (error) {
-//       console.error("Load queue error:", error);
+//       if (__DEV__) console.error("Load queue error:", error);
 //       this.offlineQueue = [];
 //     }
 //   }
@@ -129,7 +129,7 @@
 //         "SELECT * FROM transactions WHERE synced = 0",
 //       );
 //     } catch (error) {
-//       console.error(error);
+//       if (__DEV__) console.error(error);
 //       return [];
 //     }
 //   }
@@ -191,9 +191,9 @@
 //       }
 
 //       await this.loadOfflineQueue();
-//       console.log("Transactions synced");
+//       if (__DEV__) console.log("Transactions synced");
 //     } catch (error) {
-//       console.error("Sync failed:", error);
+//       if (__DEV__) console.error("Sync failed:", error);
 //     }
 //   }
 
@@ -206,10 +206,10 @@
 //       });
 
 //       if (response.ok) {
-//         console.log("Transaction synced immediately");
+//         if (__DEV__) console.log("Transaction synced immediately");
 //       }
 //     } catch (error) {
-//       console.log("Immediate sync failed, will retry later:", error);
+//       if (__DEV__) console.log("Immediate sync failed, will retry later:", error);
 //     }
 //   }
 // }

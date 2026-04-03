@@ -14,7 +14,7 @@ global {
   type UserRegistrationStep =
     | "personal"
     | "merchant"
-    | "bvn"
+    // | "bvn"
     | "phone-verify"
     | "liveness"
     | "pin"
@@ -32,6 +32,15 @@ global {
     | "BLE";
 
   type PaymentMethod = "NFC_CARD" | "BALANCE" | "BLUETOOTH";
+
+  type UserNotification = {
+    id: string;
+    title: string;
+    type: string;
+    message: string;
+    time: string;
+    read: boolean;
+  };
 
   type VASType = "airtime" | "tickets" | "data" | "general";
 
@@ -51,16 +60,16 @@ global {
     details: T;
   }
 
-  interface ReceiptData {
+  interface ReceiptData extends TransactionHistoryItem {
     amount: string;
-    recipient: string;
-    reference: string;
-    date: string;
-    narration?: string;
-    type: PaymentMode;
+    // recipient: string;
+    // reference: string;
+    // date: string;
+    // narration?: string;
+    // type: PaymentMode;
     senderName?: string;
     senderAccount?: string;
-    merchantId?: string;
+    merchantName?: string;
     terminalId?: string;
     cardLast4?: string;
   }
@@ -102,11 +111,12 @@ global {
   interface RegisterData {
     firstName: string;
     lastName: string;
+    userName: string;
     email: string;
     password: string;
     phoneNumber: string;
     bvn: string;
-    pushToken: string;
+    identityToken: string;
   }
 
   export interface User {
@@ -199,7 +209,7 @@ global {
     narration?: string;
   }
 
-  interface TransactionHistory {
+  interface TransactionHistoryItem {
     fee: number;
     transactionDate: string;
     transactionId: string;
@@ -341,7 +351,8 @@ global {
 
   interface BINData {
     scheme: string;
-    bankName: string;
+    issuerBank: string;
+    currency: string;
   }
 
   interface PaymentCard {
@@ -379,6 +390,7 @@ global {
     success: boolean;
     message: string;
     transaction?: NFCCardTransaction;
+    cardInfo?: CardInfo;
   }
 
   interface MerchantRegistrationData {

@@ -182,7 +182,7 @@ const PaymentMethodActions: React.FC<PaymentMethodActionsProps> = ({
             ToastService.info("Starting payment server...");
             await BLEService.startAdvertising({ amount });
             const result = await BLEService.startPaymentServer((payment) => {
-              console.log(payment);
+              if (__DEV__) console.log(payment);
               ToastService.success("Payment Successful via Bluetooth!");
               onPaymentMethodSelected({ method: "BLUETOOTH" });
               onClose();
@@ -254,9 +254,9 @@ const VoucherSection: React.FC<VoucherSectionProps> = ({
         >
           <Tag size={20} color={isDark ? "#334155" : "#cbd5e1"} />
           <Text
-            className={`text-xs text-center ${isDark ? "text-slate-500" : "text-slate-400"}`}
+            className={`text-base text-center ${isDark ? "text-slate-500" : "text-slate-400"}`}
           >
-            No vouchers available for this purchase
+            No Vouchers Available For This Purchase
           </Text>
         </View>
       ) : (
@@ -424,7 +424,7 @@ const PaymentMethodModal: React.FC<PaymentMethodModalProps> = ({
       finalAmount,
     });
 
-    console.log(paymentResult);
+    if (__DEV__) console.log(paymentResult);
     onClose();
   };
 

@@ -1,4 +1,5 @@
 import CardPIN from "@/src/components/ui/Modals/Transaction/CardPin";
+import { useClearLoadingOnLock } from "@/src/hooks/useClearLoadingOnLock";
 import NFCService from "@/src/lib/services/NFCService";
 import PaymentService from "@/src/lib/services/PaymentService";
 import ToastService from "@/src/lib/services/ToastService";
@@ -17,7 +18,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { SvgUri } from "react-native-svg";
 
-import { useAuth } from "@/src/components/context/AuthProvider";
+import { useAuth } from "@/src/components/context/AuthSessionProvider";
 import AmountInput from "@/src/components/ui/Input/AmountInput";
 import { LocationService } from "@/src/lib/services/LocationService";
 import { useNetInfo } from "@react-native-community/netinfo";
@@ -42,43 +43,34 @@ const CardTapNFCPayments: React.FC<CardTapNFCPaymentsProps> = ({
   const [amount, setAmount] = useState("");
   const [amountError, setAmountError] = useState("");
   const [loading, setLoading] = useState(false);
+  useClearLoadingOnLock(setLoading);
   const [paymentResult, setPaymentResult] =
-    useState<APIResponse<TransactionHistory>>();
+    useState<APIResponse<TransactionHistoryItem> | null>(null);
   const [error, setError] = useState<string>("");
   const [cardPin, setCardPin] = useState("");
   const [cardTransaction, setCardTransaction] = useState<CardDetailsResult>();
-  const [binData, setBinData] = useState<any>(null);
+  const [rawCardInfo, setRawCardInfo] = useState<CardInfo | null>(null);
 
   const networkInfo = useNetInfo();
 
   useEffect(() => {
     const initPaymentMethod = async () => {
-      const nfcInit = await NFCService.initialize();
-      const nfcEnabled = await NFCService.isEnabled();
-      setNFCReady(nfcInit && nfcEnabled);
+      try {
+        const nfcInit = await NFCService.initialize();
+        if (nfcInit) {
+          setNFCReady(true);
+          if (__DEV__) console.log("NFC initialized successfully");
+        } else {
+          setNFCReady(false);
+          if (__DEV__) console.log("NFC initialization failed");
+        }
+      } catch (err) {
+        if (__DEV__) console.error("NFC init error:", err);
+        setNFCReady(false);
+      }
     };
     initPaymentMethod();
   }, []);
-
-  useEffect(() => {
-    if (step === "CONFIRM") {
-      const fetchBin = async () => {
-        setLoading(true);
-        try {
-          const cardBIN = cardTransaction?.success
-            ? cardTransaction?.transaction?.cardInfo.BIN!
-            : "";
-          const data = await PaymentService.GetCardBIN(cardBIN.slice(0, 6));
-          setBinData(data);
-        } catch (error) {
-          console.log("Failed to fetch BIN", error);
-        } finally {
-          setLoading(false);
-        }
-      };
-      fetchBin();
-    }
-  }, [step, cardTransaction]);
 
   const cardClass = isDark
     ? "bg-white/10 border border-white/20"
@@ -112,80 +104,219 @@ const CardTapNFCPayments: React.FC<CardTapNFCPaymentsProps> = ({
 
   const CaptureCardDetails = async () => {
     if (!merchant) {
-      ToastService.warning("Register As A Merchant To Progress");
+      ToastService.warning("Register As A Merchant To Continue");
       return;
     }
 
     try {
       setLoading(true);
-      const cardResult = await NFCService.RetrieveNFCCardDetails({
-        merchantId: merchant.id,
-        amount: Number.parseFloat(amount),
-        cardPIN: cardPin,
-      });
+      // Read card ONCE - no PIN needed yet
+      const cardResult = await NFCService.ReadNFCCardOnly();
 
-      if (!cardResult.success) {
-        setError(cardResult.message || "Card Payment Failed");
+      if (!cardResult.success || !cardResult.cardInfo) {
+        setError(cardResult.message || "Failed to read card");
         return;
       }
 
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
-      const location = await LocationService.getCurrentLocation();
-      cardResult.transaction!.location = location ?? undefined;
+      // Store raw card info for later use with PIN
+      setRawCardInfo(cardResult.cardInfo);
       setCardTransaction(cardResult);
-      setStep("ENTER_PIN");
+      setStep("PIN_CONFIRMATION");
     } catch (error) {
       setError(
         error instanceof Error ? error.message : "An unknown error occurred",
       );
-      console.log(error);
+      if (__DEV__) console.log(error);
     } finally {
       setLoading(false);
     }
   };
 
+  const processPaymentResponse = (
+    paymentResponse: APIResponse<TransactionHistoryItem>,
+  ) => {
+    if (paymentResponse.success) {
+      if (__DEV__)
+        console.log(
+          "[PAYMENT] Payment succeeded! Transaction ID:",
+          paymentResponse.details?.transactionId,
+        );
+      ToastService.success(
+        `Payment of ₦${Number(amount).toFixed(2)} Successful!`,
+      );
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } else {
+      const errorMsg = paymentResponse.errorMessage?.toLowerCase() || "";
+      const isCanceledError =
+        errorMsg.includes("canceled") || errorMsg.includes("abort");
+
+      if (__DEV__)
+        console.warn("[PAYMENT] Payment failed:", paymentResponse.errorMessage);
+
+      if (!isCanceledError) {
+        const displayError = paymentResponse.errorMessage || "Payment Failed";
+        setError(displayError);
+        ToastService.error(displayError);
+      } else if (__DEV__) {
+        console.log("[PAYMENT] Canceled error suppressed from UI");
+      }
+
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    }
+  };
+
+  const validatePaymentInputs = (): {
+    valid: boolean;
+    merchant?: typeof merchant;
+    cardInfo?: CardInfo;
+  } => {
+    if (!merchant || !cardPin) {
+      ToastService.warning("Please enter PIN to continue");
+      return { valid: false };
+    }
+
+    if (!rawCardInfo) {
+      ToastService.warning("Card data not available");
+      return { valid: false };
+    }
+
+    return { valid: true, merchant, cardInfo: rawCardInfo };
+  };
+
+  const handleLocationRetrieval = async (
+    transaction: NFCCardTransaction,
+  ): Promise<void> => {
+    try {
+      const location = await LocationService.getCurrentLocation();
+      if (__DEV__)
+        console.log("[PAYMENT] Location retrieved:", location ? "yes" : "no");
+      transaction.location = location ?? undefined;
+    } catch (locationError) {
+      if (__DEV__)
+        console.warn(
+          "[PAYMENT] Location error (non-fatal):",
+          locationError instanceof Error
+            ? locationError.message
+            : locationError,
+        );
+    }
+  };
+
+  const makePaymentRequest = async (
+    transaction: NFCCardTransaction,
+  ): Promise<APIResponse<TransactionHistoryItem> | null> => {
+    const isConnected = networkInfo.isConnected === true;
+    if (__DEV__)
+      console.log(
+        "[PAYMENT] Network connected:",
+        isConnected,
+        "networkInfo:",
+        networkInfo,
+      );
+
+    if (!isConnected) {
+      ToastService.warning("No internet connection. Saving payment locally.");
+      setError("No internet connection");
+      return null;
+    }
+
+    // Create a dedicated abort controller for this payment request
+    const paymentAbortController = new AbortController();
+    const paymentTimeoutId = setTimeout(() => {
+      paymentAbortController.abort();
+    }, 30000); // 30 second timeout
+
+    try {
+      if (__DEV__) console.log("[PAYMENT] Making API call...");
+
+      const paymentResponse = await PaymentService.MakeNFCCardPayment(
+        transaction,
+        paymentAbortController.signal,
+      );
+
+      if (__DEV__)
+        console.log(
+          "[PAYMENT] API response received:",
+          paymentResponse.success,
+        );
+
+      return paymentResponse;
+    } finally {
+      clearTimeout(paymentTimeoutId);
+    }
+  };
+
+  const handlePaymentProcessing = async (
+    validation: ReturnType<typeof validatePaymentInputs>,
+  ): Promise<void> => {
+    if (!validation.valid || !validation.merchant || !validation.cardInfo) {
+      return;
+    }
+
+    if (__DEV__) console.log("[PAYMENT] Starting payment processing...");
+
+    const cardResultWithPIN = await NFCService.ProcessCardWithPIN({
+      merchantId: validation.merchant.id,
+      amount: Number.parseFloat(amount),
+      cardPIN: cardPin,
+      cardInfo: validation.cardInfo,
+    });
+
+    if (__DEV__)
+      console.log(
+        "[PAYMENT] ProcessCardWithPIN result:",
+        cardResultWithPIN.success,
+      );
+
+    if (!cardResultWithPIN.success) {
+      setError(cardResultWithPIN.message || "PIN Verification Failed");
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      return;
+    }
+
+    if (cardResultWithPIN.transaction) {
+      await handleLocationRetrieval(cardResultWithPIN.transaction);
+      const paymentResponse = await makePaymentRequest(
+        cardResultWithPIN.transaction,
+      );
+
+      if (paymentResponse) {
+        setPaymentResult(paymentResponse);
+        processPaymentResponse(paymentResponse);
+      }
+    }
+  };
+
   const HandleCardTapPayment = async () => {
     try {
-      if (!merchant) {
-        ToastService.warning("Register As A Merchant To Progress");
-        return;
-      }
-      if (!binData) {
-        ToastService.error(
-          "Card Validation Failed: Unable to verify Card issuer",
-        );
-        return;
-      }
-
-      if (networkInfo.isConnected) {
-        const paymentResponse = await PaymentService.MakeNFCCardPayment(
-          cardTransaction?.transaction!,
-        );
-        setPaymentResult(paymentResponse);
-
-        if (paymentResponse.success) {
-          ToastService.success(
-            `Payment of ₦${Number(amount).toFixed(2)} Successful!`,
-          );
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          setStep("SUCCESS");
-        } else {
-          ToastService.error(
-            `Payment of ₦${Number(amount).toFixed(2)} Failed!`,
-          );
-          setError(paymentResponse.errorMessage || "Payment Failed");
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-        }
-      } else {
-        ToastService.warning("Offline Mode: Payment saved locally");
-      }
+      setLoading(true);
+      const validation = validatePaymentInputs();
+      await handlePaymentProcessing(validation);
     } catch (error) {
-      ToastService.error("Payment Processing Failed");
-      setError((error as Error).message);
+      const errorMsg =
+        error instanceof Error ? error.message?.toLowerCase() : "";
+
+      if (__DEV__)
+        console.error(
+          "[PAYMENT] Error:",
+          error instanceof Error ? error.message : error,
+        );
+
+      // Suppress known non-critical errors
+      const isCanceledError =
+        errorMsg.includes("canceled") ||
+        errorMsg.includes("abort") ||
+        (error instanceof Error && error.name === "AbortError");
+
+      if (!isCanceledError && error instanceof Error) {
+        ToastService.error("Payment Processing Failed");
+        setError(error.message);
+      }
     } finally {
       setLoading(false);
     }
@@ -193,11 +324,22 @@ const CardTapNFCPayments: React.FC<CardTapNFCPaymentsProps> = ({
 
   const handlePinEntered = (pin: string) => {
     setCardPin(pin);
-    setStep("CONFIRM");
+  };
+
+  const resetAllState = () => {
+    setStep("ENTER_AMOUNT");
+    setAmount("");
+    setAmountError("");
+    setLoading(false);
+    setPaymentResult(null);
+    setError("");
+    setCardPin("");
+    setCardTransaction(undefined);
+    setRawCardInfo(null);
   };
 
   const handlePinCancel = () => {
-    setStep("ENTER_AMOUNT");
+    resetAllState();
   };
 
   const renderEnterDetails = () => (
@@ -212,7 +354,10 @@ const CardTapNFCPayments: React.FC<CardTapNFCPaymentsProps> = ({
           Card Payment
         </Text>
         <Pressable
-          onPress={() => setShowMerchantPayModal(false)}
+          onPress={() => {
+            resetAllState();
+            setShowMerchantPayModal(false);
+          }}
           className={`w-10 h-10 items-center justify-center rounded-full ${isDark ? "bg-white/10" : "bg-slate-100"}`}
         >
           <X size={22} color={isDark ? "#fff" : "#64748b"} />
@@ -222,22 +367,22 @@ const CardTapNFCPayments: React.FC<CardTapNFCPaymentsProps> = ({
       <View className="flex-1 px-5">
         {/* Info card */}
         <View className={`rounded-2xl p-5 mb-6 mt-4 ${cardClass}`}>
-          <View className="flex-row items-center gap-3 mb-3">
+          <View className="flex-row items-center gap-3">
             <View
-              className={`w-12 h-12 rounded-xl items-center justify-center ${isDark ? "bg-lime-500/20" : "bg-lime-50"}`}
+              className={`px-5 py-4 rounded-xl items-center justify-center ${isDark ? "bg-lime-500/20" : "bg-lime-50"}`}
             >
               <CreditCard size={22} color={isDark ? "#a3e635" : "#65a30d"} />
             </View>
             <View>
               <Text
-                className={`text-sm font-brand font-bold ${isDark ? "text-white" : "text-slate-900"}`}
+                className={`text-lg font-brand font-bold ${isDark ? "text-white" : "text-slate-900"}`}
               >
                 Accept Contactless Payments
               </Text>
               <Text
-                className={`text-xs mt-0.5 ${isDark ? "text-slate-400" : "text-slate-500"}`}
+                className={`text-base mt-0.5 ${isDark ? "text-slate-400" : "text-slate-500"}`}
               >
-                Tap cards or mobile wallets to pay
+                Tap Bank Cards To Make Payments
               </Text>
             </View>
           </View>
@@ -256,15 +401,13 @@ const CardTapNFCPayments: React.FC<CardTapNFCPaymentsProps> = ({
         </View>
 
         {/* Amount input */}
-        <View className={`rounded-2xl p-4 mb-6 ${cardClass}`}>
-          <AmountInput
-            onAmountChange={(amount) => {
-              setAmount(amount);
-              setAmountError("");
-            }}
-            error={amountError}
-          />
-        </View>
+        <AmountInput
+          onAmountChange={(amount) => {
+            setAmount(amount);
+            setAmountError("");
+          }}
+          error={amountError}
+        />
 
         {/* Actions */}
         <View className="flex-row gap-3 mb-8">
@@ -285,7 +428,10 @@ const CardTapNFCPayments: React.FC<CardTapNFCPaymentsProps> = ({
 
           <Pressable
             className={`flex-1 flex-row items-center justify-center gap-2 py-4 rounded-2xl ${isDark ? "bg-white/10" : "bg-slate-100"}`}
-            onPress={() => setShowMerchantPayModal(false)}
+            onPress={() => {
+              resetAllState();
+              setShowMerchantPayModal(false);
+            }}
           >
             <X size={20} color={isDark ? "#fff" : "#64748b"} />
             <Text
@@ -299,115 +445,146 @@ const CardTapNFCPayments: React.FC<CardTapNFCPaymentsProps> = ({
     </SafeAreaView>
   );
 
-  const renderEnterPin = () => (
+  const RenderEnterPin = () => (
     <CardPIN
+      cardTransaction={cardTransaction!}
       error={error}
       paymentMessage="Enter Your 4-Digit Card PIN to Authorize This Transaction"
       showPinModal={true}
       merchantBusinessName={merchant?.businessName || ""}
+      amount={Number.parseFloat(amount)}
       isLoading={loading}
       setIsLoading={setLoading}
       onPinEntered={handlePinEntered}
       onCancel={handlePinCancel}
       HandleCardTapPayment={HandleCardTapPayment}
+      transactionResult={paymentResult?.details}
     />
   );
 
-  const renderTapUserCard = () => (
-    <SafeAreaView
-      className={isDark ? "flex-1 bg-slate-950" : "flex-1 bg-slate-50"}
-    >
-      {/* Header */}
-      <View className="flex-row items-center justify-between px-5 pt-4 pb-2">
-        <Text
-          className={`text-2xl font-brand font-bold ${isDark ? "text-white" : "text-slate-900"}`}
-        >
-          Tap Card
-        </Text>
-        <Pressable
-          onPress={() => setStep("ENTER_AMOUNT")}
-          className={`w-10 h-10 items-center justify-center rounded-full ${isDark ? "bg-white/10" : "bg-slate-100"}`}
-        >
-          <X size={22} color={isDark ? "#fff" : "#64748b"} />
-        </Pressable>
-      </View>
+  const RenderTapUserCard = () => {
+    const getButtonColor = () => {
+      if (NFCReady) {
+        return "bg-lime-400";
+      }
+      return isDark ? "bg-slate-700" : "bg-slate-300";
+    };
 
-      <View className="flex-1 justify-center px-5">
-        {/* Status card */}
-        <View className={`rounded-2xl p-8 items-center mb-6 ${cardClass}`}>
-          <View
-            className={`w-20 h-20 rounded-full items-center justify-center mb-4 ${isDark ? "bg-lime-500/20" : "bg-lime-50"}`}
-          >
-            <Smartphone size={32} color={isDark ? "#a3e635" : "#65a30d"} />
-          </View>
+    return (
+      <SafeAreaView
+        className={isDark ? "flex-1 bg-slate-950" : "flex-1 bg-slate-50"}
+      >
+        {/* Header */}
+        <View className="flex-row items-center justify-between px-5 pt-4 pb-2">
           <Text
-            className={`text-xl font-brand font-bold mb-2 ${isDark ? "text-white" : "text-slate-900"}`}
+            className={`text-2xl font-brand font-bold ${isDark ? "text-white" : "text-slate-900"}`}
           >
-            Ready to Scan
+            Tap Card
           </Text>
-          <Text
-            className={`text-sm text-center ${isDark ? "text-slate-400" : "text-slate-500"}`}
+          <Pressable
+            onPress={resetAllState}
+            className={`w-10 h-10 items-center justify-center rounded-full ${isDark ? "bg-white/10" : "bg-slate-100"}`}
           >
-            Position your NFC Card against the back of the device
-          </Text>
+            <X size={22} color={isDark ? "#fff" : "#64748b"} />
+          </Pressable>
         </View>
 
-        {/* Loading state */}
-        {loading && (
-          <View className={`rounded-2xl p-6 items-center mb-6 ${cardClass}`}>
-            <ActivityIndicator
-              size="large"
-              color={isDark ? "#a3e635" : "#65a30d"}
-            />
-            <Text
-              className={`text-base font-brand font-bold mt-3 ${isDark ? "text-white" : "text-slate-900"}`}
+        <View className="flex-1 justify-center px-5">
+          {/* Status card */}
+          <View className={`rounded-2xl p-8 items-center mb-6 ${cardClass}`}>
+            <View
+              className={`w-20 h-20 rounded-full items-center justify-center mb-4 ${isDark ? "bg-lime-500/20" : "bg-lime-50"}`}
             >
-              Processing payment...
+              <Smartphone size={32} color={isDark ? "#a3e635" : "#65a30d"} />
+            </View>
+            <Text
+              className={`text-2xl font-brand font-bold mb-2 ${isDark ? "text-white" : "text-slate-900"}`}
+            >
+              Ready to Scan Payment Card
             </Text>
             <Text
-              className={`text-sm mt-1 ${isDark ? "text-slate-400" : "text-slate-500"}`}
+              className={`text-base text-center ${isDark ? "text-slate-400" : "text-slate-500"}`}
             >
-              Please keep your card close
+              Press Continue Position your NFC Card against the back of the
+              device
             </Text>
           </View>
-        )}
 
-        {/* Actions */}
-        {!loading && (
+          {/* NFC Not Ready Warning */}
+          {!NFCReady && !loading && (
+            <View
+              className={`rounded-2xl p-4 mb-6 ${isDark ? "bg-red-500/20 border border-red-500/50" : "bg-red-50 border border-red-200"}`}
+            >
+              <Text
+                className={`text-sm font-brand font-bold ${isDark ? "text-red-400" : "text-red-700"}`}
+              >
+                NFC is not available on this device. Please check if NFC is
+                enabled in your phone settings.
+              </Text>
+            </View>
+          )}
+
+          {/* Loading state */}
+          {loading && (
+            <View className={`rounded-2xl p-6 items-center mb-6 ${cardClass}`}>
+              <ActivityIndicator
+                size="large"
+                color={isDark ? "#a3e635" : "#65a30d"}
+              />
+              <Text
+                className={`text-base font-brand font-bold mt-3 ${isDark ? "text-white" : "text-slate-900"}`}
+              >
+                Processing payment...
+              </Text>
+              <Text
+                className={`text-sm mt-1 ${isDark ? "text-slate-400" : "text-slate-500"}`}
+              >
+                Please Keep Your Card Close To The Device
+              </Text>
+            </View>
+          )}
+
+          {/* Actions */}
+          {!loading && (
+            <Pressable
+              className={`py-4 rounded-2xl mb-4 items-center ${getButtonColor()}`}
+              onPress={CaptureCardDetails}
+              disabled={loading || !NFCReady}
+            >
+              <Text className="text-white font-brand font-bold text-base">
+                Continue
+              </Text>
+            </Pressable>
+          )}
+
           <Pressable
-            className="py-4 rounded-2xl mb-4 bg-lime-400 items-center"
-            onPress={CaptureCardDetails}
+            className={`py-4 rounded-2xl items-center ${isDark ? "bg-white/10" : "bg-slate-100"}`}
+            onPress={resetAllState}
           >
-            <Text className="text-white font-brand font-bold text-base">
-              I&apos;ve Placed The Card
+            <Text
+              className={`font-brand font-bold text-base ${isDark ? "text-white" : "text-slate-900"}`}
+            >
+              Cancel Payment
             </Text>
           </Pressable>
-        )}
-
-        <Pressable
-          className={`py-4 rounded-2xl items-center ${isDark ? "bg-white/10" : "bg-slate-100"}`}
-          onPress={() => setStep("ENTER_AMOUNT")}
-        >
-          <Text
-            className={`font-brand font-bold text-base ${isDark ? "text-white" : "text-slate-900"}`}
-          >
-            Cancel Payment
-          </Text>
-        </Pressable>
-      </View>
-    </SafeAreaView>
-  );
+        </View>
+      </SafeAreaView>
+    );
+  };
 
   return (
     <Modal
       visible={showMerchantPayModal}
-      onRequestClose={() => setShowMerchantPayModal(false)}
+      onRequestClose={() => {
+        resetAllState();
+        setShowMerchantPayModal(false);
+      }}
       animationType="slide"
       presentationStyle="pageSheet"
     >
       {step === "ENTER_AMOUNT" && renderEnterDetails()}
-      {step === "TAP_CARD" && renderTapUserCard()}
-      {step === "ENTER_PIN" && renderEnterPin()}
+      {step === "TAP_CARD" && RenderTapUserCard()}
+      {step === "PIN_CONFIRMATION" && RenderEnterPin()}
     </Modal>
   );
 };

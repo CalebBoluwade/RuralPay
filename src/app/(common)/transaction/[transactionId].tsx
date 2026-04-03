@@ -1,3 +1,4 @@
+import { useAuth } from "@/src/components/context/AuthSessionProvider";
 import TransactionReceipt from "@/src/components/ui/Modals/Transaction/TransactionReceipt";
 import { AppColor } from "@/src/constants/theme";
 import PaymentService from "@/src/lib/services/PaymentService";
@@ -5,6 +6,7 @@ import { ReceiptService } from "@/src/lib/services/ReceiptService";
 import ToastService from "@/src/lib/services/ToastService";
 import { formatAmount } from "@/src/lib/utils/formatAmount";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { ThumbsDown, ThumbsUp } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
   Pressable,
@@ -44,10 +46,10 @@ function LoadingView({ isDark }: Readonly<{ isDark: boolean }>) {
 function NotFoundView({
   isDark,
   onBack,
-}: {
+}: Readonly<{
   isDark: boolean;
   onBack: () => void;
-}) {
+}>) {
   return (
     <SafeAreaView
       className={`flex-1 ${isDark ? "bg-slate-950" : "bg-slate-50"}`}
@@ -79,10 +81,12 @@ export default function TransactionDetail() {
   const router = useRouter();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
-  const [transaction, setTransaction] = useState<TransactionHistory | null>(
+  const [transaction, setTransaction] = useState<TransactionHistoryItem | null>(
     null,
   );
   const [loading, setLoading] = useState(true);
+
+  const { user } = useAuth();
 
   useEffect(() => {
     try {
@@ -108,14 +112,12 @@ export default function TransactionDetail() {
   const isCredit = (transaction.txType || "").includes("CREDIT");
 
   const handleDownloadReceipt = async () => {
-    await ReceiptService.downloadReceipt({
+    await ReceiptService.DownloadTransactionReceipt({
+      ...transaction,
       amount: transaction.amount.toString(),
-      recipient: transaction.toAccount ?? "N/A",
+      toAccount: transaction.toAccount ?? "N/A",
       reference: transaction.transactionId,
       narration: transaction.narration || "N/A",
-      date: new Date(transaction.transactionDate).toLocaleString(),
-      // type: typeInfo.label,
-      type: transaction.paymentMode,
     });
   };
 
@@ -190,14 +192,48 @@ export default function TransactionDetail() {
           <TransactionReceipt transaction={transaction} />
 
           {/* CTA */}
-          <Pressable
-            className="bg-lime-400 rounded-2xl py-5 items-center"
-            onPress={handleDownloadReceipt}
-          >
-            <Text className="text-black text-base font-bold">
-              Download Transaction Receipt
-            </Text>
-          </Pressable>
+          {transaction.status === "COMPLETED" && (
+            <Pressable
+              className="bg-lime-400 rounded-2xl py-5 items-center"
+              onPress={handleDownloadReceipt}
+            >
+              <Text className="text-black text-base font-bold">
+                Download Transaction Receipt
+              </Text>
+            </Pressable>
+          )}
+
+          <View className="flex-row space-x-2 gap-2 mb-4">
+            {user?.role === "consumer" &&
+              transaction.status === "COMPLETED" && (
+                <Pressable
+                  className="bg-lime-400 rounded-2xl py-5 items-center"
+                  // onPress={handleDownloadReceipt}
+                >
+                  <View className="flex-row items-center gap-2">
+                    <ThumbsUp size={24} />
+                    <Text className="text-black text-base font-bold">
+                      Give Applause
+                    </Text>
+                  </View>
+                </Pressable>
+              )}
+
+            {user?.role === "consumer" &&
+              transaction.status === "COMPLETED" && (
+                <Pressable
+                  className="border border-red-400 rounded-2xl py-5 items-center"
+                  // onPress={handleDownloadReceipt}
+                >
+                  <View className="flex-row items-center gap-2">
+                    <ThumbsDown size={24} color="red" />
+                    <Text className="text-red-500 text-base font-bold">
+                      Report As Scam
+                    </Text>
+                  </View>
+                </Pressable>
+              )}
+          </View>
         </View>
       </ScrollView>
     </SafeAreaView>

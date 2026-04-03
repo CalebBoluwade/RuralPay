@@ -40,6 +40,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     slug: PROJECT_SLUG, // Must be consistent across all environments.
     orientation: "portrait",
     userInterfaceStyle: "automatic",
+    assetBundlePatterns: ["**/*"],
     // newArchEnabled: true,
     icon: icon,
     scheme: scheme,
@@ -54,17 +55,20 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       },
       entitlements: {
         "com.apple.developer.nfc.readersession.formats": ["NDEF", "TAG"],
+        "aps-environment":
+          appEnv === "production" ? "production" : "development",
       },
       infoPlist: {
         UIBackgroundModes: ["fetch", "remote-notification"],
         ITSAppUsesNonExemptEncryption: false,
-        NSCameraUsageDescription: "This App Uses The Camera To Scan QR Codes",
-        NFCReaderUsageDescription: "This App uses NFC to Read Payment Cards",
+        NSCameraUsageDescription: "RuralPay uses The Camera To Scan QR Codes",
+        NFCReaderUsageDescription: "RuralPay uses NFC to Read Payment Cards",
         NSLocationAlwaysAndWhenInUseUsageDescription:
-          "This App Uses Device Location To Enhance Transaction Security and Aid Fraud Prevention",
+          "RuralPay Uses Device Location To Enhance Transaction Security and Aid Fraud Prevention",
         NSLocationWhenInUseUsageDescription:
-          "This App Uses Device Location To Enhance Transaction Security and Aid Fraud Prevention",
+          "RuralPay Uses Device Location To Enhance Transaction Security and Aid Fraud Prevention",
         FIREBASE_ANALYTICS_COLLECTION_ENABLED: true,
+        LSApplicationCategoryType: "public.app-category.finance",
       },
     },
     android: {
@@ -126,7 +130,13 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     },
     plugins: [
       "expo-audio",
-      "expo-font",
+      [
+        "expo-font",
+        {
+          fonts: ["./assets/fonts/AutourOne-Regular.ttf"],
+        },
+      ],
+
       "expo-image",
       "expo-sharing",
       "expo-web-browser",
@@ -158,6 +168,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         {
           icon: ICON,
           color: "#ffffff",
+          mode: appEnv === "production" ? "production" : "development",
         },
       ],
       "./plugins/withModularHeaders",
@@ -180,6 +191,13 @@ export default ({ config }: ConfigContext): ExpoConfig => {
           cameraPermission: `Allow ${APP_NAME} To Access Your Camera`,
           microphonePermission: `Allow ${APP_NAME} To Access Your Microphone`,
           recordAudioAndroid: true,
+        },
+      ],
+      [
+        "react-native-vision-camera",
+        {
+          cameraPermissionText: `Allow ${APP_NAME} to access your camera for identity verification`,
+          enableFrameProcessors: true,
         },
       ],
       ["@stripe/stripe-react-native", {}],
@@ -216,6 +234,9 @@ export default ({ config }: ConfigContext): ExpoConfig => {
             targetSdkVersion: 35,
             buildToolsVersion: "36.0.0",
             minSdkVersion: 26,
+          },
+          ios: {
+            deploymentTarget: "15.5",
           },
         },
       ],

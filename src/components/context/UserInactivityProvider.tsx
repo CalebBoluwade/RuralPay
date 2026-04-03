@@ -2,7 +2,7 @@ import { router } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import React from "react";
 import { AppState, AppStateStatus } from "react-native";
-import { useAuth } from "./AuthProvider";
+import { useAuth } from "./AuthSessionProvider";
 
 const LOCK_TIMEOUT_KEY = "lockTimeout";
 const DEFAULT_LOCK_TIMEOUT = 60 * 5 * 1000; // 1 Minute
@@ -21,11 +21,11 @@ export const UserInactivityProvider = ({ children }: { children: any }) => {
   };
 
   const navigateToLock = React.useCallback(() => {
-    console.log("FSZ");
+    if (__DEV__) console.log("FSZ");
     try {
       router.replace("/auth/LockScreen");
     } catch (e) {
-      console.log("Navigation not ready:", e);
+      if (__DEV__) console.log("Navigation not ready:", e);
     }
   }, []);
 
@@ -62,7 +62,7 @@ export const UserInactivityProvider = ({ children }: { children: any }) => {
     try {
       router.push("/(modal)/overlay");
     } catch (e) {
-      console.log("Navigation not ready:", e);
+      if (__DEV__) console.log("Navigation not ready:", e);
     }
   }, []);
 
@@ -71,7 +71,7 @@ export const UserInactivityProvider = ({ children }: { children: any }) => {
       try {
         router.back();
       } catch (e) {
-        console.log("Navigation not ready:", e);
+        if (__DEV__) console.log("Navigation not ready:", e);
       }
     }
   }, []);

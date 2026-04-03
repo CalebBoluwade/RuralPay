@@ -15,7 +15,7 @@ class QRCodeService {
 
       return response.details.qrImage;
     } catch (error) {
-      console.log(error);
+      if (__DEV__) console.log(error);
 
       return "";
     }

@@ -79,7 +79,7 @@ const FeedbackForm = () => {
   };
 
   const onSubmit = async (data: UserFeedBack) => {
-    console.log(data);
+    if (__DEV__) console.log(data);
   };
 
   return (

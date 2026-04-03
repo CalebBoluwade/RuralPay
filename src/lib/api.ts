@@ -1,15 +1,28 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
 import { router } from "expo-router";
 import * as SecureStore from "expo-secure-store";
+import { DeviceEventEmitter } from "react-native";
 import { config } from "./config";
 import { ErrorHandler } from "./utils/ErrorHandler";
 
 const AUTH_TOKEN_KEY = "auth_token";
 
-// Extend AxiosRequestConfig to track retry attempts
+// Flag to prevent duplicate SESSION_EXPIRED events
+let sessionExpiredEmitted = false;
+
+// Listen for reset signal from AuthSessionProvider
+DeviceEventEmitter.addListener("RESET_SESSION_EXPIRY_FLAG", () => {
+  sessionExpiredEmitted = false;
+  if (__DEV__) {
+    console.log("[API] Session expiry flag reset for next login");
+  }
+});
+
+// Extend AxiosRequestConfig to track retry attempts and AbortController
 declare module "axios" {
   interface InternalAxiosRequestConfig {
     _retry?: boolean;
+    signal?: AbortSignal;
   }
 
   interface AxiosInstance {
@@ -51,6 +64,7 @@ axiosInstance.interceptors.request.use(
         config.headers.Authorization = `Bearer ${token}`;
       }
     } catch (error) {
+      if (__DEV__) console.error("Error in request interceptor:", error, "for URL:", config.url);
       await ErrorHandler.handle(
         error,
         {
@@ -84,14 +98,37 @@ axiosInstance.interceptors.request.use(
   },
 );
 
+let isRefreshing = false;
+let failedQueue: any[] = [];
+
+const processQueue = (error: Error | null, token = null) => {
+  failedQueue.forEach((prom) => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  failedQueue = [];
+};
+
 // Response interceptor
 axiosInstance.interceptors.response.use(
   (response) => response.data,
   async (error: AxiosError) => {
     const originalRequest = error.config as InternalAxiosRequestConfig;
 
-    // Only log API errors, not network connectivity issues
-    if (error.response?.status && error.response.status !== 0) {
+    // Handle AbortError - don't log as failure, just silently ignore
+    if (error.name === "AbortError" || error.code === "ECONNABORTED") {
+      if (__DEV__) {
+        console.log("[API] Request cancelled (AbortError)");
+      }
+      return Promise.reject(error);
+    }
+
+    // Only log API errors, not network connectivity issues or expected auth failures
+    const isAuthEndpointError = originalRequest?.url?.startsWith("/auth/");
+    if (error.response?.status && error.response.status !== 0 && !isAuthEndpointError) {
       await ErrorHandler.handle(
         error,
         {
@@ -106,38 +143,80 @@ axiosInstance.interceptors.response.use(
       );
     }
 
-    // Handle 401 Unauthorized — attempt token refresh once
+    // Handle 401 Unauthorized — emit event for AuthSessionProvider instead of immediate redirect
+    // Skip auth endpoints: a 401 on /auth/* means wrong credentials, not session expiry
+    const isAuthEndpoint = originalRequest?.url?.startsWith("/auth/");
     if (
       error.response?.status === 401 &&
       originalRequest &&
-      !originalRequest._retry
+      !originalRequest._retry &&
+      !isAuthEndpoint
     ) {
       originalRequest._retry = true;
 
-      try {
-        // Dynamically import to avoid circular dependency
-        const { authService } = await import("./services/AuthService");
-        const newToken = await authService.refreshToken();
-
-        if (newToken) {
-          // Update the failed request's Authorization header and retry
-          originalRequest.headers.Authorization = `Bearer ${newToken}`;
-          return axiosInstance(originalRequest);
-        }
-      } catch (refreshError) {
-        // Refresh failed — fall through to logout
-      }
-
-      // Refresh failed or no refresh token — clear session and redirect
+      // Clear auth data
       await SecureStore.deleteItemAsync(AUTH_TOKEN_KEY);
       await SecureStore.deleteItemAsync("refresh_token");
       await SecureStore.deleteItemAsync("user_data");
-      router.replace("/auth/lock-screen");
+
+      // Emit SESSION_EXPIRED event only once to prevent duplicates
+      if (!sessionExpiredEmitted) {
+        sessionExpiredEmitted = true;
+        DeviceEventEmitter.emit("SESSION_EXPIRED");
+
+        if (__DEV__) {
+          console.log("[API] 401 Unauthorized - SESSION_EXPIRED Event Emitted");
+        }
+      }
+
+      // Return rejected promise without throwing to prevent error propagation
+      return Promise.reject(new Error("Session expired. Please log in again."));
     }
 
-    // Handle 403 Forbidden — lock screen (permissions issue, not auth)
-    if (error.response?.status === 403) {
-      router.replace("/auth/login");
+    // Handle 423 Locked — show lock screen for PIN re-entry
+    if (error.response?.status === 423 && !originalRequest._retry) {
+      if (isRefreshing) {
+        try {
+          await new Promise((resolve, reject) => {
+            failedQueue.push({ resolve, reject });
+          });
+          return axios(originalRequest);
+        } catch (err) {
+          throw err;
+        }
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      router.push("/auth/lock-screen");
+      DeviceEventEmitter.emit("LOCK_SCREEN_SHOWN");
+
+      try {
+        await new Promise<void>((resolve, reject) => {
+          const successSub = DeviceEventEmitter.addListener("PIN_SUCCESS", () => {
+            successSub.remove();
+            cancelSub.remove();
+            isRefreshing = false;
+            processQueue(null);
+            resolve();
+          });
+
+          const cancelSub = DeviceEventEmitter.addListener("PIN_CANCEL", () => {
+            successSub.remove();
+            cancelSub.remove();
+            isRefreshing = false;
+            const cancelError = new Error("User cancelled PIN");
+            processQueue(cancelError);
+            reject(cancelError);
+          });
+        });
+
+        return axios(originalRequest);
+      } catch (err) {
+        isRefreshing = false;
+        throw err;
+      }
     }
 
     return Promise.reject(error);
