@@ -87,9 +87,9 @@ const CardPIN: React.FC<CardPinProps> = ({
     const scheme = BINData.scheme.toLowerCase();
     let source = null;
 
-    if (scheme.includes("visa")) source = require("@/assets/images/visa.svg");
+    if (scheme.includes("visa")) source = require("../../../../../assets/images/visa.svg");
     else if (scheme.includes("mastercard"))
-      source = require("@/assets/images/mastercard.svg");
+      source = require("../../../../../assets/images/mastercard.svg");
 
     if (source) {
       return (
@@ -299,7 +299,7 @@ const CardPIN: React.FC<CardPinProps> = ({
             <SvgUri
               uri={
                 Image.resolveAssetSource(
-                  require("@/assets/images/ScanToPay.svg"),
+                  require("../../../../../assets/images/ScanToPay.svg"),
                 ).uri
               }
               width={240}

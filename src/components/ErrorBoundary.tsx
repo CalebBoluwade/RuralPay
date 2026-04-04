@@ -3,6 +3,7 @@ import { router } from "expo-router";
 import { AlertCircle } from "lucide-react-native";
 import React, { Component, ReactNode } from "react";
 import { Pressable, Text, View } from "react-native";
+import { authService } from "../lib/services/AuthService";
 
 interface Props {
   children: ReactNode;
@@ -37,6 +38,7 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   handleRestart = () => {
+    authService.logout();
     this.setState({ hasError: false, error: undefined });
     router.replace("/");
   };
@@ -75,7 +77,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
           {__DEV__ && this.state.error && (
             <View className="mt-8 p-4 bg-red-50 rounded-xl border border-red-200 max-w-sm">
-              <Text className="text-xs font-mono text-red-800">
+              <Text className="text-sm font-mono text-red-800">
                 {this.state.error.message}
               </Text>
             </View>

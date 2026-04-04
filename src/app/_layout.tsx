@@ -5,7 +5,7 @@ import {
   DefaultTheme,
   ThemeProvider,
 } from "@react-navigation/native";
-import { useAssets } from 'expo-asset';
+import { useAssets } from "expo-asset";
 import { useFonts } from "expo-font";
 import { isLiquidGlassAvailable } from "expo-glass-effect";
 import * as Notifications from "expo-notifications";
@@ -19,24 +19,36 @@ import { LanguageProvider } from "../components/context/LanguageContext";
 import { ToastProvider } from "../components/context/ToastProvider";
 import ComplianceGuard from "../components/ui/ComplianceGuard";
 import { pinningService } from "../lib/services/PinningService";
+import EncryptionService from "../lib/services/EncryptionService";
 
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const [loaded, error] = useFonts({
-    AutourOne: require("@/assets/fonts/AutourOne-Regular.ttf"),
+    AutourOne: require("../../assets/fonts/AutourOne-Regular.ttf"),
   });
 
   const [assets, assetError] = useAssets([
-    require("@/assets/images/CreditCard.svg"),
-    require("@/assets/images/CBN.svg"),
-    require("@/assets/images/ScanToPay.svg"),
+    require("../../assets/images/CreditCard.svg"),
+    require("../../assets/images/CBN.svg"),
+    require("../../assets/images/ScanToPay.svg"),
   ]);
 
   const colorScheme = useColorScheme();
 
   useEffect(() => {
-    pinningService.initialize();
+    const initializeStartupServices = async () => {
+      try {
+        await Promise.all([
+          EncryptionService.RetrieveUserKey(),
+          pinningService.initialize(),
+        ]);
+      } catch (error) {
+        console.error('Failed to initialize startup services:', error);
+      }
+    };
+
+    initializeStartupServices();
   }, []);
 
   useEffect(() => {

@@ -28,6 +28,7 @@
     "@stripe/stripe-react-native": "0.58.0",
     "@stripe/stripe-terminal-react-native": "^0.0.1-beta.29",
     "axios": "^1.13.6",
+    "dotenv": "^17.4.0",
     "expo": "^55.0.7",
     "expo-audio": "~55.0.9",
     "expo-build-properties": "~55.0.10",

@@ -201,7 +201,7 @@ export default function LoginScreen() {
               <SvgUri
                 uri={
                   Image.resolveAssetSource(
-                    require("@/assets/images/CreditCard.svg"),
+                    require("../../../../assets/images/CreditCard.svg"),
                   ).uri
                 }
                 width={width - 48}
@@ -328,7 +328,7 @@ export default function LoginScreen() {
             <View className="flex-row justify-center items-center gap-2">
               <SvgUri
                 uri={
-                  Image.resolveAssetSource(require("@/assets/images/CBN.svg"))
+                  Image.resolveAssetSource(require("../../../../assets/images/CBN.svg"))
                     .uri
                 }
                 width={32}

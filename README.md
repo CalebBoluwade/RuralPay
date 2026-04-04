@@ -1,4 +1,4 @@
-# Welcome to your Expo app 👋
+bun x eas build --platform android --profile development
 
 review my code at /Users/calebboluwade/Downloads/Dev/RuralPay excluding native ios and android folders, node_modules as both a senior product specalitist and senior engineering manager, give a score btw 0 and 100 in terms of production user readiness, security checking for performance bottlenecks, product drop-offs and give a full implementation outline
 

@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { ConfigContext, ExpoConfig } from "expo/config";
 import { version } from "./package.json";
 
@@ -40,7 +41,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     slug: PROJECT_SLUG, // Must be consistent across all environments.
     orientation: "portrait",
     userInterfaceStyle: "automatic",
-    assetBundlePatterns: ["**/*"],
+    assetBundlePatterns: ["assets/**/*"],
     // newArchEnabled: true,
     icon: icon,
     scheme: scheme,
@@ -171,6 +172,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
           mode: appEnv === "production" ? "production" : "development",
         },
       ],
+      "./plugins/withAssetsBundle",
       "./plugins/withModularHeaders",
       "./plugins/withMavenCentral",
       "./plugins/withBLEPermissions",

@@ -101,6 +101,7 @@ const OptimizedInput = <T extends FieldValues>({
                   }
                   maxLength={maxLength}
                   editable={editable && !onPress}
+                  autoFocus
                   pointerEvents={onPress ? "none" : "auto"}
                   autoCapitalize={autoCapitalize}
                   allowFontScaling

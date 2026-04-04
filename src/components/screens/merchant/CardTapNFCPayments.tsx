@@ -392,7 +392,7 @@ const CardTapNFCPayments: React.FC<CardTapNFCPaymentsProps> = ({
         <View className="items-center mb-6">
           <SvgUri
             uri={
-              Image.resolveAssetSource(require("@/assets/images/ScanToPay.svg"))
+              Image.resolveAssetSource(require("../../../../assets/images/ScanToPay.svg"))
                 .uri
             }
             width={240}

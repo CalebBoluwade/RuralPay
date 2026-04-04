@@ -34,8 +34,8 @@ const TOKEN_STATUS_COLORS: Record<
 };
 
 const SCHEME_ASSETS: Partial<Record<CardScheme, number>> = {
-  VISA: require("@/assets/images/visa.svg"),
-  MASTERCARD: require("@/assets/images/mastercard.svg"),
+  VISA: require("../../../../assets/images/visa.svg"),
+  MASTERCARD: require("../../../../assets/images/mastercard.svg"),
 };
 
 function TokenBadge({ status }: { status: TokenStatus }) {
