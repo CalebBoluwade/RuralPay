@@ -30,17 +30,18 @@ interface Slide {
 
 interface OnboardingCarouselProps {
   onFinish: () => void; // called when user taps "Get Started" or skips
+  appVersion: string; // App version to display
 }
 
 function NfcRing({
   size,
   color,
   delay,
-}: {
+}: Readonly<{
   size: number;
   color: string;
   delay: number;
-}) {
+}>) {
   const scale = useSharedValue(0.6);
   const opacity = useSharedValue(0.8);
 
@@ -232,6 +233,7 @@ const SlideItem = ({
 
 export default function OnboardingCarousel({
   onFinish,
+  appVersion,
 }: Readonly<OnboardingCarouselProps>) {
   const [activeIndex, setActiveIndex] = useState(0);
   const flatListRef = useRef<FlatList<Slide>>(null);
@@ -314,6 +316,10 @@ export default function OnboardingCarousel({
             </Text>
           </Pressable>
         ) : null}
+
+        <Text className={`text-center text-base ${isDark ? "text-slate-500" : "text-slate-400"}`}>
+          v{appVersion}
+        </Text>
       </View>
     </SafeAreaView>
   );

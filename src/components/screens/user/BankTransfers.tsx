@@ -192,6 +192,7 @@ const BankTransfers = () => {
 
     // Check if response indicates an error
     if (!payment.success) {
+      if (__DEV__) console.log(payment);
       throw new Error(payment.errorMessage);
     }
 

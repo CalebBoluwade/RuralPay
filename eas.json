@@ -14,9 +14,6 @@
     "preview": {
       "developmentClient": false,
       "distribution": "internal",
-      "env": {
-        "EXPO_PUBLIC_ENVIRONMENT": "preview"
-      },
       "android": {
         "buildType": "apk"
       }

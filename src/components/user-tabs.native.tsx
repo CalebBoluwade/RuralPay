@@ -7,12 +7,8 @@ import {
 import { VectorIcon } from "expo-router";
 import { NativeTabs } from "expo-router/unstable-native-tabs";
 import React from "react";
-import { useColorScheme } from "react-native";
 
 export default function AppTabs() {
-  const scheme = useColorScheme();
-  // const colors = Colors[scheme === 'unspecified' ? 'light' : scheme];
-
   const iconColor = { iconColor: "#65a30d", backgroundColor: "#ecfccb" };
 
   return (
@@ -41,7 +37,7 @@ export default function AppTabs() {
         />
       </NativeTabs.Trigger>
 
-      <NativeTabs.Trigger name="bankTransfers">
+      <NativeTabs.Trigger name="bank-transfers">
         <NativeTabs.Trigger.Label hidden>Payments</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
           selectedColor={iconColor.iconColor}

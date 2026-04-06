@@ -68,21 +68,20 @@ export default function MerchantLayout() {
             ),
           }}
         />
+        <Tabs.Screen
+          name="profile"
+          options={{
+            title: "Profile",
+            tabBarIcon: ({ color, focused }) => (
+              <MaterialCommunityIcons
+                size={focused ? 28 : 26}
+                name={focused ? "account" : "account-outline"}
+                color={color}
+              />
+            ),
+          }}
+        />
       </Tabs.Protected>
-
-      <Tabs.Screen
-        name="profile"
-        options={{
-          title: "Profile",
-          tabBarIcon: ({ color, focused }) => (
-            <MaterialCommunityIcons
-              size={focused ? 28 : 26}
-              name={focused ? "account" : "account-outline"}
-              color={color}
-            />
-          ),
-        }}
-      />
     </Tabs>
   );
 }

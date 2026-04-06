@@ -3,6 +3,14 @@
  * Provides a centralized way to load asset files so they're properly resolved by Metro bundler.
  * This ensures assets are correctly included in the APK bundle.
  */
+import MasterCard from "@/assets/images/mastercard.svg";
+import VisaCard from "@/assets/images/visa.svg";
+import { SvgProps } from "react-native-svg";
+
+export const SCHEME_ASSETS: Partial<Record<CardScheme, React.FC<SvgProps>>> = {
+  VISA: VisaCard,
+  MASTERCARD: MasterCard,
+};
 
 // Fonts
 export const FONTS = {
@@ -21,15 +29,7 @@ export const SVG_IMAGES = {
 
 // PNG/JPG Images
 export const IMAGES = {
-  RuralPayLogo: require("../../assets/images/RuralPayLogo.png"),
-  RuralPaySplash: require("../../assets/images/RuralPaySplash.png"),
-  RuralPaySplashJPG: require("../../assets/images/RuralPaySplash.jpg"),
-  AndroidIconForeground: require("../../assets/images/android-icon-foreground.png"),
-  AndroidIconBackground: require("../../assets/images/android-icon-background.png"),
-  AndroidIconMonochrome: require("../../assets/images/android-icon-monochrome.png"),
-  Icon: require("../../assets/images/icon.png"),
-  Favicon: require("../../assets/images/favicon.png"),
-  MS: require("../../assets/images/MS.png"),
+  RuralPayLogo: require("../../assets/images/RuralPay.png"),
 } as const;
 
 // GIF Images

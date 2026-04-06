@@ -200,7 +200,7 @@ export default function Index() {
       icon: <Zap size={28} color={isDark ? "#a3e635" : "#65a30d"} />,
       title: "Start Transacting Today",
       subtitle: "Make your first payment.",
-      route: "/bankTransfers",
+      route: "/bank-transfers",
     },
   ].filter((t) => t.show);
 

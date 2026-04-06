@@ -5,7 +5,6 @@ import {
   DefaultTheme,
   ThemeProvider,
 } from "@react-navigation/native";
-import { useAssets } from "expo-asset";
 import { useFonts } from "expo-font";
 import { isLiquidGlassAvailable } from "expo-glass-effect";
 import * as Notifications from "expo-notifications";
@@ -18,21 +17,15 @@ import { AuthSessionProvider } from "../components/context/AuthSessionProvider";
 import { LanguageProvider } from "../components/context/LanguageContext";
 import { ToastProvider } from "../components/context/ToastProvider";
 import ComplianceGuard from "../components/ui/ComplianceGuard";
-import { pinningService } from "../lib/services/PinningService";
 import EncryptionService from "../lib/services/EncryptionService";
+import { pinningService } from "../lib/services/PinningService";
 
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const [loaded, error] = useFonts({
-    AutourOne: require("../../assets/fonts/AutourOne-Regular.ttf"),
+    AutourOne: require("@/assets/fonts/AutourOne.ttf"),
   });
-
-  const [assets, assetError] = useAssets([
-    require("../../assets/images/CreditCard.svg"),
-    require("../../assets/images/CBN.svg"),
-    require("../../assets/images/ScanToPay.svg"),
-  ]);
 
   const colorScheme = useColorScheme();
 
@@ -44,7 +37,7 @@ export default function RootLayout() {
           pinningService.initialize(),
         ]);
       } catch (error) {
-        console.error('Failed to initialize startup services:', error);
+        console.error("Failed to initialize startup services:", error);
       }
     };
 
@@ -127,7 +120,7 @@ function RootNavigator() {
         options={{
           presentation: "formSheet",
           sheetGrabberVisible: true,
-          sheetAllowedDetents: [0.65],
+          sheetAllowedDetents: [0.65, 0.8],
           contentStyle: {
             backgroundColor: isLiquidGlassAvailable()
               ? "transparent"

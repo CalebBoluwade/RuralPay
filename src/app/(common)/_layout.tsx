@@ -30,6 +30,9 @@ export default function CommonScreensLayout() {
             },
           }}
         />
+
+        <Stack.Screen name="airtime" />
+        <Stack.Screen name="data" />
       </Stack.Protected>
 
       <Stack.Screen

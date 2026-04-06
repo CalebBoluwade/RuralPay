@@ -5,14 +5,17 @@ import { ArrowBigLeftDashIcon, CreditCard, Lock, X } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Image,
   Pressable,
   Text,
   View,
-  useColorScheme,
+  useColorScheme
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { SvgUri } from "react-native-svg";
+
+import ScanToPay from "@/assets/images/ScanToPay.svg";
+import MasterCard from "@/assets/images/mastercard.svg";
+import VisaCard from "@/assets/images/visa.svg";
+
 import TransactionFailure from "./TransactionFailure";
 import TransactionSuccess from "./TransactionSuccess";
 
@@ -85,20 +88,9 @@ const CardPIN: React.FC<CardPinProps> = ({
     }
 
     const scheme = BINData.scheme.toLowerCase();
-    let source = null;
 
-    if (scheme.includes("visa")) source = require("../../../../../assets/images/visa.svg");
-    else if (scheme.includes("mastercard"))
-      source = require("../../../../../assets/images/mastercard.svg");
-
-    if (source) {
-      return (
-        <SvgUri
-          uri={Image.resolveAssetSource(source).uri}
-          style={{ width: 32, height: 32, borderRadius: 16 }}
-        />
-      );
-    }
+    if (scheme.includes("visa")) return <VisaCard />;
+    else if (scheme.includes("mastercard")) return <MasterCard />;
 
     return <CreditCard size={24} color={isDark ? "#fff" : "#000"} />;
   };
@@ -285,7 +277,9 @@ const CardPIN: React.FC<CardPinProps> = ({
     }
 
     return (
-      <View className={`${isDark ? "bg-[#0a0a0f]" : "bg-[#f5f5fa]"}`}>
+      <View
+        className={`flex-1 justify-center items-center ${isDark ? "bg-[#0a0a0f]" : "bg-[#f5f5fa]"}`}
+      >
         <View className="px-4 pt-6">
           <Text
             className={`text-2xl font-bold mb-6 ${
@@ -296,15 +290,7 @@ const CardPIN: React.FC<CardPinProps> = ({
           </Text>
 
           <View className="items-center mb-6">
-            <SvgUri
-              uri={
-                Image.resolveAssetSource(
-                  require("../../../../../assets/images/ScanToPay.svg"),
-                ).uri
-              }
-              width={240}
-              height={240}
-            />
+            <ScanToPay width={240} height={240} />
           </View>
 
           <View
@@ -340,7 +326,7 @@ const CardPIN: React.FC<CardPinProps> = ({
                 isDark ? "text-gray-400" : "text-gray-500"
               }`}
             >
-              Card Issuer
+              Card Issuing Bank
             </Text>
             {isLoading ? (
               <ActivityIndicator
@@ -356,6 +342,35 @@ const CardPIN: React.FC<CardPinProps> = ({
                   }`}
                 >
                   {BINData?.issuerBank || "Unknown Bank"}
+                </Text>
+              </View>
+            )}
+
+            <View className="h-[1px] bg-gray-200/20 my-4" />
+
+            <Text
+              className={`text-sm mb-2 ${
+                isDark ? "text-gray-400" : "text-gray-500"
+              }`}
+            >
+              Card Issuing Network
+            </Text>
+            {isLoading ? (
+              <ActivityIndicator
+                size="small"
+                color={isDark ? "#a78bfa" : "#7c3aed"}
+              />
+            ) : (
+              <View className="flex-row items-center">
+                {renderCardSchemeLogo()}
+                <Text
+                  className={`text-xl font-bold ml-3 ${
+                    isDark ? "text-white" : "text-gray-900"
+                  }`}
+                >
+                  {BINData?.scheme
+                    ? BINData.scheme.toUpperCase()
+                    : "Unknown Scheme"}
                 </Text>
               </View>
             )}

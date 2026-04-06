@@ -8,15 +8,6 @@ export default function Layout() {
       <Stack.Screen name="USSDPay" options={{ headerShown: false }} />
 
       <Stack.Screen
-        name="BankTransfers"
-        options={{
-          presentation: Platform.OS === "ios" ? "modal" : "card",
-          headerShown: false,
-          headerTransparent: Platform.OS === "ios",
-        }}
-      />
-
-      <Stack.Screen
         name="QRScan"
         options={{
           title: "",

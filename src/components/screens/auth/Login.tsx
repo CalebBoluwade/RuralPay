@@ -1,3 +1,5 @@
+import CBNLogo from "@/assets/images/CBN.svg";
+import CreditCard from "@/assets/images/CreditCard.svg";
 import { useAuth } from "@/src/components/context/AuthSessionProvider";
 import { useLanguage } from "@/src/components/context/LanguageContext";
 import OptimizedInput from "@/src/components/ui/Input/OptimizedInput";
@@ -20,7 +22,6 @@ import {
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import {
-  Image,
   Pressable,
   ScrollView,
   Text,
@@ -30,9 +31,10 @@ import {
 } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { SvgUri } from "react-native-svg";
 
-export default function LoginScreen() {
+export default function LoginScreen({
+  appVersion = "1.0.0",
+}: Readonly<{ appVersion?: string }>) {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const { width } = useWindowDimensions();
@@ -148,12 +150,13 @@ export default function LoginScreen() {
       className={`flex-1 ${isDark ? "bg-slate-950" : "bg-slate-50"}`}
     >
       <Loading
-        loading={isLoading}
+        loading={isSubmitting}
         isInitialLoad={isLoading}
         accentColor={isDark ? "#a3e635" : "#65a30d"}
         isDark={isDark}
         screenName="Login"
       />
+
       <KeyboardAwareScrollView
         contentContainerStyle={{ flexGrow: 1 }}
         enableOnAndroid
@@ -198,15 +201,7 @@ export default function LoginScreen() {
             </View>
 
             <View className="items-center">
-              <SvgUri
-                uri={
-                  Image.resolveAssetSource(
-                    require("../../../../assets/images/CreditCard.svg"),
-                  ).uri
-                }
-                width={width - 48}
-                height={(width - 48) * 0.8}
-              />
+              <CreditCard width={width - 48} height={(width - 48) * 0.8} />
             </View>
 
             {/* Login Form */}
@@ -325,27 +320,28 @@ export default function LoginScreen() {
               </Pressable>
             </View>
 
-            <View className="flex-row justify-center items-center gap-2">
-              <SvgUri
-                uri={
-                  Image.resolveAssetSource(require("../../../../assets/images/CBN.svg"))
-                    .uri
-                }
-                width={32}
-                height={32}
-              />
+            <View className="flex-row justify-center items-center gap-3">
+              <Text
+                className={`text-center text-lg font-semibold ${isDark ? "text-slate-500" : "text-slate-400"}`}
+              >
+                v{appVersion}
+              </Text>
 
-              <View className="flex-row">
-                <Text
-                  className={`text-sm ${isDark ? "text-slate-400" : "text-slate-600"}`}
-                >
-                  Licensed by the{" "}
-                </Text>
-                <Text
-                  className={`text-sm font-semibold ${isDark ? "text-slate-400" : "text-slate-600"}`}
-                >
-                  CBN
-                </Text>
+              <View className="flex-row justify-center items-center gap-2">
+                <CBNLogo width={32} height={32} />
+
+                <View className="flex-row">
+                  <Text
+                    className={`text-sm ${isDark ? "text-slate-400" : "text-slate-600"}`}
+                  >
+                    Licensed By The{" "}
+                  </Text>
+                  <Text
+                    className={`text-sm font-semibold ${isDark ? "text-slate-400" : "text-slate-600"}`}
+                  >
+                    CBN
+                  </Text>
+                </View>
               </View>
             </View>
           </View>

@@ -11,8 +11,8 @@ const APP_NAME = "RuralPay";
 const BUNDLE_IDENTIFIER = "com.zegiftedtechnologies.ruralpay";
 const APP_DOMAIN = "applinks:app.ruralpay.com";
 const PACKAGE_NAME = "com.zegiftedtechnologies.ruralpay";
-const ICON = "./assets/images/RuralPayLogo.png";
-const ADAPTIVE_ICON = "./assets/images/RuralPayLogo.png";
+const ICON = "./assets/images/RuralPay.png";
+const ADAPTIVE_ICON = "./assets/images/RuralPay.png";
 const SCHEME = "ruralpay";
 
 export default ({ config }: ConfigContext): ExpoConfig => {
@@ -75,9 +75,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     android: {
       adaptiveIcon: {
         foregroundImage: adaptiveIcon,
+        monochromeImage: "./assets/images/RuralPay-Monochrome.png",
         backgroundColor: "#ffffff",
-        backgroundImage: "./assets/images/RuralPayLogo.png",
-        monochromeImage: "./assets/images/RuralPayLogo.png",
       },
       predictiveBackGestureEnabled: false,
       package: packageName,
@@ -148,7 +147,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
           backgroundColor: "#e6ede7",
           android: {
             image: ICON,
-            imageWidth: 76,
+            imageWidth: 200,
+            imageHeight: 200,
           },
         },
       ],

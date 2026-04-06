@@ -209,6 +209,17 @@ class AuthService {
     }
   }
 
+  async DeleteAccount(): Promise<APIResponse<{}>> {
+    try {
+      const response = await axiosInstance.delete("/account/delete");
+      return response;
+    } catch (error: any) {
+      const message =
+        error.response?.data?.message || "Failed to Delete Account";
+      return { message, success: false, details: {} };
+    }
+  }
+
   async getStoredAuthData(): Promise<AuthResponse | null> {
     try {
       const token = await SecureStore.getItemAsync(AUTH_TOKEN_KEY);

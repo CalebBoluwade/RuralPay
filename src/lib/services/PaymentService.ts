@@ -147,7 +147,20 @@ class PaymentService {
         v.voucherAllowedServices.includes(vasType as VASType),
       );
     } catch (error) {
-      console.error("Error fetching vouchers:", error);
+      if (__DEV__) console.error("Error fetching Vouchers:", error);
+      return [];
+    }
+  }
+
+  async FetchDataPlans(network: string): Promise<DataPlan[]> {
+    try {
+      const response = await axiosInstance.get<APIResponse<DataPlan[]>>(
+        `/data-plans?network=${network}`,
+      );
+
+      return response.details;
+    } catch (error) {
+      if (__DEV__) console.error("Error Fetching Data Plans:", error);
       return [];
     }
   }

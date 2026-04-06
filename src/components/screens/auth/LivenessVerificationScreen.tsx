@@ -278,11 +278,11 @@ function StepItem({
   return (
     <View
       className={`flex-row items-center px-4 py-4 gap-4 ${
-        !isLast
-          ? isDark
+        isLast
+          ? "" : isDark
             ? "border-b border-white/10"
             : "border-b border-slate-100"
-          : ""
+        
       }`}
     >
       <View

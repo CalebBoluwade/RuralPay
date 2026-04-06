@@ -1,3 +1,4 @@
+import { useIdentityGate } from "@/src/hooks/useIdentityGate";
 import AccountService from "@/src/lib/services/AccountService";
 import { ReceiptService } from "@/src/lib/services/ReceiptService";
 import ToastService from "@/src/lib/services/ToastService";
@@ -11,8 +12,8 @@ import {
   Fingerprint,
   Grid2x2,
   Lock,
-  Mail,
   MessageSquare,
+  ScanEye,
   ScanFace,
   ScanLine,
   ShieldCheck,
@@ -41,7 +42,7 @@ import PinSetupModal from "../PinSetupModal";
 import TransactionFailure from "./TransactionFailure";
 import TransactionSuccess from "./TransactionSuccess";
 
-interface TransactionPinProps {
+interface TransactionPINProps {
   paymentMessage: string;
   showPinModal: boolean;
   // onSuccess?: () => void;
@@ -54,7 +55,7 @@ interface TransactionPinProps {
   transactionResult?: TransactionHistoryItem; // TransactionData
 }
 
-const TransactionPin: React.FC<TransactionPinProps> = ({
+const TransactionPin: React.FC<TransactionPINProps> = ({
   paymentMessage,
   showPinModal,
   initiateTransaction,
@@ -76,8 +77,10 @@ const TransactionPin: React.FC<TransactionPinProps> = ({
   const [currentStep, setCurrentStep] = React.useState<AuthStep>("PIN");
   const [selected2FA, setSelected2FA] = React.useState<string>("");
   const [lockSeconds, setLockSeconds] = React.useState<number>(0);
+  const [isVerifyingLiveness, setIsVerifyingLiveness] = React.useState(false);
   const isLocked = lockSeconds > 0;
   const codeLength = new Array(6).fill(0);
+  const { requireVerification } = useIdentityGate();
 
   const handleDownloadReceipt = async () => {
     if (transactionResult) {
@@ -95,31 +98,37 @@ const TransactionPin: React.FC<TransactionPinProps> = ({
     icon: React.FC<{ size: number; color: string }>;
   }[] = [
     {
-      id: "sms",
-      title: "SMS Verification",
-      sub: `Code will be sent to ${maskPhone(user?.phoneNumber)}`,
+      id: "otp",
+      title: "OTP Verification",
+      sub: `Code will be sent to ${maskPhone(user?.phoneNumber)} and ${maskEmail(user?.email)} and will expire in 5 mins`,
       icon: MessageSquare,
     },
     {
-      id: "email",
-      title: "Email Verification",
-      sub: `Code will be sent to ${maskEmail(user?.email)}`,
-      icon: Mail,
+      id: "biometric",
+      title: "Biometric Verification",
+      sub: "Use your fingerprint or face to verify",
+      icon:
+        biometricType === "facial"
+          ? ScanFace
+          : biometricType === "fingerprint"
+            ? Fingerprint
+            : ScanLine,
+    },
+    {
+      id: "facial",
+      title: "Facial Recognition",
+      sub: "Use Liveness Checks to Verify",
+      icon: ScanEye,
     },
   ];
 
   const send2FACode = async (method: string) => {
     setIsLoading(true);
     try {
-      const response = await AccountService.SendUserOTP(
-        "2FA-CODE",
-        method === "sms" ? "SMS" : "Email",
-      );
+      const response = await AccountService.SendUserOTP("2FA-CODE", "OTP");
 
       if (response.success) {
-        ToastService.success(
-          `Verification Code Sent via ${selected2FA === "sms" ? "SMS" : "Email"}`,
-        );
+        ToastService.success(`Verification Code Sent`);
         setCurrentStep("Verify-2FA");
       } else {
         ToastService.error("Failed to Send verification code");
@@ -393,7 +402,31 @@ const TransactionPin: React.FC<TransactionPinProps> = ({
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
               setSelected2FA(option.id);
-              send2FACode(option.id);
+              if (option.id === "facial") {
+                setIsVerifyingLiveness(true);
+                requireVerification(
+                  (result) => {
+                    setIsVerifyingLiveness(false);
+                    Validate2FACode(result?.identityToken ?? "");
+                  },
+                  () => {
+                    setIsVerifyingLiveness(false);
+                    ToastService.error("Facial verification failed");
+                  },
+                );
+              } else if (option.id === "biometric") {
+                biometricService
+                  .onFingerPrintPress(isBiometricSupported)
+                  .then((result) => {
+                    if (result) {
+                      Validate2FACode("BIOMETRIC-VERIFIED");
+                    } else {
+                      ToastService.error("Biometric verification failed");
+                    }
+                  });
+              } else {
+                send2FACode(option.id);
+              }
             }}
             disabled={isLoading}
             className={`p-4 mb-4 rounded-2xl border-2 ${isDark ? "bg-white/5 border-white/10" : "bg-white border-gray-200"}`}
@@ -411,7 +444,7 @@ const TransactionPin: React.FC<TransactionPinProps> = ({
                   {option.title}
                 </Text>
                 <Text
-                  className={`text-xs mt-1 ${isDark ? "text-gray-400" : "text-gray-600"}`}
+                  className={`text-sm mt-1 ${isDark ? "text-gray-400" : "text-gray-600"}`}
                 >
                   {option.sub}
                 </Text>
@@ -451,8 +484,7 @@ const TransactionPin: React.FC<TransactionPinProps> = ({
         <Text
           className={`text-base text-center px-8 ${isDark ? "text-gray-400" : "text-gray-600"}`}
         >
-          We&apos;ve sent a 8-digit code to your{" "}
-          {selected2FA === "sms" ? "phone" : "email"}
+          We&apos;ve Sent a 8-digit Code To Your Device
         </Text>
       </View>
 
@@ -492,7 +524,7 @@ const TransactionPin: React.FC<TransactionPinProps> = ({
       <Pressable
         onPress={() => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-          send2FACode(selected2FA === "sms" ? "SMS" : "Email");
+          send2FACode("OTP");
         }}
         disabled={isLoading}
         className="items-center mb-4"
@@ -613,7 +645,8 @@ const TransactionPin: React.FC<TransactionPinProps> = ({
           hasPin &&
           (showPinModal ||
             currentStep === "Success" ||
-            currentStep === "Failure")
+            currentStep === "Failure") &&
+          !isVerifyingLiveness
         }
         animationType="slide"
         presentationStyle="pageSheet"

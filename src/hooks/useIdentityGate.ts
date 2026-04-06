@@ -11,10 +11,23 @@ interface IdentityGateOptions {
   verificationRoute?: string;
 }
 
+type PendingVerification = {
+  onSuccess: (result: VerificationResult) => void;
+  onFailure: (error: string) => void;
+};
+
+let currentVerification: PendingVerification | null = null;
+
+export const setPendingVerification = (pv: PendingVerification | null) => {
+  currentVerification = pv;
+};
+
+export const getPendingVerification = () => currentVerification;
+
 export function useIdentityGate(options: IdentityGateOptions = {}) {
   const {
     ttl = 5 * 60 * 1000,
-    verificationRoute = "/common/LivenessVerificationScreen",
+    verificationRoute = "/liveness-check",
   } = options;
 
   const [status, setStatus] = useState<VerificationStatus>("unverified");
@@ -23,7 +36,7 @@ export function useIdentityGate(options: IdentityGateOptions = {}) {
     useState<VerificationResult | null>(null);
 
   // Stable ref so the callback passed to the screen survives re-renders
-  const pendingActionRef = useRef<(() => void) | null>(null);
+  const pendingActionRef = useRef<((result?: VerificationResult) => void) | null>(null);
 
   const isVerified = useCallback(() => {
     if (status !== "verified" || verifiedAt === null) return false;
@@ -37,21 +50,49 @@ export function useIdentityGate(options: IdentityGateOptions = {}) {
    * and runs the action.
    */
   const requireVerification = useCallback(
-    (sensitiveAction: () => void) => {
+    (sensitiveAction: (result?: VerificationResult) => void, onFailure?: () => void) => {
       if (isVerified()) {
-        sensitiveAction();
+        sensitiveAction(verifiedResult ?? undefined);
         return;
       }
 
       pendingActionRef.current = sensitiveAction;
       setStatus("pending");
 
+      setPendingVerification({
+        onSuccess: (result) => {
+          setStatus("verified");
+          setVerifiedAt(Date.now());
+          setVerifiedResult(result);
+          const action = pendingActionRef.current;
+          pendingActionRef.current = null;
+          setPendingVerification(null);
+          
+          if (router.canGoBack()) {
+            router.back();
+          } else {
+            router.replace("/");
+          }
+          
+          action?.(result);
+        },
+        onFailure: (error) => {
+          setStatus("unverified");
+          pendingActionRef.current = null;
+          setPendingVerification(null);
+          
+          if (router.canGoBack()) {
+            router.back();
+          } else {
+            router.replace("/");
+          }
+          
+          onFailure?.();
+        }
+      });
+
       router.push({
         pathname: verificationRoute as any,
-        params: {
-          // Serialise a flag — the screen calls onSuccess which we handle via
-          // the onVerified callback pattern below
-        },
       });
     },
     [isVerified, verificationRoute],
@@ -64,7 +105,7 @@ export function useIdentityGate(options: IdentityGateOptions = {}) {
     setVerifiedResult(result);
     const action = pendingActionRef.current;
     pendingActionRef.current = null;
-    action?.();
+    action?.(result);
   }, []);
 
   const invalidate = useCallback(() => {

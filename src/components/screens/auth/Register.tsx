@@ -572,65 +572,6 @@ export default function RegisterScreen() {
             </View>
           )}
 
-          {/* BVN Entry Step */}
-          {/* {step === "bvn" && (
-            <View className="flex-1">
-              <View
-                className={`rounded-2xl p-6 my-6 backdrop-blur-xl ${cardClass}`}
-              >
-                <View className="items-center mb-4 mt-2">
-                  <View
-                    className={`w-16 h-16 rounded-full items-center justify-center mb-4 ${
-                      isDark ? "bg-lime-500/20" : "bg-lime-100"
-                    }`}
-                  >
-                    
-                  </View>
-
-                  <Text
-                    className={`text-2xl mb-2 font-brand text-center ${isDark ? "text-white" : "text-gray-900"}`}
-                  >
-                    Bank Verification Number
-                  </Text>
-                  <Text
-                    className={`text-base text-center my-2 ${isDark ? "text-gray-400" : "text-gray-600"}`}
-                  >
-                    Enter your  to Verify Your Identity
-                  </Text>
-                </View>
-
-                <TextInput
-                  className={`p-4 rounded-2xl text-lg text-center backdrop-blur-xl mb-4 ${
-                    isDark
-                      ? "border-2 border-lime-500/40 text-white"
-                      : "border-2 border-lime-400 text-gray-900"
-                  }`}
-                  placeholder="Enter 11-digit BVN"
-                  placeholderTextColor={isDark ? "#9CA3AF" : "#6B7280"}
-                  value={BVN}
-                  onChangeText={setBVN}
-                  keyboardType="numeric"
-                  maxLength={11}
-                />
-
-                <Text
-                  className={`text-lg my-5 font-light ${isDark ? "text-blue-300" : "text-blue-700"}`}
-                >
-                  Your BVN Is Only Used For Verification Purposes
-                </Text>
-              </View>
-
-              <Pressable
-                onPress={HandleBvnSubmit}
-                className={`py-4 rounded-2xl ${isDark ? "bg-lime-600" : "bg-lime-700"}`}
-              >
-                <Text className="text-white text-lg font-semibold text-center">
-                  Verify BVN
-                </Text>
-              </Pressable>
-            </View>
-          )} */}
-
           {/* Liveness Step */}
           {step === "liveness" && (
             <LivenessVerificationScreen

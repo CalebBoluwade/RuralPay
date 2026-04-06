@@ -1,3 +1,4 @@
+import ScanToPay from "@/assets/images/ScanToPay.svg";
 import CardPIN from "@/src/components/ui/Modals/Transaction/CardPin";
 import { useClearLoadingOnLock } from "@/src/hooks/useClearLoadingOnLock";
 import NFCService from "@/src/lib/services/NFCService";
@@ -8,15 +9,13 @@ import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  Image,
   Modal,
   Pressable,
   Text,
   View,
-  useColorScheme,
+  useColorScheme
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { SvgUri } from "react-native-svg";
 
 import { useAuth } from "@/src/components/context/AuthSessionProvider";
 import AmountInput from "@/src/components/ui/Input/AmountInput";
@@ -390,14 +389,7 @@ const CardTapNFCPayments: React.FC<CardTapNFCPaymentsProps> = ({
 
         {/* Illustration */}
         <View className="items-center mb-6">
-          <SvgUri
-            uri={
-              Image.resolveAssetSource(require("../../../../assets/images/ScanToPay.svg"))
-                .uri
-            }
-            width={240}
-            height={240}
-          />
+          <ScanToPay width={240} height={240} />
         </View>
 
         {/* Amount input */}

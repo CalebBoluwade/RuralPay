@@ -1,5 +1,4 @@
 import { useAuth } from "@/src/components/context/AuthSessionProvider";
-import { useClearLoadingOnLock } from "@/src/hooks/useClearLoadingOnLock";
 import ContactsModal from "@/src/components/ui/Modals/ContactsModal";
 import PaymentMethodModal from "@/src/components/ui/Modals/Transaction/PaymentMethodModal";
 import TransactionPin from "@/src/components/ui/Modals/Transaction/TransactionPinModal";
@@ -10,6 +9,7 @@ import {
   NineMobileLogo,
 } from "@/src/components/ui/NetworkLogos";
 import ScreenHeader from "@/src/components/ui/ScreenHeader";
+import { useClearLoadingOnLock } from "@/src/hooks/useClearLoadingOnLock";
 import AppLogger, { LogLevel } from "@/src/lib/services/AppLogger";
 import { LocationService } from "@/src/lib/services/LocationService";
 import PaymentService from "@/src/lib/services/PaymentService";
@@ -135,8 +135,8 @@ const DataPurchase = () => {
     try {
       const location = await LocationService.getCurrentLocation();
       const payload: AirtimeDataPayload = {
-        transactionID: PaymentService.generateTransactionId("AIRTIME_DATA"),
-        paymentMode: "AIRTIME_DATA",
+        transactionID: PaymentService.generateTransactionId("DATA"),
+        paymentMode: "DATA",
         service: "DATA",
         amount: selectedPlanData.price,
         beneficiaryPhoneNumber: phoneNumber,

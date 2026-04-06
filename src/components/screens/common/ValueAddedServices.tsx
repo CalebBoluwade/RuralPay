@@ -62,7 +62,7 @@ const ValueAddedServices = () => {
 
   const handleQuickAction = (id: string) => {
     if (id === "airtime") router.push("/airtime");
-    else if (id === "data") router.push("/dataPurchase");
+    else if (id === "data") router.push("/data");
   };
 
   const handleServicePress = (id: string) => {
@@ -77,7 +77,8 @@ const ValueAddedServices = () => {
         <ScreenHeader
           title="Value Added Services"
           subtitle="Airtime, Data & more"
-          onBack={() => router.back()}
+          goBack={false}
+          // onBack={() => router.back()}
         />
 
         <View className="px-5 mt-4">

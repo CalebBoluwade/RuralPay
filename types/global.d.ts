@@ -1,4 +1,5 @@
 global {
+  type CardScheme = "VISA" | "MASTERCARD" | "VERVE";
   // --- Types ---
   type AuthStep =
     | "PIN"
@@ -26,7 +27,8 @@ global {
     | "CARD"
     | "QR"
     | "BANK_TRANSFER"
-    | "AIRTIME_DATA"
+    | "AIRTIME"
+    | "DATA"
     | "USSD"
     | "VOICE"
     | "BLE";
@@ -43,6 +45,13 @@ global {
   };
 
   type VASType = "airtime" | "tickets" | "data" | "general";
+
+  interface DataPlan {
+    id: string;
+    size: string;
+    validity: string;
+    price: number;
+  }
 
   interface Voucher {
     id: string;
@@ -265,9 +274,16 @@ global {
     transactionID: string;
   }
 
+  interface PhoneNumber {
+    label: string;
+    number: string;
+    name: string;
+    imageUri?: string;
+  }
+
   interface AirtimeDataPayload {
     transactionID: string;
-    paymentMode: string;
+    paymentMode: PaymentMode;
     service: string;
     amount: number;
     beneficiaryPhoneNumber: string;
@@ -352,6 +368,7 @@ global {
   interface BINData {
     scheme: string;
     issuerBank: string;
+    issuerBankLogo: string;
     currency: string;
   }
 
