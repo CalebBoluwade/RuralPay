@@ -15,10 +15,21 @@ import { useColorScheme } from "react-native";
 import "react-native-reanimated";
 import { AuthSessionProvider } from "../components/context/AuthSessionProvider";
 import { LanguageProvider } from "../components/context/LanguageContext";
+import { NotificationProvider } from "../components/context/NotificationContext";
 import { ToastProvider } from "../components/context/ToastProvider";
 import ComplianceGuard from "../components/ui/ComplianceGuard";
 import EncryptionService from "../lib/services/EncryptionService";
 import { pinningService } from "../lib/services/PinningService";
+
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: false,
+    shouldSetBadge: false,
+    shouldShowBanner: false,
+    shouldShowList: false,
+  }),
+});
 
 SplashScreen.preventAutoHideAsync();
 
@@ -37,7 +48,7 @@ export default function RootLayout() {
           pinningService.initialize(),
         ]);
       } catch (error) {
-        console.error("Failed to initialize startup services:", error);
+        console.error("Failed To Initialize Startup Services:", error);
       }
     };
 
@@ -62,20 +73,24 @@ export default function RootLayout() {
 
   return (
     <ErrorBoundary>
-      <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-        <ToastProvider>
-          <AuthSessionProvider>
-            <LanguageProvider>
-              <ComplianceGuard>
-                {/* <Slot /> */}
-                <RootNavigator />
+      <NotificationProvider>
+        <ThemeProvider
+          value={colorScheme === "dark" ? DarkTheme : DefaultTheme}
+        >
+          <ToastProvider>
+            <AuthSessionProvider>
+              <LanguageProvider>
+                <ComplianceGuard>
+                  {/* <Slot /> */}
+                  <RootNavigator />
 
-                <StatusBar style="auto" />
-              </ComplianceGuard>
-            </LanguageProvider>
-          </AuthSessionProvider>
-        </ToastProvider>
-      </ThemeProvider>
+                  <StatusBar style="auto" />
+                </ComplianceGuard>
+              </LanguageProvider>
+            </AuthSessionProvider>
+          </ToastProvider>
+        </ThemeProvider>
+      </NotificationProvider>
     </ErrorBoundary>
   );
 }

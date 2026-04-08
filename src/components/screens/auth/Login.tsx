@@ -31,6 +31,7 @@ import {
 } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useNotification } from "../../context/NotificationContext";
 
 export default function LoginScreen({
   appVersion = "1.0.0",
@@ -38,6 +39,8 @@ export default function LoginScreen({
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const { width } = useWindowDimensions();
+
+  const { devicePushToken, expoPushToken, notification } = useNotification();
 
   const {
     login,
@@ -319,6 +322,10 @@ export default function LoginScreen({
                 </Text>
               </Pressable>
             </View>
+
+            {/* {__DEV__ && ( */}
+            <Text>{process.env.EXPO_PUBLIC_API_URL || "NO ENV"}</Text>
+            {/* )} */}
 
             <View className="flex-row justify-center items-center gap-3">
               <Text

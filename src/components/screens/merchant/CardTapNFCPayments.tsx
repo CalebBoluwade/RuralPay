@@ -13,7 +13,7 @@ import {
   Pressable,
   Text,
   View,
-  useColorScheme
+  useColorScheme,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -280,6 +280,12 @@ const CardTapNFCPayments: React.FC<CardTapNFCPaymentsProps> = ({
 
     if (cardResultWithPIN.transaction) {
       await handleLocationRetrieval(cardResultWithPIN.transaction);
+
+      if (cardResultWithPIN?.transaction?.cardInfo) {
+        delete cardResultWithPIN.transaction.cardInfo.errorMessage;
+        delete cardResultWithPIN.transaction.cardInfo.schemeLabel;
+      }
+
       const paymentResponse = await makePaymentRequest(
         cardResultWithPIN.transaction,
       );

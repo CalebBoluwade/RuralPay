@@ -763,8 +763,8 @@ class NFCService {
   async stopNFC() {
     try {
       await NfcManager.cancelTechnologyRequest();
-    } catch (error) {
-      // Ignore errors if no session is active
+    } catch {
+      if (__DEV__) console.log("No Active NFC request to Cancel");
     }
   }
 
@@ -832,7 +832,7 @@ class NFCService {
 
           if (sw1 === 0x90 && sw2 === 0x00) {
             applications.push({ aid: aidBytes, label: name });
-            ToastService.info(`Found ${name} Processor`);
+            if (__DEV__) ToastService.info(`Found ${name} Processor`);
             break; // Use first successful AID
           }
         } catch (error: any) {
@@ -887,6 +887,7 @@ class NFCService {
 
       // Step 6: Parse card information
       const cardInfo = this.parseCardData(cardData);
+      cardInfo.schemeLabel = selectedApp.label;
 
       // if (__DEV__) console.log(">>>>>", cardData, cardInfo);
       this.currentCard = cardInfo;
@@ -894,12 +895,14 @@ class NFCService {
       return cardInfo;
     } catch (error) {
       if (__DEV__) console.log(error);
-      // await ErrorHandler.handleAsync("Error Reading Card", {
-      //   action: "Read User Card",
-      //   // metadata: error,
-      // });
+      await ErrorHandler.handle("Error Reading Card", {
+        action: "Read User Card",
+        // metadata: error,
+      });
+
       return {
         success: false,
+        schemeLabel: "",
         errorMessage: error instanceof Error ? error.message : "",
         BIN: "",
         last4: "",
@@ -908,7 +911,6 @@ class NFCService {
         expiryDate: "",
         cardholderName: "",
         ATC: 0,
-        applicationLabel: "",
         cryptogram: "",
         issuerAppData: "",
         CVR: "",
@@ -1065,7 +1067,7 @@ class NFCService {
         PIN: "",
         expiryDate: "",
         cardholderName: "",
-        applicationLabel: "",
+        schemeLabel: "",
         cryptogram: "",
         issuerAppData: "",
         CVR: "",
@@ -1106,12 +1108,12 @@ class NFCService {
 
       // Application Label (Tag 50)
       if (tlvData["50"]) {
-        cardInfo.applicationLabel = this.hexToString(tlvData["50"]).trim();
+        cardInfo.schemeLabel = this.hexToString(tlvData["50"]).trim();
       }
 
       // Application Preferred Name (Tag 9F12) - Alternative label
-      if (!cardInfo.applicationLabel && tlvData["9F12"]) {
-        cardInfo.applicationLabel = this.hexToString(tlvData["9F12"]).trim();
+      if (!cardInfo.schemeLabel && tlvData["9F12"]) {
+        cardInfo.schemeLabel = this.hexToString(tlvData["9F12"]).trim();
       }
 
       // Application Cryptogram (Tag 9F26)
@@ -1156,7 +1158,7 @@ class NFCService {
         PIN: "",
         expiryDate: "",
         cardholderName: "",
-        applicationLabel: "",
+        schemeLabel: "",
         cryptogram: "",
         issuerAppData: "",
         CVR: "",

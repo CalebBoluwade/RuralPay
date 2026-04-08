@@ -21,10 +21,6 @@
     "production": {
       "autoIncrement": true,
       "developmentClient": false,
-      "env": {
-        "EXPO_PUBLIC_API_URL": "$EXPO_PUBLIC_API_URL",
-        "EXPO_PUBLIC_ENVIRONMENT": "production"
-      },
       "android": {
         "buildType": "apk"
       }

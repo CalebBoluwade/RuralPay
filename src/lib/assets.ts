@@ -12,11 +12,6 @@ export const SCHEME_ASSETS: Partial<Record<CardScheme, React.FC<SvgProps>>> = {
   MASTERCARD: MasterCard,
 };
 
-// Fonts
-export const FONTS = {
-  AutourOne: require("../../assets/fonts/AutourOne-Regular.ttf"),
-} as const;
-
 // SVG Images
 export const SVG_IMAGES = {
   CreditCard: require("../../assets/images/CreditCard.svg"),
@@ -38,7 +33,6 @@ export const GIFS = {
 } as const;
 
 export default {
-  FONTS,
   SVG_IMAGES,
   IMAGES,
   GIFS,

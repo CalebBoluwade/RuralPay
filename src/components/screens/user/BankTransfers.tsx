@@ -157,6 +157,7 @@ const BankTransfers = () => {
   };
 
   const processTransfer = async (
+    selected2FA: TwoFAType,
     TwoFA_VerificationCode: string,
   ): Promise<TransactionHistoryItem> => {
     if (!transferData) throw new Error("No Transfer Data Found");
@@ -185,6 +186,7 @@ const BankTransfers = () => {
       beneficiaryAccountName: accountName || "",
       saveBeneficiary,
       OneTimeCode: TwoFA_VerificationCode,
+      twoFAType: selected2FA,
       ...(location && { location }),
     };
 
@@ -200,6 +202,7 @@ const BankTransfers = () => {
   };
 
   const handlePinSuccess = async (
+    selected2FA: TwoFAType,
     TwoFA_VerificationCode: string,
   ): Promise<boolean> => {
     if (!transferData) return false;
@@ -217,7 +220,7 @@ const BankTransfers = () => {
     setLoading(true);
 
     try {
-      const result = await processTransfer(TwoFA_VerificationCode);
+      const result = await processTransfer(selected2FA, TwoFA_VerificationCode);
 
       result.amount = Number(transferData.amount);
       result.narration = transferData.narration;

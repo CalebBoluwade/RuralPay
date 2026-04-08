@@ -43,7 +43,10 @@ const QRPayments = () => {
     accountName?: string;
   } | null>(null);
 
-  const ProcessPayment = async (twoFACode: string): Promise<boolean> => {
+  const ProcessPayment = async (
+    selected2FA: TwoFAType,
+    twoFACode: string,
+  ): Promise<boolean> => {
     if (!pendingPaymentData?.accountNumber || !scannedQRData) {
       setError("Missing payment information");
       return false;
@@ -67,6 +70,7 @@ const QRPayments = () => {
         paymentMode: "QR",
         transactionID: PaymentService.generateTransactionId("QR"),
         txType: "DEBIT",
+        twoFAType: selected2FA,
       });
 
       if (payment.success) {
@@ -92,8 +96,11 @@ const QRPayments = () => {
     }
   };
 
-  const handlePinSuccess = async (twoFACode: string): Promise<boolean> => {
-    return await ProcessPayment(twoFACode);
+  const handlePinSuccess = async (
+    selected2FA: TwoFAType,
+    twoFACode: string,
+  ): Promise<boolean> => {
+    return await ProcessPayment(selected2FA, twoFACode);
   };
 
   const handleBarCodeScanned = async ({ data }: { data: string }) => {

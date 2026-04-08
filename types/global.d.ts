@@ -23,6 +23,8 @@ global {
 
   type KYCStatus = "VERIFIED" | "PENDING" | "FAILED" | "UNVERIFIED";
 
+  type TwoFAType = "DEFAULT" | "OTP" | "BYPASS" | "FACIAL_RECOGNITION";
+
   type PaymentMode =
     | "CARD"
     | "QR"
@@ -268,6 +270,7 @@ global {
     beneficiaryBankCode: string;
     narration: string;
     OneTimeCode: string;
+    twoFAType: TwoFAType;
     location?: LocationData;
     paymentMode: PaymentMode;
     saveBeneficiary: boolean;
@@ -390,7 +393,8 @@ global {
     CVR: string;
     cardNonce: string;
     cardholderName: string;
-    applicationLabel: string;
+    // applicationLabel: string;
+    schemeLabel?: string;
     countryCode: string;
     language: string;
   }

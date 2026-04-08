@@ -119,7 +119,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       eas: {
         projectId: EAS_PROJECT_ID,
       },
-      apiUrl: getApiUrl(appEnv as "development" | "preview" | "production"),
+      // apiUrl: getApiUrl(appEnv as "development" | "preview" | "production"),
       environment: appEnv,
       router: {},
     },
@@ -133,7 +133,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       [
         "expo-font",
         {
-          fonts: ["./assets/fonts/AutourOne-Regular.ttf"],
+          fonts: ["./assets/fonts/AutourOne.ttf"],
         },
       ],
 
@@ -147,8 +147,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
           backgroundColor: "#e6ede7",
           android: {
             image: ICON,
-            imageWidth: 200,
-            imageHeight: 200,
+            imageWidth: 250,
+            imageHeight: 250,
           },
         },
       ],
@@ -172,7 +172,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
           mode: appEnv === "production" ? "production" : "development",
         },
       ],
-      "./plugins/withAssetsBundle",
+      // "./plugins/withAssetsBundle",
       "./plugins/withModularHeaders",
       "./plugins/withMavenCentral",
       "./plugins/withBLEPermissions",
@@ -288,14 +288,14 @@ export const getDynamicAppConfig = (
   };
 };
 
-export const getApiUrl = (
-  environment: "development" | "preview" | "production",
-): string => {
-  const envApiUrl = process.env.EXPO_PUBLIC_API_URL;
-  if (!envApiUrl) {
-    throw new Error(
-      `EXPO_PUBLIC_API_URL Environment Variable Required for ${environment} Environment`,
-    );
-  }
-  return envApiUrl;
-};
+// export const getApiUrl = (
+//   environment: "development" | "preview" | "production",
+// ): string => {
+//   const envApiUrl = process.env.EXPO_PUBLIC_API_URL;
+//   if (!envApiUrl) {
+//     throw new Error(
+//       `EXPO_PUBLIC_API_URL Environment Variable Required for ${environment} Environment`,
+//     );
+//   }
+//   return envApiUrl;
+// };

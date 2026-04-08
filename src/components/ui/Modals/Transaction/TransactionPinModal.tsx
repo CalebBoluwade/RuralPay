@@ -47,7 +47,10 @@ interface TransactionPINProps {
   showPinModal: boolean;
   // onSuccess?: () => void;
   error: string;
-  initiateTransaction: (TwoFA_VerificationCode: string) => Promise<boolean>;
+  initiateTransaction: (
+    TwoFAType: TwoFAType,
+    TwoFA_VerificationCode: string,
+  ) => Promise<boolean>;
   onCancel?: () => void;
   isLoading: boolean;
   setIsLoading: React.Dispatch<React.SetStateAction<boolean>>;
@@ -75,7 +78,7 @@ const TransactionPin: React.FC<TransactionPINProps> = ({
   const [hasPin, setHasPin] = React.useState<boolean>(false);
   const [showPinSetup, setShowPinSetup] = React.useState<boolean>(false);
   const [currentStep, setCurrentStep] = React.useState<AuthStep>("PIN");
-  const [selected2FA, setSelected2FA] = React.useState<string>("");
+  const [selected2FA, setSelected2FA] = React.useState<TwoFAType>("DEFAULT");
   const [lockSeconds, setLockSeconds] = React.useState<number>(0);
   const [isVerifyingLiveness, setIsVerifyingLiveness] = React.useState(false);
   const isLocked = lockSeconds > 0;
@@ -92,19 +95,19 @@ const TransactionPin: React.FC<TransactionPINProps> = ({
   };
 
   const TFAOptions: {
-    id: string;
+    id: TwoFAType;
     title: string;
     sub: string;
     icon: React.FC<{ size: number; color: string }>;
   }[] = [
     {
-      id: "otp",
+      id: "OTP",
       title: "OTP Verification",
       sub: `Code will be sent to ${maskPhone(user?.phoneNumber)} and ${maskEmail(user?.email)} and will expire in 5 mins`,
       icon: MessageSquare,
     },
     {
-      id: "biometric",
+      id: "BYPASS",
       title: "Biometric Verification",
       sub: "Use your fingerprint or face to verify",
       icon:
@@ -115,7 +118,7 @@ const TransactionPin: React.FC<TransactionPINProps> = ({
             : ScanLine,
     },
     {
-      id: "facial",
+      id: "FACIAL_RECOGNITION",
       title: "Facial Recognition",
       sub: "Use Liveness Checks to Verify",
       icon: ScanEye,
@@ -125,7 +128,7 @@ const TransactionPin: React.FC<TransactionPINProps> = ({
   const send2FACode = async (method: string) => {
     setIsLoading(true);
     try {
-      const response = await AccountService.SendUserOTP("2FA-CODE", "OTP");
+      const response = await AccountService.SendUserOTP(method, selected2FA);
 
       if (response.success) {
         ToastService.success(`Verification Code Sent`);
@@ -145,6 +148,7 @@ const TransactionPin: React.FC<TransactionPINProps> = ({
     try {
       // "2FA-CODE"
       const transactionResult = await initiateTransaction(
+        selected2FA,
         TwoFA_VerificationCode,
       );
       if (transactionResult) {
@@ -165,7 +169,7 @@ const TransactionPin: React.FC<TransactionPINProps> = ({
   useEffect(() => {
     if (!showPinModal) {
       setCode([]);
-      setSelected2FA("");
+      setSelected2FA("DEFAULT");
       return;
     }
 
@@ -402,7 +406,7 @@ const TransactionPin: React.FC<TransactionPINProps> = ({
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
               setSelected2FA(option.id);
-              if (option.id === "facial") {
+              if (option.id === "FACIAL_RECOGNITION") {
                 setIsVerifyingLiveness(true);
                 requireVerification(
                   (result) => {
@@ -414,7 +418,7 @@ const TransactionPin: React.FC<TransactionPINProps> = ({
                     ToastService.error("Facial verification failed");
                   },
                 );
-              } else if (option.id === "biometric") {
+              } else if (option.id === "BYPASS") {
                 biometricService
                   .onFingerPrintPress(isBiometricSupported)
                   .then((result) => {
