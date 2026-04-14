@@ -1,63 +1,74 @@
+import AccountService from "@/src/lib/services/AccountService";
+import ToastService from "@/src/lib/services/ToastService";
 import { Bell } from "lucide-react-native";
-import { Switch, Text, View } from "react-native";
+import { useEffect, useState } from "react";
+import { ActivityIndicator, Switch, Text, View } from "react-native";
+
+interface NotificationSettings {
+  pushNotifications: boolean;
+  smsNotifications: boolean;
+  emailNotifications: boolean;
+}
+
+type SettingKey = keyof NotificationSettings;
 
 interface NotificationsSectionProps {
   isDark: boolean;
-  pushNotifications: boolean;
-  setPushNotifications: (value: boolean) => void;
-  smsNotifications: boolean;
-  setSmsNotifications: (value: boolean) => void;
-  emailNotifications: boolean;
-  setEmailNotifications: (value: boolean) => void;
 }
 
-export function NotificationsSection({
-  isDark,
-  pushNotifications,
-  setPushNotifications,
-  smsNotifications,
-  setSmsNotifications,
-  emailNotifications,
-  setEmailNotifications,
-}: NotificationsSectionProps) {
-  const renderSwitch = (
-    title: string,
-    description: string,
-    value: boolean,
-    onChange: (value: boolean) => void
-  ) => (
-    <View
-      className={`p-4 rounded-2xl mb-4 ${
-        isDark
-          ? "bg-slate-800 border border-slate-700"
-          : "bg-slate-50 border border-slate-200"
-      }`}
-    >
-      <View className="flex-row items-center justify-between">
-        <View className="flex-1">
-          <Text
-            className={`text-lg font-semibold mb-1 ${isDark ? "text-white" : "text-slate-900"}`}
-          >
-            {title}
-          </Text>
-          <Text
-            className={`text-sm ${isDark ? "text-slate-400" : "text-slate-600"}`}
-          >
-            {description}
-          </Text>
-        </View>
-        <Switch
-          value={value}
-          onValueChange={onChange}
-          trackColor={{
-            false: isDark ? "#374151" : "#E5E7EB",
-            true: "#84cc16",
-          }}
-          thumbColor={value ? "#FFFFFF" : "#9CA3AF"}
-        />
-      </View>
-    </View>
-  );
+export function NotificationsSection({ isDark }: NotificationsSectionProps) {
+  const [settings, setSettings] = useState<NotificationSettings>({
+    pushNotifications: true,
+    smsNotifications: true,
+    emailNotifications: true,
+  });
+  const [loading, setLoading] = useState(true);
+  const [updating, setUpdating] = useState<SettingKey | null>(null);
+
+  useEffect(() => {
+    AccountService.getNotificationSettings()
+      .then((data) => setSettings(data))
+      .catch(() => ToastService.error("Failed to load notification settings"))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const handleToggle = async (key: SettingKey, value: boolean) => {
+    const previous = settings[key];
+    // Optimistic update
+    setSettings((prev) => ({ ...prev, [key]: value }));
+    setUpdating(key);
+
+    const result = await AccountService.updateNotificationSettings({
+      ...settings,
+      [key]: value,
+    });
+
+    if (!result.success) {
+      // Revert on failure
+      setSettings((prev) => ({ ...prev, [key]: previous }));
+      ToastService.error(result.message || "Failed to update setting");
+    }
+
+    setUpdating(null);
+  };
+
+  const rows: { key: SettingKey; title: string; description: string }[] = [
+    {
+      key: "pushNotifications",
+      title: "Push Notifications",
+      description: "Receive app notifications about transactions",
+    },
+    {
+      key: "smsNotifications",
+      title: "SMS Notifications",
+      description: "Get SMS alerts for important updates",
+    },
+    {
+      key: "emailNotifications",
+      title: "Email Notifications",
+      description: "Receive email notifications and reports",
+    },
+  ];
 
   return (
     <View
@@ -80,28 +91,52 @@ export function NotificationsSection({
         >
           Notifications
         </Text>
+        {loading && (
+          <ActivityIndicator
+            size="small"
+            color={isDark ? "#a3e635" : "#65a30d"}
+            style={{ marginLeft: 8 }}
+          />
+        )}
       </View>
 
-      {renderSwitch(
-        "Push Notifications",
-        "Receive app notifications about transactions",
-        pushNotifications,
-        setPushNotifications
-      )}
-
-      {renderSwitch(
-        "SMS Notifications",
-        "Get SMS alerts for important updates",
-        smsNotifications,
-        setSmsNotifications
-      )}
-
-      {renderSwitch(
-        "Email Notifications",
-        "Receive email notifications and reports",
-        emailNotifications,
-        setEmailNotifications
-      )}
+      {rows.map(({ key, title, description }, index) => (
+        <View
+          key={key}
+          className={`p-4 rounded-2xl ${index < rows.length - 1 ? "mb-4" : ""} ${
+            isDark
+              ? "bg-slate-800 border border-slate-700"
+              : "bg-slate-50 border border-slate-200"
+          }`}
+        >
+          <View className="flex-row items-center justify-between">
+            <View className="flex-1">
+              <Text
+                className={`text-lg font-semibold mb-1 ${isDark ? "text-white" : "text-slate-900"}`}
+              >
+                {title}
+              </Text>
+              <Text className={`text-sm ${isDark ? "text-slate-400" : "text-slate-600"}`}>
+                {description}
+              </Text>
+            </View>
+            {updating === key ? (
+              <ActivityIndicator
+                size="small"
+                color={isDark ? "#a3e635" : "#65a30d"}
+              />
+            ) : (
+              <Switch
+                value={settings[key]}
+                onValueChange={(value) => handleToggle(key, value)}
+                disabled={loading || updating !== null}
+                trackColor={{ false: isDark ? "#374151" : "#E5E7EB", true: "#84cc16" }}
+                thumbColor={settings[key] ? "#FFFFFF" : "#9CA3AF"}
+              />
+            )}
+          </View>
+        </View>
+      ))}
     </View>
   );
 }

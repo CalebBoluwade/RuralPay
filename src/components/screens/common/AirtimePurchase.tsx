@@ -9,6 +9,8 @@ import {
   MTNLogo,
   NineMobileLogo,
 } from "@/src/components/ui/NetworkLogos";
+import Button from "@/src/components/ui/Button";
+import Card from "@/src/components/ui/Card";
 import ScreenHeader from "@/src/components/ui/ScreenHeader";
 import { useClearLoadingOnLock } from "@/src/hooks/useClearLoadingOnLock";
 import AppLogger, { LogLevel } from "@/src/lib/services/AppLogger";
@@ -89,10 +91,6 @@ const AirtimePurchase = () => {
   const phoneAnim = useFadeSlide(80);
   const amountAnim = useFadeSlide(160);
   const btnAnim = useFadeSlide(240);
-
-  const cardClass = isDark
-    ? "bg-white/10 border border-white/20"
-    : "bg-white border border-slate-200 shadow-sm";
 
   const handlePaymentMethodSelected = (data: {
     method: PaymentMethod;
@@ -237,7 +235,7 @@ const AirtimePurchase = () => {
             >
               Phone Number
             </Text>
-            <View className={`rounded-2xl overflow-hidden ${cardClass}`}>
+            <Card className="overflow-hidden">
               {/* Use my number */}
               <Pressable
                 className={`flex-row items-center px-4 py-4 gap-4 ${isDark ? "border-b border-white/10" : "border-b border-slate-100"}`}
@@ -291,7 +289,7 @@ const AirtimePurchase = () => {
                   )}
                 </Pressable>
               </View>
-            </View>
+            </Card>
           </Animated.View>
 
           {/* Amount */}
@@ -306,17 +304,11 @@ const AirtimePurchase = () => {
 
           {/* CTA */}
           <Animated.View style={btnAnim} className="mb-8">
-            <Pressable
+            <Button
+              label="Purchase Airtime"
               onPress={() => setShowPaymentModal(true)}
               disabled={!canPurchase}
-              className={`rounded-2xl py-4 items-center ${canPurchase ? "bg-lime-400" : isDark ? "bg-white/10" : "bg-slate-200"}`}
-            >
-              <Text
-                className={`font-brand font-bold text-base ${canPurchase ? "text-black" : isDark ? "text-slate-500" : "text-slate-400"}`}
-              >
-                Purchase Airtime
-              </Text>
-            </Pressable>
+            />
           </Animated.View>
         </ScrollView>
 

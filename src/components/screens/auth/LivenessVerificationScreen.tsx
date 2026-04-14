@@ -3,6 +3,7 @@ import {
   VerificationResult,
   useLiveness,
 } from "@/src/hooks/useLiveness";
+import { router } from "expo-router";
 import {
   Fingerprint,
   RotateCcw,
@@ -19,6 +20,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Camera } from "react-native-vision-camera";
+import ScreenHeader from "../../ui/ScreenHeader";
 
 interface LivenessVerificationProps {
   userId: string;
@@ -86,10 +88,24 @@ export default function LivenessVerificationScreen({
     <SafeAreaView
       className={isDark ? "flex-1 bg-slate-950" : "flex-1 bg-slate-50"}
     >
+      <ScreenHeader
+        title={
+          screenStep === "idle"
+            ? "Identity Verification"
+            : screenStep === "success"
+              ? "Verification Successful"
+              : screenStep === "failed"
+                ? "Verification Failed"
+                : "Liveness Check In Progress"
+        }
+        subtitle="Verify your identity using your Face"
+        goBack
+        onBack={() => router.back()}
+      />
       {/* ── IDLE ── */}
       {screenStep === "idle" && (
-        <View className="flex-1 px-5 mt-6 gap-6">
-          <View>
+        <View className="flex-1 justify-end px-5 mt-6 gap-6">
+          {/* <View>
             <Text
               className={`text-3xl text-center font-brand font-bold ${isDark ? "text-white" : "text-slate-900"}`}
             >
@@ -100,7 +116,7 @@ export default function LivenessVerificationScreen({
             >
               Verify your identity using your face and BVN to proceed.
             </Text>
-          </View>
+          </View> */}
 
           <View className={`rounded-2xl overflow-hidden ${cardClass}`}>
             <StepItem
@@ -279,10 +295,10 @@ function StepItem({
     <View
       className={`flex-row items-center px-4 py-4 gap-4 ${
         isLast
-          ? "" : isDark
+          ? ""
+          : isDark
             ? "border-b border-white/10"
             : "border-b border-slate-100"
-        
       }`}
     >
       <View

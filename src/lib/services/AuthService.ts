@@ -1,7 +1,6 @@
-import axios from "axios";
 import * as SecureStore from "expo-secure-store";
 import { axiosInstance } from "../api";
-import { config } from "../config";
+import { LoginAPIResponseMessage } from "../utils";
 import { ErrorHandler } from "../utils/ErrorHandler";
 import { DeviceService } from "./Device";
 import EncryptionService from "./EncryptionService";
@@ -32,9 +31,14 @@ class AuthService {
 
       if (__DEV__) console.log(deviceInfo, pushToken);
 
+      const userKeyConfig = await EncryptionService.RetrieveUserKey();
+
       const response = await axiosInstance.post<AuthResponse>("/auth/login", {
         identifier: identifier,
-        password: await EncryptionService.EncryptPII(password),
+        password: userKeyConfig.useEncryptedPayload
+          ? await EncryptionService.EncryptPII(password)
+          : password,
+        // password,
         deviceInfo: deviceInfo,
         pushToken: pushToken ?? undefined,
       });
@@ -57,15 +61,7 @@ class AuthService {
         false,
       );
 
-      const message =
-        (error.error ?? "").includes("Credentials") ||
-        error.response?.status === 401
-          ? "Invalid Credentials"
-          : error.response?.status === 400
-            ? "Something Went Wrong"
-            : error.response?.status === 429
-              ? "Too Many Login Attempts. Please Try Again Later"
-              : "Login Failed. Please Check Your Connection And Try Again";
+      const message = LoginAPIResponseMessage(error.response?.status ?? 0);
 
       throw new Error(message);
     }
@@ -135,18 +131,21 @@ class AuthService {
     }
   }
 
-  async refreshToken(): Promise<string | null> {
+  async refreshToken(refreshToken: string): Promise<string | null> {
     try {
-      const refreshToken = await SecureStore.getItemAsync(REFRESH_TOKEN_KEY);
       if (!refreshToken) return null;
+
+      if (__DEV__)
+        console.log(
+          "Attempting token refresh with refresh token:",
+          refreshToken,
+        );
 
       // Use raw axios — bypasses the axiosInstance interceptors to prevent
       // an infinite retry loop if the refresh endpoint itself returns 401.
-      const { data } = await axios.post(
-        `${config.apiUrl}/auth/refresh`,
-        { refreshToken },
-        { headers: { "Content-Type": "application/json" } },
-      );
+      const { data } = await axiosInstance.post("/auth/refresh", {
+        refreshToken,
+      });
 
       const { token, refreshToken: newRefreshToken } = data?.details ?? data;
 

@@ -1,16 +1,17 @@
+import Card from "@/src/components/ui/Card";
 import ScreenHeader from "@/src/components/ui/ScreenHeader";
 import NFCService from "@/src/lib/services/NFCService";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    Pressable,
-    ScrollView,
-    Text,
-    View,
-    useColorScheme,
+  ActivityIndicator,
+  Alert,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+  useColorScheme,
 } from "react-native";
 
 export default function CardManagement() {
@@ -219,17 +220,19 @@ export default function CardManagement() {
           </View>
         ) : (
           cards.map((card) => (
-            <View
+            <Card
               key={card.id}
-              className={`px-6 py-5 rounded-2xl backdrop-blur-xl mb-3 ${
+              darkClass={
                 card.status === "active"
-                  ? isDark
-                    ? "bg-green-500/20 border-2 border-green-500"
-                    : "bg-green-50 border-2 border-green-500"
-                  : isDark
-                    ? "bg-white/10 border border-white/20"
-                    : "bg-gray-50 border border-gray-200"
-              }`}
+                  ? "bg-green-500/20 border-2 border-green-500"
+                  : "bg-white/10 border border-white/20"
+              }
+              lightClass={
+                card.status === "active"
+                  ? "bg-green-50 border-2 border-green-500"
+                  : "bg-gray-50 border border-gray-200"
+              }
+              className="px-6 py-5 backdrop-blur-xl mb-3"
             >
               <View className="flex-row justify-between items-start mb-3">
                 <View className="flex-1">
@@ -316,7 +319,7 @@ export default function CardManagement() {
                   </Pressable>
                 )}
               </View>
-            </View>
+            </Card>
           ))
         )}
       </ScrollView>

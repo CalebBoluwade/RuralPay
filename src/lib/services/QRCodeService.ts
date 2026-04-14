@@ -1,7 +1,7 @@
 import { axiosInstance } from "@/src/lib/api";
 
 class QRCodeService {
-  async processScannedQR(data: string) {
+  async processScannedQR(data: string): Promise<ScannedQRData> {
     const response = await axiosInstance.get(`/account/qr?token=${data}`);
     return response.details;
   }

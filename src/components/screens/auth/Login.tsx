@@ -2,6 +2,7 @@ import CBNLogo from "@/assets/images/CBN.svg";
 import CreditCard from "@/assets/images/CreditCard.svg";
 import { useAuth } from "@/src/components/context/AuthSessionProvider";
 import { useLanguage } from "@/src/components/context/LanguageContext";
+import Button from "@/src/components/ui/Button";
 import OptimizedInput from "@/src/components/ui/Input/OptimizedInput";
 import Loading from "@/src/components/ui/Modals/Loading";
 import SelectLanguageModal from "@/src/components/ui/Modals/SelectLanguageModal";
@@ -281,17 +282,11 @@ export default function LoginScreen({
             </View>
 
             {/* Login Button */}
-            <Pressable
+            <Button
+              label={isSubmitting ? "Signing In..." : t("auth.login")}
+              loading={isSubmitting}
               onPress={handleSubmit(onSubmit)}
-              disabled={isSubmitting}
-              className={`bg-lime-400 rounded-2xl py-4 shadow-lg mb-2 ${
-                isSubmitting ? "opacity-50" : ""
-              }`}
-            >
-              <Text className="text-black text-lg font-bold text-center">
-                {isSubmitting ? "Signing In..." : t("auth.login")}
-              </Text>
-            </Pressable>
+            />
 
             {/* Sign Up Link */}
             <View className="flex-row justify-center items-center mt-2">
@@ -322,10 +317,6 @@ export default function LoginScreen({
                 </Text>
               </Pressable>
             </View>
-
-            {/* {__DEV__ && ( */}
-            <Text>{process.env.EXPO_PUBLIC_API_URL || "NO ENV"}</Text>
-            {/* )} */}
 
             <View className="flex-row justify-center items-center gap-3">
               <Text

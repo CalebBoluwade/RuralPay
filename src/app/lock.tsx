@@ -1,4 +1,5 @@
 import { useAuth } from "@/src/components/context/AuthSessionProvider";
+import { useLanguage } from "@/src/components/context/LanguageContext";
 import ToastService from "@/src/lib/services/ToastService";
 import { PinService } from "@/src/lib/utils/SecureStorage";
 import { Ionicons } from "@expo/vector-icons";
@@ -18,7 +19,8 @@ import Animated, {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const Lock = () => {
-  const { user } = useAuth();
+  const { user, biometricLogin } = useAuth();
+  const { t } = useLanguage();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const [code, setCode] = React.useState<number[]>([]);
@@ -34,8 +36,13 @@ const Lock = () => {
   const OFFSET = 20;
   const TIME = 80;
 
-  const onFingerPrintPress = () => {
+  const onFingerPrintPress = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    try {
+      await biometricLogin();
+    } catch (error) {
+      if (__DEV__) console.log("Biometric unlock failed:", error);
+    }
   };
 
   const OnNumberPressDown = (num: number) => {
@@ -58,7 +65,7 @@ const Lock = () => {
         const isValid = await PinService.ValidatePin(code.join(""));
 
         if (isValid) {
-          ToastService.info("PIN is Correct");
+          ToastService.info(t("lock.pinCorrect"));
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
           setCode([]);
 
@@ -70,7 +77,7 @@ const Lock = () => {
             if (__DEV__) console.log("Navigation error:", e);
           }
         } else {
-          ToastService.error("PIN is incorrect");
+          ToastService.error(t("lock.pinIncorrect"));
 
           offset.value = withSequence(
             withTiming(-OFFSET, { duration: TIME / 2 }),
@@ -123,9 +130,9 @@ const Lock = () => {
         <View className="items-center">
           <Animated.View entering={FadeInDown.delay(200).duration(600)}>
             <Text
-              className={`text-sm mb-6 ${isDark ? "text-gray-500" : "text-gray-500"}`}
+            className={`text-sm mb-6 ${isDark ? "text-gray-500" : "text-gray-500"}`}
             >
-              Enter your PIN
+              {t("lock.enterPin")}
             </Text>
             <Animated.View
               style={style}

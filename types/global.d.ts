@@ -31,6 +31,8 @@ global {
     | "BANK_TRANSFER"
     | "AIRTIME"
     | "DATA"
+    | "ELECTRICITY"
+    | "CABLE_TV"
     | "USSD"
     | "VOICE"
     | "BLE";
@@ -53,6 +55,23 @@ global {
     size: string;
     validity: string;
     price: number;
+  }
+
+  interface ElectricityProvider {
+    id: string;
+    name: string;
+  }
+
+  interface CablePlan {
+    id: string;
+    label: string;
+    price: number;
+  }
+
+  interface CableProvider {
+    id: string;
+    name: string;
+    plans: CablePlan[];
   }
 
   interface Voucher {
@@ -378,12 +397,12 @@ global {
   interface PaymentCard {
     PAN: string;
     expiryDate: string;
-    BIN: string;
-    last4: string;
+    BIN?: string;
+    last4?: string;
   }
 
   interface CardInfo extends PaymentCard {
-    success: boolean;
+    success?: boolean;
     errorMessage?: string;
     PIN: string;
     cryptogram: string;
@@ -391,12 +410,9 @@ global {
     currencyCode: string;
     ATC: number;
     CVR: string;
-    cardNonce: string;
-    cardholderName: string;
-    // applicationLabel: string;
+    cryptogram: string;
     schemeLabel?: string;
     countryCode: string;
-    language: string;
   }
 
   interface Credentials {
@@ -419,6 +435,15 @@ global {
     businessAddress: string;
     businessType: string;
     userId: string;
+  }
+
+  interface ScannedQRData {
+    amount: number;
+    merchantName: string;
+    accountNumber: string;
+    bankCode: string;
+    bankName?: string;
+    merchantId?: string;
   }
 }
 

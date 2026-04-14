@@ -574,7 +574,7 @@ class NFCService {
 
       return {
         success: true,
-        BIN: cardInfo.BIN,
+        BIN: cardInfo.BIN!,
         message: "Card Processed Successfully",
         transaction: transaction,
       };
@@ -889,7 +889,39 @@ class NFCService {
       const cardInfo = this.parseCardData(cardData);
       cardInfo.schemeLabel = selectedApp.label;
 
-      // if (__DEV__) console.log(">>>>>", cardData, cardInfo);
+      // Step 7: Generate AC (cryptogram) if CDOL1 is available from parsed records
+      // parseTLV on the raw stream to find CDOL1 (tag 8C)
+      try {
+        const rawStream: number[] = [];
+        cardData.forEach((record) => {
+          const clean = record[record.length - 2] === 0x90 ? record.slice(0, -2) : record;
+          const fb = clean[0];
+          if (fb === 0x70 || fb === 0x77 || fb === 0x6f) {
+            let off = 1;
+            const l = clean[1];
+            off += l > 0x7f ? 1 + (l & 0x7f) : 1;
+            rawStream.push(...clean.slice(off));
+          } else if (fb !== 0x80) {
+            rawStream.push(...clean);
+          }
+        });
+        const tlv = this.parseTLV(rawStream);
+        const cdol1 = tlv["8C"];
+        if (cdol1) {
+          const txResult = await this.performTransaction(cdol1, 0);
+          cardInfo.cryptogram = txResult.cryptogram;
+          cardInfo.issuerAppData = txResult.issuerAppData || cardInfo.issuerAppData;
+          cardInfo.ATC = txResult.atc ? parseInt(txResult.atc, 16) : cardInfo.ATC;
+          // Re-extract CVR from fresh IAD
+          if (cardInfo.issuerAppData && cardInfo.issuerAppData.length >= 10) {
+            cardInfo.CVR = cardInfo.issuerAppData.substring(4, 10);
+          }
+        }
+      } catch (genACError) {
+        if (__DEV__) console.log("GENERATE AC skipped:", genACError);
+      }
+
+      if (__DEV__) console.log(">>>>>", cardData, cardInfo);
       this.currentCard = cardInfo;
 
       return cardInfo;
@@ -909,15 +941,12 @@ class NFCService {
         PAN: "",
         PIN: "",
         expiryDate: "",
-        cardholderName: "",
         ATC: 0,
         cryptogram: "",
         issuerAppData: "",
         CVR: "",
         currencyCode: "",
         countryCode: "",
-        cardNonce: "",
-        language: "",
       };
     } finally {
       this.isReading = false;
@@ -1027,31 +1056,30 @@ class NFCService {
         // Step A: Remove Status Words (last 2 bytes, usually 144, 0)
         let cleanRecord = record;
         if (record.length >= 2) {
-          // Check for 0x90 0x00 (144, 0)
           const sw1 = record[record.length - 2];
           if (sw1 === 0x90) {
             cleanRecord = record.slice(0, -2);
           }
         }
 
-        // Step B: Unwrap Tag 0x70
-        if (cleanRecord[0] === 0x70) {
-          // Calculate where the data actually starts
-          let offset = 1; // Skip Tag 70
-          const len = cleanRecord[1];
+        // Step B: Unwrap known EMV template tags (0x70, 0x77, 0x6F, 0x80)
+        const firstByte = cleanRecord[0];
+        const isTemplate = firstByte === 0x70 || firstByte === 0x77 || firstByte === 0x6f;
 
-          // Handle EMV multi-byte length encoding
+        if (isTemplate) {
+          let offset = 1; // Skip Tag byte
+          const len = cleanRecord[1];
           if (len > 0x7f) {
             const byteCount = len & 0x7f;
             offset += 1 + byteCount;
           } else {
             offset += 1;
           }
-
-          // Push ONLY the inner body to our stream
           rawDataStream.push(...cleanRecord.slice(offset));
+        } else if (firstByte === 0x80) {
+          // Format 1 primitive: skip tag + length, rest is AIP+AFL (not card data fields)
+          // Do not push — GPO Format 1 is handled in parseGPO, not here
         } else {
-          // Fallback: If no 0x70 wrapper, just add the data
           rawDataStream.push(...cleanRecord);
         }
       });
@@ -1066,7 +1094,6 @@ class NFCService {
         PAN: "",
         PIN: "",
         expiryDate: "",
-        cardholderName: "",
         schemeLabel: "",
         cryptogram: "",
         issuerAppData: "",
@@ -1074,8 +1101,6 @@ class NFCService {
         ATC: 0,
         currencyCode: "",
         countryCode: "",
-        language: "",
-        cardNonce: "",
       };
 
       // Track 2 Equivalent Data (Tag 57) - This contains PAN + Expiry
@@ -1101,10 +1126,10 @@ class NFCService {
       }
 
       // Cardholder Name (Tag 5F20)
-      if (tlvData["5F20"]) {
-        cardInfo.cardholderName =
-          this.hexToString(tlvData["5F20"]).trim() || "N/A";
-      }
+      // if (tlvData["5F20"]) {
+      //   cardInfo.cardholderName =
+      //     this.hexToString(tlvData["5F20"]).trim() || "N/A";
+      // }
 
       // Application Label (Tag 50)
       if (tlvData["50"]) {
@@ -1132,21 +1157,27 @@ class NFCService {
           ? Number.parseInt(tlvData["9F4A"], 16)
           : 0;
 
-      // Issuer Country Code
-      cardInfo.countryCode = tlvData["5F28"] || "";
-
-      // Currency Code - Try multiple possible tags
-      cardInfo.currencyCode = tlvData["5F2A"] || tlvData["9F42"] || "";
-
-      // Language Preference
-      cardInfo.language = tlvData["5F2D"]
-        ? this.hexToString(tlvData["5F2D"])
+      // Issuer Country Code — BCD-encoded decimal string, strip leading zeros ("0566" -> "566")
+      cardInfo.countryCode = tlvData["5F28"]
+        ? tlvData["5F28"].replace(/^0+/, "")
         : "";
 
-      // Card Verification Results (CVR) - Use available tags
-      cardInfo.CVR = tlvData["9F34"] || tlvData["8E"] || "";
+      // Currency Code — same BCD stripping
+      const rawCurrency = tlvData["5F2A"] || tlvData["9F42"] || "";
+      cardInfo.currencyCode = rawCurrency ? rawCurrency.replace(/^0+/, "") : "";
 
-      cardInfo.cardNonce = tlvData["9F37"] || "";
+      // Card Verification Results (CVR) — Tag 9F34 is CVM List (not CVR).
+      // CVR lives inside Issuer Application Data (9F10), bytes 3-5.
+      // Extract it only if IAD is present and long enough.
+      if (cardInfo.issuerAppData && cardInfo.issuerAppData.length >= 10) {
+        // IAD structure: 06 [length] [CVR 3 bytes] ...
+        // CVR starts at byte offset 2 (after 06 + length byte), 3 bytes = 6 hex chars
+        cardInfo.CVR = cardInfo.issuerAppData.substring(4, 10);
+      } else {
+        cardInfo.CVR = tlvData["9F34"] || tlvData["8E"] || "";
+      }
+
+      // cardInfo.cardNonce = tlvData["9F37"] || "";
 
       return cardInfo;
     } catch {
@@ -1157,7 +1188,6 @@ class NFCService {
         PAN: "",
         PIN: "",
         expiryDate: "",
-        cardholderName: "",
         schemeLabel: "",
         cryptogram: "",
         issuerAppData: "",
@@ -1165,8 +1195,6 @@ class NFCService {
         ATC: 0,
         currencyCode: "",
         countryCode: "",
-        language: "",
-        cardNonce: "",
       };
 
       return cardInfo;
@@ -1490,9 +1518,33 @@ class NFCService {
       // C. Send to Card
       const response = await this.sendAPDU(commandBytes);
 
-      // D. Parse Response (Template 77 or 80)
-      // (Assuming you use the parser helper we wrote earlier)
-      const tlv = this.parseTLV(response);
+      // D. Parse Response — unwrap 0x77 (Format 2) or 0x80 (Format 1) before TLV parsing
+      const sw1 = response[response.length - 2];
+      const clean = sw1 === 0x90 ? response.slice(0, -2) : response;
+      const firstByte = clean[0];
+
+      let tlv: Record<string, string>;
+      if (firstByte === 0x77) {
+        // Format 2: nested TLV inside 77 template
+        let off = 1;
+        const l = clean[1];
+        off += l > 0x7f ? 1 + (l & 0x7f) : 1;
+        tlv = this.parseTLV(clean.slice(off));
+      } else if (firstByte === 0x80) {
+        // Format 1: raw bytes — [CID(1)] [ATC(2)] [AC(8)] [IAD(variable)]
+        let off = 1;
+        const l = clean[1];
+        off += l > 0x7f ? 1 + (l & 0x7f) : 1;
+        const body = clean.slice(off);
+        tlv = {
+          "9F27": body.slice(0, 1).map(b => b.toString(16).padStart(2, "0")).join(""),
+          "9F36": body.slice(1, 3).map(b => b.toString(16).padStart(2, "0")).join(""),
+          "9F26": body.slice(3, 11).map(b => b.toString(16).padStart(2, "0")).join(""),
+          "9F10": body.slice(11).map(b => b.toString(16).padStart(2, "0")).join(""),
+        };
+      } else {
+        tlv = this.parseTLV(clean);
+      }
 
       if (!tlv["9F26"]) {
         throw new Error("Transaction Declined: No Cryptogram returned");

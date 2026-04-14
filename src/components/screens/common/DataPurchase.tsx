@@ -8,6 +8,8 @@ import {
   MTNLogo,
   NineMobileLogo,
 } from "@/src/components/ui/NetworkLogos";
+import Button from "@/src/components/ui/Button";
+import Card from "@/src/components/ui/Card";
 import ScreenHeader from "@/src/components/ui/ScreenHeader";
 import { useClearLoadingOnLock } from "@/src/hooks/useClearLoadingOnLock";
 import AppLogger, { LogLevel } from "@/src/lib/services/AppLogger";
@@ -45,15 +47,6 @@ const networks = [
   { id: "9mobile", name: "9mobile", color: "#00A65E", Logo: NineMobileLogo },
 ];
 
-const dataPlans = [
-  { id: "1", size: "1GB", validity: "1 Day", price: 300 },
-  { id: "2", size: "2GB", validity: "7 Days", price: 500 },
-  { id: "3", size: "5GB", validity: "30 Days", price: 1500 },
-  { id: "4", size: "10GB", validity: "30 Days", price: 2500 },
-  { id: "5", size: "20GB", validity: "30 Days", price: 4500 },
-  { id: "6", size: "50GB", validity: "30 Days", price: 10000 },
-];
-
 function useFadeSlide(delay: number) {
   const anim = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(18)).current;
@@ -84,6 +77,8 @@ const DataPurchase = () => {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [selectedNetwork, setSelectedNetwork] = useState("");
   const [selectedPlan, setSelectedPlan] = useState("");
+  const [dataPlans, setDataPlans] = useState<DataPlan[]>([]);
+  const [plansLoading, setPlansLoading] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showPinModal, setShowPinModal] = useState(false);
   const [pendingPaymentData, setPendingPaymentData] = useState<{
@@ -99,18 +94,20 @@ const DataPurchase = () => {
   const [isLoadingContacts, setIsLoadingContacts] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   useClearLoadingOnLock(setIsLoading, setIsLoadingContacts);
-  // const [transactionResult, setTransactionResult] = useState<
-  //   ReceiptData | undefined
-  // >(undefined);
+
+  useEffect(() => {
+    if (!selectedNetwork) return;
+    setSelectedPlan("");
+    setPlansLoading(true);
+    PaymentService.FetchDataPlans(selectedNetwork.toUpperCase())
+      .then((plans) => { if (plans.length) setDataPlans(plans); })
+      .finally(() => setPlansLoading(false));
+  }, [selectedNetwork]);
 
   const networkAnim = useFadeSlide(0);
   const phoneAnim = useFadeSlide(80);
   const planAnim = useFadeSlide(160);
   const btnAnim = useFadeSlide(240);
-
-  const cardClass = isDark
-    ? "bg-white/10 border border-white/20"
-    : "bg-white border border-slate-200 shadow-sm";
 
   const selectedPlanData = dataPlans.find((p) => p.id === selectedPlan);
   const canPurchase = !!phoneNumber && !!selectedNetwork && !!selectedPlan;
@@ -260,7 +257,7 @@ const DataPurchase = () => {
             >
               Phone Number
             </Text>
-            <View className={`rounded-2xl overflow-hidden ${cardClass}`}>
+            <Card className="overflow-hidden">
               {/* Use my number */}
               <Pressable
                 className={`flex-row items-center px-4 py-4 gap-4 ${isDark ? "border-b border-white/10" : "border-b border-slate-100"}`}
@@ -314,7 +311,7 @@ const DataPurchase = () => {
                   )}
                 </Pressable>
               </View>
-            </View>
+            </Card>
           </Animated.View>
 
           {/* Data Plans */}
@@ -324,7 +321,10 @@ const DataPurchase = () => {
             >
               Select Data Plan
             </Text>
-            <View className={`rounded-2xl overflow-hidden ${cardClass}`}>
+            {plansLoading ? (
+              <ActivityIndicator color={isDark ? "#a3e635" : "#65a30d"} />
+            ) : (
+            <Card className="overflow-hidden">
               {dataPlans.map((plan, index) => (
                 <Pressable
                   key={plan.id}
@@ -369,24 +369,21 @@ const DataPurchase = () => {
                   </View>
                 </Pressable>
               ))}
-            </View>
+            </Card>
+            )}
           </Animated.View>
 
           {/* CTA */}
           <Animated.View style={btnAnim} className="mb-8">
-            <Pressable
+            <Button
+              label={
+                selectedPlanData
+                  ? `Purchase ${selectedPlanData.size} for ₦${selectedPlanData.price.toLocaleString()}`
+                  : "Purchase Data"
+              }
               onPress={() => setShowPaymentModal(true)}
               disabled={!canPurchase}
-              className={`rounded-2xl py-4 items-center ${canPurchase ? "bg-lime-400" : isDark ? "bg-white/10" : "bg-slate-200"}`}
-            >
-              <Text
-                className={`font-brand font-bold text-base ${canPurchase ? "text-white" : isDark ? "text-slate-500" : "text-slate-400"}`}
-              >
-                {selectedPlanData
-                  ? `Purchase ${selectedPlanData.size} for ₦${selectedPlanData.price.toLocaleString()}`
-                  : "Purchase Data"}
-              </Text>
-            </Pressable>
+            />
           </Animated.View>
         </ScrollView>
 

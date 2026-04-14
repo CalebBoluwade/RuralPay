@@ -1,3 +1,5 @@
+import Button from "@/src/components/ui/Button";
+import Card from "@/src/components/ui/Card";
 import OptimizedInput from "@/src/components/ui/Input/OptimizedInput";
 import ScreenHeader from "@/src/components/ui/ScreenHeader";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -55,7 +57,6 @@ const ProvisionCard = () => {
 
   const handleNfcWrite = async () => {
     setNfcWriting(true);
-    // Simulate NFC write
     setTimeout(() => {
       setNfcWriting(false);
       Alert.alert("Success", "Card provisioned successfully");
@@ -69,15 +70,11 @@ const ProvisionCard = () => {
       <View className={`flex-1 ${isDark ? "bg-[#0a0a0f]" : "bg-[#f5f5fa]"}`}>
         <View className="px-6 pt-12 pb-6">
           <Text
-            className={`text-3xl font-bold mb-2 ${
-              isDark ? "text-white" : "text-gray-900"
-            }`}
+            className={`text-3xl font-bold mb-2 ${isDark ? "text-white" : "text-gray-900"}`}
           >
             NFC Card Writing
           </Text>
-          <Text
-            className={`text-lg ${isDark ? "text-gray-400" : "text-gray-600"}`}
-          >
+          <Text className={`text-lg ${isDark ? "text-gray-400" : "text-gray-600"}`}>
             Position your card near the device
           </Text>
         </View>
@@ -85,11 +82,7 @@ const ProvisionCard = () => {
         <View className="flex-1 justify-center items-center px-6">
           <View
             className={`w-56 h-56 rounded-full justify-center items-center mb-8 ${
-              nfcWriting
-                ? "bg-green-500"
-                : isDark
-                  ? "bg-lime-600"
-                  : "bg-lime-500"
+              nfcWriting ? "bg-green-500" : isDark ? "bg-lime-600" : "bg-lime-500"
             }`}
           >
             <View
@@ -102,122 +95,70 @@ const ProvisionCard = () => {
           </View>
 
           <Text
-            className={`text-2xl font-bold mb-3 text-center ${
-              isDark ? "text-white" : "text-gray-900"
-            }`}
+            className={`text-2xl font-bold mb-3 text-center ${isDark ? "text-white" : "text-gray-900"}`}
           >
             {nfcWriting ? "Writing Data..." : "Ready to Write"}
           </Text>
           <Text
-            className={`text-lg text-center mb-10 px-4 ${
-              isDark ? "text-gray-400" : "text-gray-600"
-            }`}
+            className={`text-lg text-center mb-10 px-4 ${isDark ? "text-gray-400" : "text-gray-600"}`}
           >
             {nfcWriting
               ? "Keep the card steady and close to your device"
               : "Hold the NFC card against the back of your device"}
           </Text>
 
-          <View
-            className={`p-6 rounded-2xl mb-10 w-full backdrop-blur-xl ${
-              isDark
-                ? "bg-white/10 border border-white/20"
-                : "bg-white/60 border border-gray-200/50 shadow-sm"
-            }`}
+          <Card
+            lightClass="bg-white/60 border border-gray-200/50 shadow-sm"
+            className="p-6 mb-10 w-full backdrop-blur-xl"
           >
             <Text
-              className={`text-lg font-bold mb-4 ${
-                isDark ? "text-white" : "text-gray-800"
-              }`}
+              className={`text-lg font-bold mb-4 ${isDark ? "text-white" : "text-gray-800"}`}
             >
               Card Details
             </Text>
             <View className="space-y-2">
               <View className="flex-row justify-between">
-                <Text className={isDark ? "text-gray-400" : "text-gray-600"}>
-                  Customer
-                </Text>
-                <Text
-                  className={`font-semibold ${
-                    isDark ? "text-white" : "text-gray-900"
-                  }`}
-                >
+                <Text className={isDark ? "text-gray-400" : "text-gray-600"}>Customer</Text>
+                <Text className={`font-semibold ${isDark ? "text-white" : "text-gray-900"}`}>
                   {watchedValues.customerName}
                 </Text>
               </View>
               <View className="flex-row justify-between">
-                <Text className={isDark ? "text-gray-400" : "text-gray-600"}>
-                  Email
-                </Text>
-                <Text
-                  className={`font-medium ${
-                    isDark ? "text-white" : "text-gray-900"
-                  }`}
-                >
+                <Text className={isDark ? "text-gray-400" : "text-gray-600"}>Email</Text>
+                <Text className={`font-medium ${isDark ? "text-white" : "text-gray-900"}`}>
                   {watchedValues.email}
                 </Text>
               </View>
               <View className="flex-row justify-between">
-                <Text className={isDark ? "text-gray-400" : "text-gray-600"}>
-                  Phone
-                </Text>
-                <Text
-                  className={`font-medium ${
-                    isDark ? "text-white" : "text-gray-900"
-                  }`}
-                >
+                <Text className={isDark ? "text-gray-400" : "text-gray-600"}>Phone</Text>
+                <Text className={`font-medium ${isDark ? "text-white" : "text-gray-900"}`}>
                   {watchedValues.phone}
                 </Text>
               </View>
               <View className="flex-row justify-between">
-                <Text className={isDark ? "text-gray-400" : "text-gray-600"}>
-                  Type
-                </Text>
+                <Text className={isDark ? "text-gray-400" : "text-gray-600"}>Type</Text>
                 <Text
-                  className={`font-semibold capitalize ${
-                    isDark ? "text-lime-400" : "text-lime-600"
-                  }`}
+                  className={`font-semibold capitalize ${isDark ? "text-lime-400" : "text-lime-600"}`}
                 >
                   {watchedValues.cardType}
                 </Text>
               </View>
             </View>
-          </View>
+          </Card>
 
           <View className="w-full space-y-4">
-            <Pressable
-              className={`py-4 rounded-2xl ${
-                nfcWriting
-                  ? "bg-gray-500"
-                  : isDark
-                    ? "bg-lime-600"
-                    : "bg-lime-700"
-              }`}
+            <Button
+              label={nfcWriting ? "Writing to Card..." : "Start NFC Write"}
+              loading={nfcWriting}
               onPress={handleNfcWrite}
-              disabled={nfcWriting}
-            >
-              <Text className="text-white text-lg font-bold text-center">
-                {nfcWriting ? "Writing to Card..." : "Start NFC Write"}
-              </Text>
-            </Pressable>
-
-            <Pressable
-              className={`py-3 rounded-2xl backdrop-blur-xl ${
-                isDark
-                  ? "bg-white/5 border border-white/10"
-                  : "bg-white/40 border-2 border-gray-300"
-              }`}
+            />
+            <Button
+              variant="secondary"
+              label="← Back to Form"
               onPress={() => setStep(1)}
               disabled={nfcWriting}
-            >
-              <Text
-                className={`text-lg font-semibold text-center ${
-                  isDark ? "text-white" : "text-gray-700"
-                }`}
-              >
-                ← Back to Form
-              </Text>
-            </Pressable>
+              className="mt-3"
+            />
           </View>
         </View>
       </View>
@@ -235,17 +176,12 @@ const ProvisionCard = () => {
       />
 
       <View className="px-6 pb-8">
-        <View
-          className={`rounded-2xl p-6 mb-6 backdrop-blur-xl ${
-            isDark
-              ? "bg-white/10 border border-white/20"
-              : "bg-white/60 border border-gray-200/50 shadow-sm"
-          }`}
+        <Card
+          lightClass="bg-white/60 border border-gray-200/50 shadow-sm"
+          className="p-6 mb-6 backdrop-blur-xl"
         >
           <Text
-            className={`text-xl font-bold mb-6 ${
-              isDark ? "text-white" : "text-gray-800"
-            }`}
+            className={`text-xl font-bold mb-6 ${isDark ? "text-white" : "text-gray-800"}`}
           >
             Customer Information
           </Text>
@@ -275,19 +211,14 @@ const ProvisionCard = () => {
             keyboardType="phone-pad"
             error={errors.phone}
           />
-        </View>
+        </Card>
 
-        <View
-          className={`rounded-2xl p-6 mb-8 backdrop-blur-xl ${
-            isDark
-              ? "bg-white/10 border border-white/20"
-              : "bg-white/60 border border-gray-200/50 shadow-sm"
-          }`}
+        <Card
+          lightClass="bg-white/60 border border-gray-200/50 shadow-sm"
+          className="p-6 mb-8 backdrop-blur-xl"
         >
           <Text
-            className={`text-xl font-bold mb-4 ${
-              isDark ? "text-white" : "text-gray-800"
-            }`}
+            className={`text-xl font-bold mb-4 ${isDark ? "text-white" : "text-gray-800"}`}
           >
             Card Type
           </Text>
@@ -312,12 +243,8 @@ const ProvisionCard = () => {
                 <Text
                   className={`text-lg font-semibold capitalize ${
                     watchedValues.cardType === type
-                      ? isDark
-                        ? "text-lime-400"
-                        : "text-lime-600"
-                      : isDark
-                        ? "text-gray-400"
-                        : "text-gray-700"
+                      ? isDark ? "text-lime-400" : "text-lime-600"
+                      : isDark ? "text-gray-400" : "text-gray-700"
                   }`}
                 >
                   {type}
@@ -325,18 +252,9 @@ const ProvisionCard = () => {
               </Pressable>
             ))}
           </View>
-        </View>
+        </Card>
 
-        <Pressable
-          className={`py-4 rounded-2xl ${
-            isDark ? "bg-lime-600" : "bg-lime-700"
-          }`}
-          onPress={handleNext}
-        >
-          <Text className="text-white text-lg font-bold text-center">
-            Continue to NFC Writing →
-          </Text>
-        </Pressable>
+        <Button label="Continue to NFC Writing →" onPress={handleNext} />
       </View>
     </ScrollView>
   );

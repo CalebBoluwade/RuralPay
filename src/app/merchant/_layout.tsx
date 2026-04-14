@@ -25,8 +25,12 @@ export default function MerchantLayout() {
           name="index"
           options={{
             title: "Dashboard",
-            tabBarIcon: ({ color, size }) => (
-              <Ionicons name="storefront" size={size} color={color} />
+            tabBarIcon: ({ color, focused }) => (
+              <Ionicons
+                size={focused ? 28 : 26}
+                name={focused ? "home" : "home-outline"}
+                color={color}
+              />
             ),
           }}
         />
@@ -34,9 +38,13 @@ export default function MerchantLayout() {
         <Tabs.Screen
           name="sales-analytics"
           options={{
-            title: "Sales Navigator",
-            tabBarIcon: ({ color, size }) => (
-              <Ionicons name="storefront" size={size} color={color} />
+            title: "Analytics",
+            tabBarIcon: ({ color, focused }) => (
+              <Ionicons
+                size={focused ? 28 : 26}
+                name={focused ? "bar-chart" : "bar-chart-outline"}
+                color={color}
+              />
             ),
           }}
         />
@@ -56,6 +64,20 @@ export default function MerchantLayout() {
         />
 
         <Tabs.Screen
+          name="services"
+          options={{
+            title: "Services",
+            tabBarIcon: ({ color, focused }) => (
+              <Ionicons
+                size={focused ? 28 : 26}
+                name={focused ? "grid" : "grid-outline"}
+                color={color}
+              />
+            ),
+          }}
+        />
+
+        <Tabs.Screen
           name="bank-uptime"
           options={{
             title: "Bank Uptime",
@@ -68,6 +90,7 @@ export default function MerchantLayout() {
             ),
           }}
         />
+
         <Tabs.Screen
           name="profile"
           options={{

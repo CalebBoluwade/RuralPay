@@ -1,4 +1,6 @@
 import { useAuth } from "@/src/components/context/AuthSessionProvider";
+import Button from "@/src/components/ui/Button";
+import Card from "@/src/components/ui/Card";
 import QRCodeService from "@/src/lib/services/QRCodeService";
 import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
@@ -193,7 +195,7 @@ const MerchantQRDisplay = ({
           showsVerticalScrollIndicator={false}
         >
           {/* Merchant info */}
-          <View className={`rounded-2xl p-5 mb-6 mt-4 ${cardClass}`}>
+          <Card className="p-5 mb-6 mt-4">
             <View className="flex-row items-center gap-3 mb-3">
               <View
                 className={`w-12 h-12 rounded-xl items-center justify-center ${isDark ? "bg-lime-500/20" : "bg-lime-50"}`}
@@ -218,10 +220,10 @@ const MerchantQRDisplay = ({
             >
               Customers can scan this QR code to pay you instantly
             </Text>
-          </View>
+          </Card>
 
           {/* QR Code */}
-          <View className={`rounded-2xl p-6 mb-6 items-center ${cardClass}`}>
+          <Card className="p-6 mb-6 items-center">
             <View className="flex-row items-center gap-2 mb-4">
               <QrCode size={20} color={isDark ? "#a3e635" : "#65a30d"} />
               <Text
@@ -260,31 +262,21 @@ const MerchantQRDisplay = ({
               Let your customer&apos;s camera scan this QR code to receive
               payment
             </Text>
-          </View>
+          </Card>
 
-          {/* Actions */}
+          {/* Actions */}}
           <View className="flex-row gap-3 mb-8">
-            <Pressable
+            <Button
+              variant="secondary"
+              label="Share"
               onPress={handleShare}
-              className={`flex-1 flex-row items-center justify-center gap-2 py-4 rounded-2xl ${isDark ? "bg-white/10" : "bg-slate-100"}`}
-            >
-              <Share size={18} color={isDark ? "#fff" : "#64748b"} />
-              <Text
-                className={`font-brand font-bold text-sm ${isDark ? "text-white" : "text-slate-900"}`}
-              >
-                Share
-              </Text>
-            </Pressable>
-
-            <Pressable
+              className="flex-1 flex-row gap-2"
+            />
+            <Button
+              label="Save PDF"
               onPress={handlePrint}
-              className="flex-1 flex-row items-center justify-center gap-2 py-4 rounded-2xl bg-lime-400"
-            >
-              <Download size={18} color="white" />
-              <Text className="font-brand font-bold text-sm text-white">
-                Save PDF
-              </Text>
-            </Pressable>
+              className="flex-1"
+            />
           </View>
         </ScrollView>
       </SafeAreaView>

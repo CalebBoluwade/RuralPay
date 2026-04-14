@@ -1,26 +1,27 @@
+import Card from "@/src/components/ui/Card";
 import ScreenHeader from "@/src/components/ui/ScreenHeader";
 import PaymentService from "@/src/lib/services/PaymentService";
 import { formatAmount } from "@/src/lib/utils/formatAmount";
 import DateTimePicker from "expo-datepicker";
 import { useRouter } from "expo-router";
 import {
-    ArrowDown,
-    ArrowUp,
-    CalendarDays,
-    FileText,
-    LucideIcon,
-    Receipt,
-    X,
+  ArrowDown,
+  ArrowUp,
+  CalendarDays,
+  FileText,
+  LucideIcon,
+  Receipt,
+  X,
 } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
 import {
-    ActivityIndicator,
-    FlatList,
-    Pressable,
-    RefreshControl,
-    Text,
-    View,
-    useColorScheme,
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  RefreshControl,
+  Text,
+  View,
+  useColorScheme,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -29,7 +30,9 @@ const TransactionHistory = () => {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
 
-  const [transactions, setTransactions] = useState<TransactionHistory[]>([]);
+  const [transactions, setTransactions] = useState<TransactionHistoryItem[]>(
+    [],
+  );
   const [pagination, setPagination] = useState({
     page: 1,
     total: 0,
@@ -120,15 +123,11 @@ const TransactionHistory = () => {
     }
   };
 
-  const cardClass = isDark
-    ? "bg-white/10 border border-white/20"
-    : "bg-white border border-slate-200 shadow-sm";
-
   const renderTransaction = ({
     item,
     index,
   }: {
-    item: TransactionHistory;
+    item: TransactionHistoryItem;
     index: number;
   }) => {
     const typeInfo = getTransactionTypeLabel(item.txType);
@@ -155,7 +154,7 @@ const TransactionHistory = () => {
             className={`text-sm font-brand font-bold ${isDark ? "text-white" : "text-slate-900"}`}
             numberOfLines={1}
           >
-            {item.merchantId || typeInfo.label}
+            {item.transactionId || typeInfo.label}
           </Text>
           <Text
             className={`text-xs mt-0.5 ${isDark ? "text-slate-400" : "text-slate-500"}`}
@@ -237,7 +236,7 @@ const TransactionHistory = () => {
             >
               Filter by Date
             </Text>
-            <View className={`rounded-2xl overflow-hidden ${cardClass}`}>
+            <Card className="overflow-hidden">
               <Pressable
                 className={`flex-row items-center px-4 py-4 gap-4 ${isDark ? "border-b border-white/10" : "border-b border-slate-100"}`}
                 onPress={() => setShowStartDatePicker(true)}
@@ -291,7 +290,7 @@ const TransactionHistory = () => {
                   </Text>
                 </View>
               </Pressable>
-            </View>
+            </Card>
 
             {/* Status filter */}
             <Text
@@ -365,7 +364,7 @@ const TransactionHistory = () => {
               All Transactions
             </Text>
             {filteredTransactions.length > 0 && (
-              <View className={`rounded-2xl overflow-hidden ${cardClass}`} />
+              <View className="rounded-2xl overflow-hidden" />
             )}
           </View>
         }

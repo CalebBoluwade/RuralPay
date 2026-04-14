@@ -158,6 +158,63 @@ class AccountService {
     }
   }
 
+  async getSpendingLimits(): Promise<{ dailyLimit: number; monthlyLimit: number }> {
+    const response = await axiosInstance.get<
+      APIResponse<{ dailyLimit: number; monthlyLimit: number }>
+    >("/account/spending-limits");
+    return response.details;
+  }
+
+  async updateSpendingLimits(limits: {
+    dailyLimit: number;
+    monthlyLimit: number;
+  }): Promise<APIResponse<{}>> {
+    try {
+      const response = await axiosInstance.patch<APIResponse<{}>>(
+        "/account/spending-limits",
+        limits,
+      );
+      return response;
+    } catch (error: any) {
+      const message =
+        error.response?.data?.message || "Failed to update spending limits";
+      return { success: false, message, details: {} };
+    }
+  }
+
+  async getNotificationSettings(): Promise<{
+    pushNotifications: boolean;
+    smsNotifications: boolean;
+    emailNotifications: boolean;
+  }> {
+    const response = await axiosInstance.get<
+      APIResponse<{
+        pushNotifications: boolean;
+        smsNotifications: boolean;
+        emailNotifications: boolean;
+      }>
+    >("/account/notification-settings");
+    return response.details;
+  }
+
+  async updateNotificationSettings(settings: {
+    pushNotifications: boolean;
+    smsNotifications: boolean;
+    emailNotifications: boolean;
+  }): Promise<APIResponse<{}>> {
+    try {
+      const response = await axiosInstance.patch<APIResponse<{}>>(
+        "/account/notification-settings",
+        settings,
+      );
+      return response;
+    } catch (error: any) {
+      const message =
+        error.response?.data?.message || "Failed to update notification settings";
+      return { success: false, message, details: {} };
+    }
+  }
+
   async ResolveAccountName(
     bankCode: string,
     accountNumber: string,

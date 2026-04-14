@@ -18,7 +18,6 @@ import { LanguageProvider } from "../components/context/LanguageContext";
 import { NotificationProvider } from "../components/context/NotificationContext";
 import { ToastProvider } from "../components/context/ToastProvider";
 import ComplianceGuard from "../components/ui/ComplianceGuard";
-import EncryptionService from "../lib/services/EncryptionService";
 import { pinningService } from "../lib/services/PinningService";
 
 Notifications.setNotificationHandler({
@@ -44,11 +43,12 @@ export default function RootLayout() {
     const initializeStartupServices = async () => {
       try {
         await Promise.all([
-          EncryptionService.RetrieveUserKey(),
+          // EncryptionService.RetrieveUserKey(),
           pinningService.initialize(),
         ]);
       } catch (error) {
-        console.error("Failed To Initialize Startup Services:", error);
+        if (__DEV__)
+          console.error("Failed To Initialize Startup Services:", error);
       }
     };
 

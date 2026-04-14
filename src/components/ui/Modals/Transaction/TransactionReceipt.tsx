@@ -4,7 +4,7 @@ import React from "react";
 import { Text, View, useColorScheme } from "react-native";
 
 interface TransactionReceiptProps {
-  transaction: TransactionHistory;
+  transaction: TransactionHistoryItem;
 }
 
 const TransactionReceipt: React.FC<TransactionReceiptProps> = ({

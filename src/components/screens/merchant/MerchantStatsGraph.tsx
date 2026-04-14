@@ -1,4 +1,6 @@
 import ScreenHeader from "@/src/components/ui/ScreenHeader";
+import Card from "@/src/components/ui/Card";
+import { useLanguage } from "@/src/components/context/LanguageContext";
 import MerchantService from "@/src/lib/services/MerchantService";
 import { formatNaira } from "@/src/lib/utils";
 import React, { useEffect, useState } from "react";
@@ -28,6 +30,15 @@ const MerchantStatsGraph = () => {
 
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
+  const { t } = useLanguage();
+
+  const labelClass = isDark ? "text-gray-400" : "text-gray-500";
+  const valueClass = isDark ? "text-white" : "text-gray-900";
+  const titleClass = isDark ? "text-white" : "text-gray-900";
+  const chartAxisStyle = { fontSize: 10, color: isDark ? "#9ca3af" : "#6b7280" };
+  const chartBg = isDark ? "#0a0a0f" : "#ffffff";
+  const chartGridColor = isDark ? "#ffffff15" : "#e5e7eb";
+  const chartRulesColor = isDark ? "#ffffff15" : "#e5e7eb";
 
   useEffect(() => {
     loadMerchantData();
@@ -86,7 +97,7 @@ const MerchantStatsGraph = () => {
 
   return (
     <SafeAreaView
-      className={`flex-1 --bg-gray-50 p-4 ${isDark ? "bg-[#0a0a0f]" : "bg-white"}`}
+      className={`flex-1 ${isDark ? "bg-[#0a0a0f]" : "bg-gray-50"}`}
     >
       <ScrollView
         className={`flex-1`}
@@ -98,35 +109,35 @@ const MerchantStatsGraph = () => {
           />
         }
       >
-        <ScreenHeader goBack title="Sales Analytics" />
-        <Animated.View style={animatedStyle}>
-          <Text className="text-2xl font-bold mb-6">Merchant Analytics</Text>
+        <ScreenHeader goBack title={t("merchant.salesAnalytics")} />
+        <Animated.View style={animatedStyle} className="px-4 pt-2">
+          <Text className={`text-2xl font-bold mb-6 ${titleClass}`}>{t("merchant.analytics")}</Text>
 
           <View className="flex-row justify-between mb-6">
-            <View className="bg-white rounded-2xl p-4 shadow w-[48%]">
-              <Text className="text-gray-500 text-xs">Total Volume</Text>
-              <Text className="text-lg font-bold mt-1">
+            <Card lightClass="bg-white shadow" className="p-4 w-[48%]">
+              <Text className={`text-xs ${labelClass}`}>{t("merchant.totalVolume")}</Text>
+              <Text className={`text-lg font-bold mt-1 ${valueClass}`}>
                 {formatNaira(merchant.totalCompletedVolume)}
               </Text>
-            </View>
-            <View className="bg-white rounded-2xl p-4 shadow w-[48%]">
-              <Text className="text-gray-500 text-xs">Total Profit</Text>
-              <Text className="text-lg font-bold mt-1">
+            </Card>
+            <Card lightClass="bg-white shadow" className="p-4 w-[48%]">
+              <Text className={`text-xs ${labelClass}`}>{t("merchant.totalProfit")}</Text>
+              <Text className={`text-lg font-bold mt-1 ${valueClass}`}>
                 {formatNaira(merchant.totalProfit)}
               </Text>
-            </View>
+            </Card>
           </View>
 
-          <View className="bg-white rounded-2xl p-4 shadow mb-6">
-            <Text className="text-gray-500 text-xs">Total Transactions</Text>
-            <Text className="text-xl font-bold mt-1">
+          <Card lightClass="bg-white shadow" className="p-4 mb-6">
+            <Text className={`text-xs ${labelClass}`}>{t("merchant.totalTransactions")}</Text>
+            <Text className={`text-xl font-bold mt-1 ${valueClass}`}>
               {merchant.totalCompletedCount}
             </Text>
-          </View>
+          </Card>
 
-          <View className="bg-white rounded-2xl p-4 shadow mb-6">
-            <Text className="text-base font-semibold mb-4">
-              Transactions by Status
+          <Card lightClass="bg-white shadow" className="p-4 mb-6">
+            <Text className={`text-base font-semibold mb-4 ${titleClass}`}>
+              {t("merchant.transactionsByStatus")}
             </Text>
             <BarChart
               data={barCountData}
@@ -134,13 +145,18 @@ const MerchantStatsGraph = () => {
               barWidth={32}
               noOfSections={4}
               isAnimated
-              xAxisLabelTextStyle={{ fontSize: 10 }}
+              xAxisLabelTextStyle={chartAxisStyle}
+              yAxisTextStyle={chartAxisStyle}
+              backgroundColor={chartBg}
+              xAxisColor={chartGridColor}
+              yAxisColor={chartGridColor}
+              rulesColor={chartRulesColor}
             />
-          </View>
+          </Card>
 
-          <View className="bg-white rounded-2xl p-4 shadow mb-6">
-            <Text className="text-base font-semibold mb-4">
-              Status Distribution
+          <Card lightClass="bg-white shadow" className="p-4 mb-6">
+            <Text className={`text-base font-semibold mb-4 ${titleClass}`}>
+              {t("merchant.statusDistribution")}
             </Text>
             <PieChart
               data={pieData}
@@ -149,15 +165,17 @@ const MerchantStatsGraph = () => {
               radius={100}
               isAnimated
               textSize={10}
+              textColor={isDark ? "#f9fafb" : "#111827"}
+              backgroundColor={chartBg}
               centerLabelComponent={() => (
-                <Text className="text-xs text-gray-500">Status</Text>
+                <Text className={`text-xs ${labelClass}`}>{t("merchant.statusLabel")}</Text>
               )}
             />
-          </View>
+          </Card>
 
-          <View className="bg-white rounded-2xl p-4 shadow mb-10">
-            <Text className="text-base font-semibold mb-4">
-              Volume by Status
+          <Card lightClass="bg-white shadow" className="p-4 mb-10">
+            <Text className={`text-base font-semibold mb-4 ${titleClass}`}>
+              {t("merchant.volumeByStatus")}
             </Text>
             <BarChart
               data={barVolumeData}
@@ -165,9 +183,14 @@ const MerchantStatsGraph = () => {
               barWidth={32}
               noOfSections={4}
               isAnimated
-              xAxisLabelTextStyle={{ fontSize: 10 }}
+              xAxisLabelTextStyle={chartAxisStyle}
+              yAxisTextStyle={chartAxisStyle}
+              backgroundColor={chartBg}
+              xAxisColor={chartGridColor}
+              yAxisColor={chartGridColor}
+              rulesColor={chartRulesColor}
             />
-          </View>
+          </Card>
         </Animated.View>
       </ScrollView>
     </SafeAreaView>

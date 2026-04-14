@@ -1,4 +1,6 @@
 import { axiosInstance } from "@/src/lib/api";
+import Button from "@/src/components/ui/Button";
+import Card from "@/src/components/ui/Card";
 import { useStripe } from "@stripe/stripe-react-native";
 import { Reader, useStripeTerminal } from "@stripe/stripe-terminal-react-native";
 import { router } from "expo-router";
@@ -57,9 +59,7 @@ const WalletPaySection = () => {
   };
 
   return (
-    <View
-      className={`rounded-3xl p-5 mb-4 ${isDark ? "bg-white/10 border border-white/20" : "bg-white border border-slate-200 shadow-sm"}`}
-    >
+    <Card className="rounded-3xl p-5 mb-4">
       <View className="flex-row items-center gap-3 mb-4">
         <View
           className={`w-11 h-11 rounded-2xl items-center justify-center ${isDark ? "bg-lime-500/20" : "bg-lime-50"}`}
@@ -96,18 +96,8 @@ const WalletPaySection = () => {
         </View>
       )}
 
-      <Pressable
-        onPress={handlePay}
-        disabled={loading}
-        className={`py-4 rounded-2xl items-center justify-center ${loading ? "opacity-50" : ""} ${isDark ? "bg-lime-500" : "bg-lime-600"}`}
-      >
-        {loading ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <Text className="text-white font-bold text-base">Pay Now</Text>
-        )}
-      </Pressable>
-    </View>
+      <Button label="Pay Now" loading={loading} onPress={handlePay} />
+    </Card>
   );
 };
 
@@ -154,9 +144,7 @@ const TapToPaySection = () => {
   };
 
   return (
-    <View
-      className={`rounded-3xl p-5 mb-4 ${isDark ? "bg-white/10 border border-white/20" : "bg-white border border-slate-200 shadow-sm"}`}
-    >
+    <Card className="rounded-3xl p-5 mb-4">
       <View className="flex-row items-center gap-3 mb-4">
         <View
           className={`w-11 h-11 rounded-2xl items-center justify-center ${isDark ? "bg-lime-500/20" : "bg-lime-50"}`}
@@ -193,20 +181,13 @@ const TapToPaySection = () => {
         </View>
       )}
 
-      <Pressable
+      <Button
+        label={ready ? "Reader Connected" : "Start Tap to Pay"}
+        loading={loading}
+        disabled={ready}
         onPress={handleStart}
-        disabled={loading || ready}
-        className={`py-4 rounded-2xl items-center justify-center ${loading || ready ? "opacity-50" : ""} ${isDark ? "bg-lime-500" : "bg-lime-600"}`}
-      >
-        {loading ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <Text className="text-white font-bold text-base">
-            {ready ? "Reader Connected" : "Start Tap to Pay"}
-          </Text>
-        )}
-      </Pressable>
-    </View>
+      />
+    </Card>
   );
 };
 

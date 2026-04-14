@@ -24,6 +24,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useAuth } from "../../context/AuthSessionProvider";
 
 const LockScreen = () => {
   const colorScheme = useColorScheme();
@@ -37,6 +38,8 @@ const LockScreen = () => {
   const [lockSeconds, setLockSeconds] = React.useState<number>(0);
   const isLocked = lockSeconds > 0;
   const codeLength = new Array(6).fill(0);
+
+  const { refreshToken } = useAuth();
 
   const offset = useSharedValue(0);
   const style = useAnimatedStyle(() => {
@@ -206,7 +209,7 @@ const LockScreen = () => {
     try {
       setIsLoading(true);
 
-      const user = await authService.refreshToken();
+      const user = await authService.refreshToken(refreshToken!);
 
       if (!isMounted.current) return;
 

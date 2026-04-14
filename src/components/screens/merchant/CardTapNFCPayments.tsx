@@ -14,6 +14,7 @@ import {
   Text,
   View,
   useColorScheme,
+  useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -37,6 +38,8 @@ const CardTapNFCPayments: React.FC<CardTapNFCPaymentsProps> = ({
   const merchant = user?.merchant;
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
+
+  const { width } = useWindowDimensions();
 
   const [step, setStep] = useState("ENTER_AMOUNT");
   const [amount, setAmount] = useState("");
@@ -282,6 +285,8 @@ const CardTapNFCPayments: React.FC<CardTapNFCPaymentsProps> = ({
       await handleLocationRetrieval(cardResultWithPIN.transaction);
 
       if (cardResultWithPIN?.transaction?.cardInfo) {
+        delete cardResultWithPIN.transaction.cardInfo.BIN;
+        delete cardResultWithPIN.transaction.cardInfo.last4;
         delete cardResultWithPIN.transaction.cardInfo.errorMessage;
         delete cardResultWithPIN.transaction.cardInfo.schemeLabel;
       }
@@ -395,7 +400,7 @@ const CardTapNFCPayments: React.FC<CardTapNFCPaymentsProps> = ({
 
         {/* Illustration */}
         <View className="items-center mb-6">
-          <ScanToPay width={240} height={240} />
+          <ScanToPay width={width - 48} height={(width - 48) * 0.8} />
         </View>
 
         {/* Amount input */}

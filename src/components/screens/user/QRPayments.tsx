@@ -1,3 +1,4 @@
+import Button from "@/src/components/ui/Button";
 import PaymentMethodModal from "@/src/components/ui/Modals/Transaction/PaymentMethodModal";
 import TransactionPin from "@/src/components/ui/Modals/Transaction/TransactionPinModal";
 import ScreenHeader from "@/src/components/ui/ScreenHeader";
@@ -30,7 +31,9 @@ const QRPayments = () => {
   const [loading, setLoading] = useState(false);
   const [paymentResult, setPaymentResult] = useState<any>(null);
   const [error, setError] = useState("");
-  const [scannedQRData, setScannedQRData] = useState<any>(null);
+  const [scannedQRData, setScannedQRData] = useState<ScannedQRData | null>(
+    null,
+  );
   const [permission, requestPermission] = useCameraPermissions();
 
   const [showPaymentMethodModal, setShowPaymentMethodModal] = useState(false);
@@ -52,6 +55,11 @@ const QRPayments = () => {
       return false;
     }
 
+    if (!scannedQRData.accountNumber || !scannedQRData.bankCode) {
+      setError("Invalid QR code: missing merchant account details");
+      return false;
+    }
+
     setIsProcessingPayment(true);
     setError("");
 
@@ -59,9 +67,10 @@ const QRPayments = () => {
       const payment = await PaymentService.B2BTransfer({
         amount: scannedQRData.amount,
         currency: "NGN",
-        beneficiaryBankCode: "000",
-        beneficiaryBankName: scannedQRData.merchantName,
-        beneficiaryAccountNumber: "0000000000",
+        beneficiaryBankCode: scannedQRData.bankCode,
+        beneficiaryBankName:
+          scannedQRData.bankName ?? scannedQRData.merchantName,
+        beneficiaryAccountNumber: scannedQRData.accountNumber,
         beneficiaryAccountName: scannedQRData.merchantName,
         fromAccount: pendingPaymentData.accountNumber,
         narration: `QR Payment to ${scannedQRData.merchantName}`,
@@ -204,12 +213,7 @@ const QRPayments = () => {
               >
                 Camera Access Is Required To Scan QR Codes.
               </Text>
-              <Pressable
-                className={`bg-lime-400 rounded-2xl py-4 shadow-lg px-6`}
-                onPress={requestPermission}
-              >
-                <Text className="font-semibold">Grant Permission</Text>
-              </Pressable>
+              <Button label="Grant Permission" onPress={requestPermission} />
             </View>
           ) : (
             <View className="w-full h-[70%] rounded-2xl overflow-hidden">

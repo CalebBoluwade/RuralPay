@@ -3,7 +3,7 @@ import { ConfigContext, ExpoConfig } from "expo/config";
 import { version } from "./package.json";
 
 const EAS_PROJECT_ID = "e4c8aac2-05e4-4310-9ed9-a70edcdadbe6";
-const PROJECT_SLUG = "nfc-card-payments";
+const PROJECT_SLUG = "ruralpay";
 const OWNER = "calebjnr";
 
 // App production config
@@ -69,6 +69,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         NSLocationWhenInUseUsageDescription:
           "RuralPay Uses Device Location To Enhance Transaction Security and Aid Fraud Prevention",
         FIREBASE_ANALYTICS_COLLECTION_ENABLED: true,
+        CFBundleAllowMixedLocalizations: true,
+        CFBundleLocalizations: ["fr"],
         LSApplicationCategoryType: "public.app-category.finance",
       },
     },

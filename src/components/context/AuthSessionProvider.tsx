@@ -10,6 +10,7 @@ import { DeviceEventEmitter } from "react-native";
 interface AuthContextType {
   user: User | null;
   token: string | null;
+  refreshToken: string | null;
   isLocked: boolean;
   lock: () => void;
   unlock: () => void;
@@ -47,6 +48,7 @@ export function AuthSessionProvider({
   const [hasRequiredConsents, setHasRequiredConsents] = useState(false);
   const [consentOutdated, setConsentOutdated] = useState(false);
   const [token, setToken] = useState<string | null>(null);
+  const [refreshToken, setRefreshToken] = useState<string | null>(null);
   const [isLocked, setIsLocked] = useState(false);
   const [showSessionExpiredModal, setShowSessionExpiredModal] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -72,6 +74,7 @@ export function AuthSessionProvider({
       if (authData) {
         setUser(authData.details.user);
         setToken(authData.details.token);
+        setRefreshToken(authData.details.refreshToken);
       }
       setHasBiometricCredentials(hasBiometric);
       if (hasBiometric) setNativeAuthLogin(true);
@@ -158,6 +161,7 @@ export function AuthSessionProvider({
 
     const authResponse = await authService.login(identifier, password);
     setToken(authResponse.details.token);
+    setRefreshToken(authResponse.details.refreshToken);
     setUser(authResponse.details.user);
 
     await biometricService.storeBiometricCredentials(identifier, password);
@@ -191,6 +195,7 @@ export function AuthSessionProvider({
     );
 
     setToken(authResponse.details.token);
+    setRefreshToken(authResponse.details.refreshToken);
     setUser(authResponse.details.user);
 
     if (authResponse.details.user.role === "merchant") {
@@ -278,6 +283,7 @@ export function AuthSessionProvider({
         updateVisibleBalance,
         checkConsents,
         token,
+        refreshToken,
         isLocked,
         lock,
         unlock,

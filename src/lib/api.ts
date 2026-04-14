@@ -2,7 +2,6 @@ import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
 import { router } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import { DeviceEventEmitter } from "react-native";
-import { config } from "./config";
 import { ErrorHandler } from "./utils/ErrorHandler";
 
 const AUTH_TOKEN_KEY = "auth_token";
@@ -47,7 +46,7 @@ declare module "axios" {
 }
 
 export const axiosInstance = axios.create({
-  baseURL: config.apiUrl,
+  baseURL: process.env.EXPO_PUBLIC_API_URL,
   timeout: Number(process.env.EXPO_PUBLIC_API_TIMEOUT || 30000),
   headers: {
     "Content-Type": "application/json",
@@ -57,6 +56,8 @@ export const axiosInstance = axios.create({
 // Request interceptor
 axiosInstance.interceptors.request.use(
   async (config) => {
+    if (__DEV__) console.log("URL:", config.baseURL + (config.url ?? ""));
+
     try {
       const isAuthEndpoint = config.url?.startsWith("/auth/");
       const token = await SecureStore.getItemAsync(AUTH_TOKEN_KEY);
@@ -64,7 +65,13 @@ axiosInstance.interceptors.request.use(
         config.headers.Authorization = `Bearer ${token}`;
       }
     } catch (error) {
-      if (__DEV__) console.error("Error in request interceptor:", error, "for URL:", config.url);
+      if (__DEV__)
+        console.error(
+          "Error in request interceptor:",
+          error,
+          "for URL:",
+          config.url,
+        );
       await ErrorHandler.handle(
         error,
         {
@@ -128,7 +135,11 @@ axiosInstance.interceptors.response.use(
 
     // Only log API errors, not network connectivity issues or expected auth failures
     const isAuthEndpointError = originalRequest?.url?.startsWith("/auth/");
-    if (error.response?.status && error.response.status !== 0 && !isAuthEndpointError) {
+    if (
+      error.response?.status &&
+      error.response.status !== 0 &&
+      !isAuthEndpointError
+    ) {
       await ErrorHandler.handle(
         error,
         {
@@ -194,13 +205,16 @@ axiosInstance.interceptors.response.use(
 
       try {
         await new Promise<void>((resolve, reject) => {
-          const successSub = DeviceEventEmitter.addListener("PIN_SUCCESS", () => {
-            successSub.remove();
-            cancelSub.remove();
-            isRefreshing = false;
-            processQueue(null);
-            resolve();
-          });
+          const successSub = DeviceEventEmitter.addListener(
+            "PIN_SUCCESS",
+            () => {
+              successSub.remove();
+              cancelSub.remove();
+              isRefreshing = false;
+              processQueue(null);
+              resolve();
+            },
+          );
 
           const cancelSub = DeviceEventEmitter.addListener("PIN_CANCEL", () => {
             successSub.remove();

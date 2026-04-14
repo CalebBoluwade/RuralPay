@@ -157,10 +157,29 @@ class PaymentService {
       const response = await axiosInstance.get<APIResponse<DataPlan[]>>(
         `/data-plans?network=${network}`,
       );
-
       return response.details;
     } catch (error) {
       if (__DEV__) console.error("Error Fetching Data Plans:", error);
+      return [];
+    }
+  }
+
+  async FetchElectricityProviders(): Promise<ElectricityProvider[]> {
+    try {
+      const response = await axiosInstance.get<APIResponse<ElectricityProvider[]>>("/vas/electricity/providers");
+      return response.details;
+    } catch (error) {
+      if (__DEV__) console.error("Error Fetching Electricity Providers:", error);
+      return [];
+    }
+  }
+
+  async FetchCableProviders(): Promise<CableProvider[]> {
+    try {
+      const response = await axiosInstance.get<APIResponse<CableProvider[]>>("/vas/cable/providers");
+      return response.details;
+    } catch (error) {
+      if (__DEV__) console.error("Error Fetching Cable Providers:", error);
       return [];
     }
   }

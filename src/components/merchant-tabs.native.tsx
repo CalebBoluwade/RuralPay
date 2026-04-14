@@ -2,8 +2,8 @@ import {
   FontAwesome,
   FontAwesome5,
   FontAwesome6,
+  Ionicons,
   MaterialCommunityIcons,
-  SimpleLineIcons,
 } from "@expo/vector-icons";
 import { VectorIcon } from "expo-router";
 import { NativeTabs } from "expo-router/unstable-native-tabs";
@@ -21,28 +21,19 @@ export default function MerchantTabs() {
       rippleColor={"#ecfccb"}
     >
       <NativeTabs.Trigger name="index">
-        <NativeTabs.Trigger.Label hidden>Home</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label hidden>Dashboard</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
           selectedColor={iconColor.iconColor}
-          src={<VectorIcon family={MaterialCommunityIcons} name="home" />}
-          renderingMode="template"
-        />
-      </NativeTabs.Trigger>
-
-      <NativeTabs.Trigger name="bank-uptime">
-        <NativeTabs.Trigger.Label hidden>Bank Uptime</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon
-          selectedColor={iconColor.iconColor}
-          src={<VectorIcon family={SimpleLineIcons} name="organization" />}
+          src={<VectorIcon family={Ionicons} name="home" />}
           renderingMode="template"
         />
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="sales-analytics">
-        <NativeTabs.Trigger.Label hidden>Sales</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label hidden>Analytics</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
           selectedColor={iconColor.iconColor}
-          src={<VectorIcon family={FontAwesome} name="pie-chart" />}
+          src={<VectorIcon family={Ionicons} name="bar-chart" />}
           renderingMode="template"
         />
       </NativeTabs.Trigger>
@@ -51,22 +42,31 @@ export default function MerchantTabs() {
         <NativeTabs.Trigger.Label hidden>Transactions</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
           selectedColor={iconColor.iconColor}
-          src={<VectorIcon family={FontAwesome} name="send" />}
+          src={<VectorIcon family={Ionicons} name="list" />}
           renderingMode="template"
         />
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="services">
-        <NativeTabs.Trigger.Label>VAS</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label hidden>Services</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
           selectedColor={iconColor.iconColor}
-          src={<VectorIcon family={FontAwesome6} name="plug-circle-bolt" />}
+          src={<VectorIcon family={Ionicons} name="grid" />}
+          renderingMode="template"
+        />
+      </NativeTabs.Trigger>
+
+      <NativeTabs.Trigger name="bank-uptime">
+        <NativeTabs.Trigger.Label hidden>Bank Uptime</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon
+          selectedColor={iconColor.iconColor}
+          src={<VectorIcon family={MaterialCommunityIcons} name="heart-pulse" />}
           renderingMode="template"
         />
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="profile">
-        <NativeTabs.Trigger.Label>Profile</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label hidden>Profile</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
           selectedColor={iconColor.iconColor}
           src={<VectorIcon family={FontAwesome5} name="user-circle" />}

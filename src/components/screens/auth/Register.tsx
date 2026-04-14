@@ -18,7 +18,7 @@ import {
   ChevronUp,
   ShieldCheck,
 } from "lucide-react-native";
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Pressable, Text, TextInput, View, useColorScheme } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
@@ -38,6 +38,29 @@ export default function RegisterScreen() {
     useState<VerificationResult | null>(null);
 
   const [phoneOTP, setPhoneOTP] = useState("");
+  const [otpCooldown, setOtpCooldown] = useState(60);
+  const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const startCooldown = useCallback(() => {
+    setOtpCooldown(60);
+    if (cooldownRef.current) clearInterval(cooldownRef.current);
+    cooldownRef.current = setInterval(() => {
+      setOtpCooldown((prev) => {
+        if (prev <= 1) {
+          clearInterval(cooldownRef.current!);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  }, []);
+
+  useEffect(() => {
+    if (step === "phone-verify") startCooldown();
+    return () => {
+      if (cooldownRef.current) clearInterval(cooldownRef.current);
+    };
+  }, [step]);
 
   // Merchant
   const [isMerchant, setIsMerchant] = useState(false);
@@ -84,15 +107,15 @@ export default function RegisterScreen() {
 
   const HandleMerchantSubmit = () => {
     if (!businessName.trim()) {
-      ToastService.warning("Business Name is required");
+      ToastService.warning(t("auth.businessNameRequired"));
       return;
     }
     if (!businessAddress.trim()) {
-      ToastService.warning("Business Address is required");
+      ToastService.warning(t("auth.businessAddressRequired"));
       return;
     }
     if (!businessType.trim()) {
-      ToastService.warning("Business Type is required");
+      ToastService.warning(t("auth.businessTypeRequired"));
       return;
     }
 
@@ -106,19 +129,24 @@ export default function RegisterScreen() {
   };
 
   const HandlePhoneVerify = async () => {
-    if (phoneOTP.length < 6 && phoneOTP.length > 8) {
-      ToastService.warning("Please Enter the 8-digit Code");
+    if (phoneOTP.length !== 8) {
+      ToastService.warning(t("auth.invalidOtp"));
       return;
     }
 
-    // const OtpValidation = await AccountService.ValidateUserPhoneNumberOTP("BVN", phoneOTP);
+    const OtpValidation = await AccountService.ValidateUserPhoneNumberOTP(
+      "Registration",
+      phoneOTP,
+    );
 
-    // if (!OtpValidation.valid) {
-    //   ToastService.error(OtpValidation.message || "Failed to Validate OTP");
-    //   return;
-    // }
+    if (!OtpValidation.success) {
+      ToastService.error(
+        OtpValidation.message || t("auth.otpValidationFailed"),
+      );
+      return;
+    }
 
-    ToastService.success("Phone Number Verified Successfully");
+    ToastService.success(t("auth.phoneVerifiedSuccess"));
     setStep("liveness");
   };
 
@@ -161,8 +189,8 @@ export default function RegisterScreen() {
 
       ToastService.success(
         registrationData.isMerchant
-          ? "Merchant Registration Successful"
-          : "Registration Successful",
+          ? t("auth.merchantRegistrationSuccess")
+          : t("auth.registrationSuccess"),
       );
 
       setShowPinModal(false);
@@ -171,9 +199,7 @@ export default function RegisterScreen() {
       setShowPinModal(false);
       setStep("personal");
       ToastService.error(
-        error instanceof Error
-          ? error.message
-          : "Registration failed. Please try again",
+        error instanceof Error ? error.message : t("auth.registrationFailed"),
       );
     }
   };
@@ -185,8 +211,8 @@ export default function RegisterScreen() {
 
   const RenderProgressBar = () => {
     const Steps: UserRegistrationStep[] = isMerchant
-      ? ["personal", "merchant", "phone-verify", "liveness"]
-      : ["personal", "phone-verify", "liveness"];
+      ? ["personal", "merchant", "phone-verify", "liveness", "pin"]
+      : ["personal", "phone-verify", "liveness", "pin"];
 
     const CurrentIndex = Steps.indexOf(step);
 
@@ -236,10 +262,10 @@ export default function RegisterScreen() {
   };
 
   const RenderSubtitle = (): string => {
-    if (step === "personal") return "Enter Your Personal Details";
-    if (step === "merchant") return "Enter Your Business Information";
-    if (step === "phone-verify") return "Enter Phone Verification Code";
-    if (step === "liveness") return "Follow The Prompts";
+    if (step === "personal") return t("auth.enterPersonalDetails");
+    if (step === "merchant") return t("auth.enterBusinessInfo");
+    if (step === "phone-verify") return t("auth.enterPhoneCode");
+    if (step === "liveness") return t("auth.followPrompts");
     return "";
   };
 
@@ -300,12 +326,12 @@ export default function RegisterScreen() {
                   <Text
                     className={`text-base font-semibold ${isDark ? "text-white" : "text-gray-900"}`}
                   >
-                    Register As A New Merchant
+                    {t("auth.registerAsMerchant")}
                   </Text>
                   <Text
                     className={`text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}
                   >
-                    Accept Payments For Your Business
+                    {t("auth.registerAsMerchantSubtitle")}
                   </Text>
                 </View>
               </Pressable>
@@ -314,7 +340,7 @@ export default function RegisterScreen() {
                 control={control}
                 name="firstName"
                 label={t("auth.firstName")}
-                placeholder="Enter your First Name"
+                placeholder={t("auth.firstName")}
                 error={errors.firstName}
               />
 
@@ -322,15 +348,15 @@ export default function RegisterScreen() {
                 control={control}
                 name="lastName"
                 label={t("auth.lastName")}
-                placeholder="Enter your Last Name"
+                placeholder={t("auth.lastName")}
                 error={errors.lastName}
               />
 
               <OptimizedInput
                 control={control}
                 name="username"
-                label="Username"
-                placeholder="Choose a Unique Username"
+                label={t("auth.username")}
+                placeholder={t("auth.username")}
                 autoCapitalize="none"
                 error={errors.username}
               />
@@ -339,7 +365,7 @@ export default function RegisterScreen() {
                 control={control}
                 name="email"
                 label={t("auth.email")}
-                placeholder="Enter your Email Address"
+                placeholder={t("auth.email")}
                 keyboardType="email-address"
                 autoCapitalize="none"
                 error={errors.email}
@@ -349,7 +375,7 @@ export default function RegisterScreen() {
                 control={control}
                 name="phoneNumber"
                 label={t("auth.phoneNumber")}
-                placeholder="Enter Your Phone Number"
+                placeholder={t("auth.phoneNumber")}
                 keyboardType="phone-pad"
                 error={errors.phoneNumber}
               />
@@ -357,8 +383,8 @@ export default function RegisterScreen() {
               <OptimizedInput
                 control={control}
                 name="BVN"
-                label={"BVN (Bank Verification Number)"}
-                placeholder="Enter Your 11-digit BVN"
+                label={t("auth.bvn")}
+                placeholder={t("auth.bvnPlaceholder")}
                 keyboardType="numeric"
                 error={errors.BVN}
                 labelRight={
@@ -375,7 +401,7 @@ export default function RegisterScreen() {
                 control={control}
                 name="password"
                 label={t("auth.password")}
-                placeholder="Enter your Password"
+                placeholder={t("auth.password")}
                 secureTextEntry
                 showPasswordToggle
                 error={errors.password}
@@ -385,10 +411,9 @@ export default function RegisterScreen() {
                 control={control}
                 name="confirmPassword"
                 label={t("auth.confirmPassword")}
-                placeholder="Confirm Your Password"
+                placeholder={t("auth.confirmPassword")}
                 secureTextEntry
                 showPasswordToggle
-                // editable={isSubmitting}
                 error={errors.confirmPassword}
               />
 
@@ -400,7 +425,7 @@ export default function RegisterScreen() {
                 }`}
               >
                 <Text className="text-black text-lg font-bold text-center">
-                  {isSubmitting ? "Processing..." : t("common.continue")}
+                  {isSubmitting ? t("common.processing") : t("common.continue")}
                 </Text>
               </Pressable>
 
@@ -447,12 +472,12 @@ export default function RegisterScreen() {
                   <Text
                     className={`text-xl font-brand text-center ${isDark ? "text-white" : "text-gray-900"}`}
                   >
-                    Business Information
+                    {t("auth.businessInformation")}
                   </Text>
                   <Text
                     className={`text-sm text-center mt-2 ${isDark ? "text-gray-400" : "text-gray-600"}`}
                   >
-                    Tell us about your business to start accepting payments
+                    {t("auth.businessInformationSubtitle")}
                   </Text>
                 </View>
 
@@ -462,7 +487,7 @@ export default function RegisterScreen() {
                       ? "bg-white/10 border border-white/20 text-white"
                       : "bg-white/60 border border-gray-200/50 text-gray-900"
                   }`}
-                  placeholder="Business Name"
+                  placeholder={t("auth.businessName")}
                   placeholderTextColor={isDark ? "#9CA3AF" : "#6B7280"}
                   value={businessName}
                   onChangeText={setBusinessName}
@@ -474,7 +499,7 @@ export default function RegisterScreen() {
                       ? "bg-white/10 border border-white/20 text-white"
                       : "bg-white/60 border border-gray-200/50 text-gray-900"
                   }`}
-                  placeholder="Business Address"
+                  placeholder={t("auth.businessAddress")}
                   placeholderTextColor={isDark ? "#9CA3AF" : "#6B7280"}
                   value={businessAddress}
                   onChangeText={setBusinessAddress}
@@ -503,7 +528,7 @@ export default function RegisterScreen() {
                             : "text-gray-500"
                       }`}
                     >
-                      {businessType || "Select Business Type"}
+                      {businessType || t("auth.selectBusinessType")}
                     </Text>
                     {showBusinessTypeDropdown ? (
                       <ChevronUp
@@ -566,7 +591,7 @@ export default function RegisterScreen() {
                 className={`py-4 rounded-2xl ${isDark ? "bg-lime-600" : "bg-lime-700"}`}
               >
                 <Text className="text-white text-lg font-semibold text-center">
-                  Continue to Verification
+                  {t("auth.continueToVerification")}
                 </Text>
               </Pressable>
             </View>
@@ -606,12 +631,12 @@ export default function RegisterScreen() {
                   <Text
                     className={`text-xl font-brand text-center ${isDark ? "text-white" : "text-gray-900"}`}
                   >
-                    Verify Phone Number
+                    {t("auth.verifyPhoneNumber")}
                   </Text>
                   <Text
                     className={`text-sm text-center mt-2 ${isDark ? "text-gray-400" : "text-gray-600"}`}
                   >
-                    Enter the 6-digit Code sent via SMS, WhatsApp, and Email
+                    {t("auth.verifyPhoneSubtitle")}
                   </Text>
                 </View>
 
@@ -638,26 +663,38 @@ export default function RegisterScreen() {
                 />
 
                 <Pressable
+                  disabled={otpCooldown > 0}
                   onPress={() => {
                     try {
                       AccountService.SendUserOTP(
                         "Registration",
                         registrationData?.phoneNumber ?? "",
                       );
-                      ToastService.info("Verification Code Resent");
+                      ToastService.info(t("auth.otpResent"));
+                      startCooldown();
                     } catch (error) {
                       ToastService.error(
                         error instanceof Error
                           ? error.message
-                          : "Failed to resend code. Please try again.",
+                          : t("auth.resendFailed"),
                       );
                     }
                   }}
                 >
                   <Text
-                    className={`text-center ${isDark ? "text-lime-400" : "text-lime-600"}`}
+                    className={`text-center ${
+                      otpCooldown > 0
+                        ? isDark
+                          ? "text-slate-500"
+                          : "text-slate-400"
+                        : isDark
+                          ? "text-lime-400"
+                          : "text-lime-600"
+                    }`}
                   >
-                    Resend Code
+                    {otpCooldown > 0
+                      ? `Resend Code in ${otpCooldown}s`
+                      : t("auth.resendCode")}
                   </Text>
                 </Pressable>
               </View>
@@ -667,7 +704,7 @@ export default function RegisterScreen() {
                 className={`py-4 rounded-2xl ${isDark ? "bg-lime-600" : "bg-lime-700"}`}
               >
                 <Text className="text-white text-lg font-semibold text-center">
-                  Complete Registration
+                  {t("auth.completeRegistration")}
                 </Text>
               </Pressable>
             </View>

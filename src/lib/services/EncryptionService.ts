@@ -8,6 +8,7 @@ interface UserKey {
   publicKey: string;
   hash: string;
   algorithm: string;
+  useEncryptedPayload: boolean;
 }
 
 function uint8ToBase64(bytes: Uint8Array): string {
@@ -18,7 +19,10 @@ function concatUint8Arrays(arrays: Uint8Array[]): Uint8Array {
   const total = arrays.reduce((sum, a) => sum + a.byteLength, 0);
   const result = new Uint8Array(total);
   let offset = 0;
-  for (const arr of arrays) { result.set(arr, offset); offset += arr.byteLength; }
+  for (const arr of arrays) {
+    result.set(arr, offset);
+    offset += arr.byteLength;
+  }
   return result;
 }
 
@@ -28,9 +32,7 @@ class EncryptionService {
   async RetrieveUserKey() {
     try {
       const response =
-        await axiosInstance.get<
-          APIResponse<{ publicKey: string; hash: string; algorithm: string }>
-        >("/encryption/keys");
+        await axiosInstance.get<APIResponse<UserKey>>("/encryption/keys");
 
       await Keychain.setGenericPassword(
         this.PUBLIC_KEY_PEM_ID,
@@ -42,7 +44,7 @@ class EncryptionService {
         },
       );
 
-      return response.details.publicKey;
+      return response.details;
     } catch (error) {
       if (__DEV__) console.error("Failed to retrieve user key:", error);
       throw new Error("Could Not Retrieve Encryption Key");
@@ -142,9 +144,18 @@ class EncryptionService {
     encryptedData: Uint8Array,
   ): Uint8Array {
     const lengthBuffer = new Uint8Array(2);
-    new DataView(lengthBuffer.buffer).setUint16(0, encryptedAesKey.byteLength, true);
+    new DataView(lengthBuffer.buffer).setUint16(
+      0,
+      encryptedAesKey.byteLength,
+      true,
+    );
 
-    return concatUint8Arrays([lengthBuffer, encryptedAesKey, iv, encryptedData]);
+    return concatUint8Arrays([
+      lengthBuffer,
+      encryptedAesKey,
+      iv,
+      encryptedData,
+    ]);
   }
 }
 

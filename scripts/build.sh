@@ -125,9 +125,9 @@ fi
 echo "🚀 Building for '$APP_ENV' on '$APP_PLATFORM'..."
 
 if [[ "$APP_PLATFORM" == "android" ]]; then
-  bunx expo prebuild --clean --platform android
-  # bunx expo run:android --no-build-cache --variant Debug
-  bunx expo run:android --no-build-cache --variant Release
+  # bunx expo prebuild --clean --platform android
+  bunx expo run:android --no-build-cache --variant Debug
+  # bunx expo run:android --no-build-cache --variant Release
 
   # Clean up build artifacts to save space
   echo "🧹 Cleaning up Android build artifacts..."
@@ -148,6 +148,7 @@ elif [[ "$APP_PLATFORM" == "ios" ]]; then
       echo "📱 Device detected, proceeding..."
       break
     fi
+
     echo "   Attempt $i/12 — device not ready, waiting 5s..."
     sleep 5
   done

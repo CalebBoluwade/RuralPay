@@ -1,3 +1,5 @@
+import Button from "@/src/components/ui/Button";
+import Card from "@/src/components/ui/Card";
 import ScreenHeader from "@/src/components/ui/ScreenHeader";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
@@ -57,58 +59,49 @@ export default function MerchantServices() {
         />
 
         <View className="space-y-4">
-          {services.map((service, index) => (
+          {services.map((service) => (
             <Pressable
               key={service.id}
               onPress={() => service.route && router.push(service.route as any)}
-              className={`p-6 rounded-2xl backdrop-blur-xl ${
-                isDark
-                  ? "bg-white/10 border border-white/20"
-                  : "bg-white/60 border border-gray-200/50 shadow-sm"
-              }`}
               style={{ marginBottom: 16 }}
             >
-              <View className="flex-row items-center">
-                <View
-                  className={`w-16 h-16 rounded-2xl items-center justify-center mr-4 ${
-                    isDark ? "bg-white/10" : "bg-gray-100"
-                  }`}
-                >
+              <Card className="p-6 backdrop-blur-xl">
+                <View className="flex-row items-center">
+                  <View
+                    className={`w-16 h-16 rounded-2xl items-center justify-center mr-4 ${
+                      isDark ? "bg-white/10" : "bg-gray-100"
+                    }`}
+                  >
+                    <MaterialCommunityIcons
+                      size={28}
+                      name={service.icon as any}
+                      color={isDark ? "#f472b6" : "#db2777"}
+                    />
+                  </View>
+                  <View className="flex-1">
+                    <Text
+                      className={`text-xl font-bold mb-1 ${isDark ? "text-white" : "text-gray-900"}`}
+                    >
+                      {service.title}
+                    </Text>
+                    <Text
+                      className={`text-base leading-5 ${isDark ? "text-gray-400" : "text-gray-600"}`}
+                    >
+                      {service.description}
+                    </Text>
+                  </View>
                   <MaterialCommunityIcons
-                    size={28}
-                    name={service.icon as any}
-                    color={isDark ? "#f472b6" : "#db2777"}
+                    size={24}
+                    name="chevron-right"
+                    color={isDark ? "rgba(255,255,255,0.3)" : "rgba(0,0,0,0.3)"}
                   />
                 </View>
-                <View className="flex-1">
-                  <Text
-                    className={`text-xl font-bold mb-1 ${isDark ? "text-white" : "text-gray-900"}`}
-                  >
-                    {service.title}
-                  </Text>
-                  <Text
-                    className={`text-base leading-5 ${isDark ? "text-gray-400" : "text-gray-600"}`}
-                  >
-                    {service.description}
-                  </Text>
-                </View>
-                <MaterialCommunityIcons
-                  size={24}
-                  name="chevron-right"
-                  color={isDark ? "rgba(255,255,255,0.3)" : "rgba(0,0,0,0.3)"}
-                />
-              </View>
+              </Card>
             </Pressable>
           ))}
         </View>
 
-        <View
-          className={`mt-8 p-6 rounded-2xl backdrop-blur-xl ${
-            isDark
-              ? "bg-white/10 border border-white/20"
-              : "bg-white/60 border border-gray-200/50 shadow-sm"
-          }`}
-        >
+        <Card className="mt-8 p-6 backdrop-blur-xl">
           <Text
             className={`text-lg font-bold mb-4 ${isDark ? "text-white" : "text-gray-900"}`}
           >
@@ -140,7 +133,7 @@ export default function MerchantServices() {
               </Text>
             </View>
           </View>
-        </View>
+        </Card>
       </ScrollView>
     </SafeAreaView>
   );

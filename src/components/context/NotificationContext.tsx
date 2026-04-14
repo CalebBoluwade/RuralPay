@@ -60,14 +60,14 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
 
     const notificationListener = Notifications.addNotificationReceivedListener(
       (notification) => {
-        console.log("🔔 Notification Received: ", notification);
+        if (__DEV__) console.log("🔔 Notification Received: ", notification);
         setNotification(notification);
       },
     );
 
     const responseListener =
       Notifications.addNotificationResponseReceivedListener((response) => {
-        console.log("🔔 Notification Response: ", response);
+        if (__DEV__) console.log("🔔 Notification Response: ", response);
       });
 
     return () => {

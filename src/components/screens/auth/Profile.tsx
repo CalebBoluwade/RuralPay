@@ -36,15 +36,6 @@ export default function ProfileScreen() {
   const [showPinModal, setShowPinModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
-  // Limit state
-  const [dailyLimit, setDailyLimit] = useState(500000);
-  const [monthlyLimit, setMonthlyLimit] = useState(5000000);
-
-  // Notification state
-  const [pushNotifications, setPushNotifications] = useState(true);
-  const [smsNotifications, setSmsNotifications] = useState(true);
-  const [emailNotifications, setEmailNotifications] = useState(true);
-
   // Use profile handlers hook
   const {
     pinState: { oldPin, newPin, confirmPin, pinStep, setOldPin, setNewPin, setConfirmPin },
@@ -87,12 +78,6 @@ export default function ProfileScreen() {
     handleLogout();
   }, [handleLogout]);
 
-  const handleLimitsUpdate = useCallback((daily: number, monthly: number) => {
-    setDailyLimit(daily);
-    setMonthlyLimit(monthly);
-    // Backend API call will be made by LimitSettingsSection via useIdentityGate
-  }, []);
-
   const handlePinClose = useCallback(() => {
     setShowPinModal(false);
     resetPinState();
@@ -128,12 +113,7 @@ export default function ProfileScreen() {
             onLogout={handleLogoutPress}
           />
 
-          <LimitSettingsSection
-            isDark={isDark}
-            dailyLimit={dailyLimit}
-            monthlyLimit={monthlyLimit}
-            onLimitsUpdate={handleLimitsUpdate}
-          />
+          <LimitSettingsSection isDark={isDark} />
 
           <SecuritySettingsSection
             isDark={isDark}
@@ -146,15 +126,7 @@ export default function ProfileScreen() {
             onPinPress={() => setShowPinModal(true)}
           />
 
-          <NotificationsSection
-            isDark={isDark}
-            pushNotifications={pushNotifications}
-            setPushNotifications={setPushNotifications}
-            smsNotifications={smsNotifications}
-            setSmsNotifications={setSmsNotifications}
-            emailNotifications={emailNotifications}
-            setEmailNotifications={setEmailNotifications}
-          />
+          <NotificationsSection isDark={isDark} />
 
           <DeleteAccountSection
             isDark={isDark}
