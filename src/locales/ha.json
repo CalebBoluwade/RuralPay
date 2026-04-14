@@ -135,6 +135,28 @@
     "slide4Title": "Bayanai Masu Wayo na Kashe Kuɗi",
     "slide4Subtitle": "Fahimci inda kuɗin ka ke tafiya tare da rarrabuwa ta atomatik, taƙaitaccen wata-wata, da manufofin ajiya."
   },
+  "linkBankAccount": {
+    "verificationRequired": "Tabbatarwa Tana Bukata",
+    "verificationSubtitle": "Don haɗa asusun bankin ka lafiya, muna buƙatar tabbatar da mallakar asusun ka.",
+    "howItWorks": "Yadda yake aiki:",
+    "step1": "Za mu cire ₦50 daga asusun ka",
+    "step2": "Wannan yana tabbatar da cewa kai ne mai asusun",
+    "step3": "Za a Haɗa Asusun Ka Nan Da Nan",
+    "verificationFee": "Kuɗin Tabbatarwa",
+    "feeNote": "Biyan kuɗi guda ɗaya • Amintacce • Nan Da Nan",
+    "proceedToVerification": "Ci Gaba zuwa Tabbatarwa",
+    "selectBank": "Zabar Banki",
+    "chooseBank": "Zabar Banki",
+    "accountNumber": "Lambar Asusun",
+    "enterAccountNumber": "Shigar da Lambar Asusun Lambobi 10",
+    "resolvingName": "Ana Neman Sunan Asusun...",
+    "accountNameLabel": "Sunan Asusun:",
+    "accountNotFound": "Ba a Sami Asusun Ba",
+    "linkAccount": "Haɗa Asusun",
+    "accountVerification": "Tabbatar da Asusun",
+    "linkSuccess": "An Haɗa Asusun",
+    "linkFailed": "Kasa Haɗa Asusun"
+  },
   "feedback": {
     "mostLovedFeature": {
       "label": "Mene ne kafi so?",

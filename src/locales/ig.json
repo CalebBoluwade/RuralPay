@@ -135,6 +135,28 @@
     "slide4Title": "Echiche Ọgụgụ Isi Maka Mmefu",
     "slide4Subtitle": "Ghọta ebe ego gị na-aga site na nhazi akpaaka, nchịkọta ọnwa, na ebumnuche nchekwa."
   },
+  "linkBankAccount": {
+    "verificationRequired": "A Chọọ Nkwenye",
+    "verificationSubtitle": "Iji jiṣọ akaụntụ ụlọ akụ gị n'ụzọ nchekwa, anyị chọọ iji kwenye na ị nwe akaụntụ ahụ.",
+    "howItWorks": "Otu o si arụ ọrụ:",
+    "step1": "Anyị ga-ewepụ ₦50 n'akaụntụ gị",
+    "step2": "Nke a na-ekwenye na ị nwe akaụntụ ahụ",
+    "step3": "A Ga-ejikọ Akaụntụ Gị Ozugbo",
+    "verificationFee": "Ụgwọ Nkwenye",
+    "feeNote": "Ịkwụ ụgwọ otu oge • Nchekwa • Ozugbo",
+    "proceedToVerification": "Gaa N'ihu na Nkwenye",
+    "selectBank": "Họọṛọ Ụlọ Akụ",
+    "chooseBank": "Họọṛọ Ụlọ Akụ",
+    "accountNumber": "Nọỏmba Akaụntụ",
+    "enterAccountNumber": "Tinye Nọỏmba Akaụntụ Nọỏmba 10",
+    "resolvingName": "Na-achọ Aha Akaụntụ...",
+    "accountNameLabel": "Aha Akaụntụ:",
+    "accountNotFound": "Ahụghị Akaụntụ",
+    "linkAccount": "Jikọọ Akaụntụ",
+    "accountVerification": "Nkwenye Akaụntụ",
+    "linkSuccess": "Ejikọọla Akaụntụ Nke Ọma",
+    "linkFailed": "Ọ Dịghị Ike Ijikọ Akaụntụ"
+  },
   "feedback": {
     "mostLovedFeature": {
       "label": "Kedu ihe kacha amasị gị?",

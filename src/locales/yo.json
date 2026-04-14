@@ -135,6 +135,28 @@
     "slide4Title": "Awọn Imọran Inawo Ọlọgbọn",
     "slide4Subtitle": "Loye ibiti owo rẹ nlọ pẹlu iyasọtọ adaṣe, awọn akopọ oṣooṣu, ati awọn ibi-afẹde ifowopamọ."
   },
+  "linkBankAccount": {
+    "verificationRequired": "Idaniloju Nilo",
+    "verificationSubtitle": "Lati sọ akoọlẹ banki rẹ pọ ni ailewu, a nilo lati jeriṣi pe o ni akoọlẹ naa.",
+    "howItWorks": "Bi o ṣe nṣe:",
+    "step1": "A o gé ₦50 kuro ninu akoọlẹ rẹ",
+    "step2": "Eyi jeriṣi pe o ni akoọlẹ naa",
+    "step3": "Akoọlẹ Rẹ Yoo Sọ Pọ Leṣeṣekeṣe",
+    "verificationFee": "Owọ Idaniloju",
+    "feeNote": "Iṣanwọ igba kan • Ailewu • Leṣeṣekeṣe",
+    "proceedToVerification": "Tẹsiwaju si Idaniloju",
+    "selectBank": "Yan Banki",
+    "chooseBank": "Yan Banki",
+    "accountNumber": "Nọmba Akoọlẹ",
+    "enterAccountNumber": "Tẹ Nọmba Akoọlẹ Awon Nọmba 10",
+    "resolvingName": "N wa Orukọ Akoọlẹ...",
+    "accountNameLabel": "Orukọ Akoọlẹ:",
+    "accountNotFound": "Ko Ri Akoọlẹ",
+    "linkAccount": "Sọ Akoọlẹ Pọ",
+    "accountVerification": "Idaniloju Akoọlẹ",
+    "linkSuccess": "Akoọlẹ Ti Sọ Pọ Ni Aṣeyọri",
+    "linkFailed": "Kuna lati Sọ Akoọlẹ Pọ"
+  },
   "feedback": {
     "mostLovedFeature": {
       "label": "Kini o fẹran julọ?",

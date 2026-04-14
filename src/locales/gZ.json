@@ -135,6 +135,28 @@
     "slide4Title": "Smart Spending Insights",
     "slide4Subtitle": "Understand where your money goes with automatic categorisation, monthly summaries, and savings goals."
   },
+  "linkBankAccount": {
+    "verificationRequired": "Verification Required 🔐",
+    "verificationSubtitle": "We need to verify you actually own this account before linking it. Quick process, we promise.",
+    "howItWorks": "Here's the deal:",
+    "step1": "We'll pull ₦50 from your account",
+    "step2": "That proves it's yours fr",
+    "step3": "Your Account Gets Linked Instantly ⚡",
+    "verificationFee": "Verification Fee",
+    "feeNote": "One-time • Secure • Instant ⚡",
+    "proceedToVerification": "Let's Verify 🚀",
+    "selectBank": "Pick Your Bank",
+    "chooseBank": "Choose a Bank",
+    "accountNumber": "Account Number",
+    "enterAccountNumber": "Drop the 10-Digit Account Number",
+    "resolvingName": "Looking up account...",
+    "accountNameLabel": "Account Name:",
+    "accountNotFound": "Account Not Found 😕",
+    "linkAccount": "Link It 🔗",
+    "accountVerification": "Account Verification",
+    "linkSuccess": "Account Linked! 🎉",
+    "linkFailed": "Couldn't link account 😬"
+  },
   "feedback": {
     "mostLovedFeature": {
       "label": "What Do You Love Most?",

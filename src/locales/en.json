@@ -135,6 +135,28 @@
     "slide4Title": "Smart Spending Insights",
     "slide4Subtitle": "Understand where your money goes with automatic categorisation, monthly summaries, and savings goals."
   },
+  "linkBankAccount": {
+    "verificationRequired": "Verification Required",
+    "verificationSubtitle": "To link your bank account securely, we need to verify your account ownership.",
+    "howItWorks": "How it works:",
+    "step1": "We'll deduct ₦50 from your account",
+    "step2": "This confirms you own the account",
+    "step3": "Your Account Will be Linked Instantly",
+    "verificationFee": "Verification Fee",
+    "feeNote": "One-time payment • Secure • Instant",
+    "proceedToVerification": "Proceed to Verification",
+    "selectBank": "Select Bank",
+    "chooseBank": "Choose A Bank",
+    "accountNumber": "Account Number",
+    "enterAccountNumber": "Enter 10-Digit Account Number",
+    "resolvingName": "Resolving Account Name...",
+    "accountNameLabel": "Account Name:",
+    "accountNotFound": "Account Not Found",
+    "linkAccount": "Link Account",
+    "accountVerification": "Account Verification",
+    "linkSuccess": "Account Linked Successfully",
+    "linkFailed": "Failed to Link Account"
+  },
   "feedback": {
     "mostLovedFeature": {
       "label": "What Do You Love Most?",
