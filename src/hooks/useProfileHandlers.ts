@@ -116,7 +116,7 @@ export const useProfileHandlers = ({
   );
 
   const handleLogout = useCallback(() => {
-    Alert.alert("Logout", "Are you sure you want to logout?", [
+    Alert.alert("Logout", "Are You Sure You Want to Logout?", [
       { text: "Cancel", style: "cancel" },
       {
         text: "Logout",

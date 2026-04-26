@@ -1,13 +1,26 @@
-import AccountService from "@/src/lib/services/AccountService";
+import { useAuth } from "@/src/components/context/AuthSessionProvider";
 import { useIdentityGate } from "@/src/hooks/useIdentityGate";
+import AccountService from "@/src/lib/services/AccountService";
 import ToastService from "@/src/lib/services/ToastService";
 import { CreditCard } from "lucide-react-native";
 import { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, Text, TextInput, View } from "react-native";
+import {
+  ActivityIndicator,
+  Pressable,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 
-const MIN_LIMIT = 10000;
-const MAX_DAILY_LIMIT = 1000000;
-const MAX_MONTHLY_LIMIT = 10000000;
+const MIN_LIMIT = process.env.MIN_LIMIT
+  ? Number.parseInt(process.env.MIN_LIMIT, 10)
+  : 20000;
+const MAX_DAILY_LIMIT = process.env.MAX_DAILY_LIMIT
+  ? Number.parseInt(process.env.MAX_DAILY_LIMIT, 10)
+  : 1000000;
+const MAX_SINGLE_TRANSACTION_LIMIT = process.env.MAX_SINGLE_TRANSACTION_LIMIT
+  ? Number.parseInt(process.env.MAX_SINGLE_TRANSACTION_LIMIT, 10)
+  : 10000000;
 
 function LimitInput({
   isDark,
@@ -52,37 +65,44 @@ function LimitInput({
   );
 }
 
-export function LimitSettingsSection({ isDark }: Readonly<{ isDark: boolean }>) {
+export function LimitSettingsSection({
+  isDark,
+}: Readonly<{ isDark: boolean }>) {
   const [dailyLimit, setDailyLimit] = useState(0);
-  const [monthlyLimit, setMonthlyLimit] = useState(0);
   const [tempDailyLimit, setTempDailyLimit] = useState("");
-  const [tempMonthlyLimit, setTempMonthlyLimit] = useState("");
-  const [fetching, setFetching] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [singleTransactionLimit, setSingleTransactionLimit] = useState(0);
+  const [tempSingleTransactionLimit, setTempSingleTransactionLimit] =
+    useState("");
+  const [updating, setUpdating] = useState(false);
   const { requireVerification } = useIdentityGate({ ttl: 3 * 60 * 1000 });
+  const { user } = useAuth();
 
   useEffect(() => {
-    AccountService.getSpendingLimits()
-      .then(({ dailyLimit: d, monthlyLimit: m }) => {
-        setDailyLimit(d);
-        setMonthlyLimit(m);
-        setTempDailyLimit(d.toString());
-        setTempMonthlyLimit(m.toString());
-      })
-      .catch(() => ToastService.error("Failed to load spending limits"))
-      .finally(() => setFetching(false));
+    // AccountService.getSpendingLimits()
+    //   .then(({ dailyLimit: d, monthlyLimit: m }) => {
+    setDailyLimit(user?.transactionLimits?.dailyLimit || 0);
+    setSingleTransactionLimit(
+      user?.transactionLimits?.singleTransactionLimit || 0,
+    );
+    setTempDailyLimit((user?.transactionLimits?.dailyLimit || 0).toString());
+    setTempSingleTransactionLimit(
+      (user?.transactionLimits?.singleTransactionLimit || 0).toString(),
+    );
+    // })
+    // .catch(() => ToastService.error("Failed to load spending limits"))
+    // .finally(() => setupdating(false));
   }, []);
 
   const handleReset = useCallback(() => {
     setTempDailyLimit(dailyLimit.toString());
-    setTempMonthlyLimit(monthlyLimit.toString());
-  }, [dailyLimit, monthlyLimit]);
+    setTempSingleTransactionLimit(singleTransactionLimit.toString());
+  }, [dailyLimit, singleTransactionLimit]);
 
   const handleConfirm = useCallback(() => {
     const daily = Number.parseInt(tempDailyLimit, 10);
-    const monthly = Number.parseInt(tempMonthlyLimit, 10);
+    const singleTransaction = Number.parseInt(tempSingleTransactionLimit, 10);
 
-    if (Number.isNaN(daily) || Number.isNaN(monthly)) {
+    if (Number.isNaN(daily) || Number.isNaN(singleTransaction)) {
       ToastService.error("Please enter valid numbers");
       return;
     }
@@ -92,32 +112,44 @@ export function LimitSettingsSection({ isDark }: Readonly<{ isDark: boolean }>) 
       );
       return;
     }
-    if (monthly < MIN_LIMIT || monthly > MAX_MONTHLY_LIMIT) {
+    if (
+      singleTransaction < MIN_LIMIT ||
+      singleTransaction > MAX_SINGLE_TRANSACTION_LIMIT
+    ) {
       ToastService.error(
-        `Monthly limit must be between ₦${MIN_LIMIT.toLocaleString()} and ₦${MAX_MONTHLY_LIMIT.toLocaleString()}`,
+        `Single transaction limit must be between ₦${MIN_LIMIT.toLocaleString()} and ₦${MAX_SINGLE_TRANSACTION_LIMIT.toLocaleString()}`,
       );
       return;
     }
-    if (daily > monthly) {
-      ToastService.error("Daily limit cannot exceed monthly limit");
+    if (daily > singleTransaction) {
+      ToastService.error("Daily limit cannot exceed single transaction limit");
       return;
     }
 
     requireVerification(async () => {
-      setSaving(true);
-      const result = await AccountService.updateSpendingLimits({ dailyLimit: daily, monthlyLimit: monthly });
+      setUpdating(true);
+      const result = await AccountService.updateSpendingLimits({
+        dailyLimit: daily,
+        singleTransactionLimit: singleTransaction,
+      });
       if (result.success) {
         setDailyLimit(daily);
-        setMonthlyLimit(monthly);
+        setSingleTransactionLimit(singleTransaction);
         ToastService.success("Spending limits updated");
       } else {
         ToastService.error(result.message || "Failed to update limits");
         setTempDailyLimit(dailyLimit.toString());
-        setTempMonthlyLimit(monthlyLimit.toString());
+        setTempSingleTransactionLimit(singleTransactionLimit.toString());
       }
-      setSaving(false);
+      setUpdating(false);
     });
-  }, [tempDailyLimit, tempMonthlyLimit, dailyLimit, monthlyLimit, requireVerification]);
+  }, [
+    tempDailyLimit,
+    tempSingleTransactionLimit,
+    dailyLimit,
+    singleTransactionLimit,
+    requireVerification,
+  ]);
 
   return (
     <View
@@ -140,8 +172,11 @@ export function LimitSettingsSection({ isDark }: Readonly<{ isDark: boolean }>) 
         >
           Transaction Limits
         </Text>
-        {fetching && (
-          <ActivityIndicator size="small" color={isDark ? "#a3e635" : "#65a30d"} />
+        {updating && (
+          <ActivityIndicator
+            size="small"
+            color={isDark ? "#a3e635" : "#65a30d"}
+          />
         )}
       </View>
 
@@ -150,15 +185,15 @@ export function LimitSettingsSection({ isDark }: Readonly<{ isDark: boolean }>) 
         label="Daily Limit"
         value={tempDailyLimit}
         onChangeText={setTempDailyLimit}
-        disabled={fetching || saving}
+        disabled={updating}
       />
 
       <LimitInput
         isDark={isDark}
-        label="Monthly Limit"
-        value={tempMonthlyLimit}
-        onChangeText={setTempMonthlyLimit}
-        disabled={fetching || saving}
+        label="Single Transaction Limit"
+        value={tempSingleTransactionLimit}
+        onChangeText={setTempSingleTransactionLimit}
+        disabled={updating}
       />
 
       <View
@@ -168,8 +203,11 @@ export function LimitSettingsSection({ isDark }: Readonly<{ isDark: boolean }>) 
             : "bg-slate-50 border border-slate-200"
         }`}
       >
-        <Text className={`text-xs leading-5 ${isDark ? "text-slate-400" : "text-slate-600"}`}>
-          Daily limit must be ≤ monthly limit. Changes require biometric verification.
+        <Text
+          className={`text-xs leading-5 ${isDark ? "text-slate-400" : "text-slate-600"}`}
+        >
+          Daily limit must be ≤ monthly limit. Changes require biometric
+          verification.
         </Text>
       </View>
 
@@ -181,18 +219,20 @@ export function LimitSettingsSection({ isDark }: Readonly<{ isDark: boolean }>) 
               : "bg-slate-100 border border-slate-200"
           }`}
           onPress={handleReset}
-          disabled={fetching || saving}
+          disabled={updating}
         >
-          <Text className={`text-center font-bold ${isDark ? "text-white" : "text-slate-800"}`}>
+          <Text
+            className={`text-center font-bold ${isDark ? "text-white" : "text-slate-800"}`}
+          >
             Reset
           </Text>
         </Pressable>
         <Pressable
-          className={`flex-1 p-4 rounded-2xl bg-lime-400 ${saving ? "opacity-50" : ""}`}
+          className={`flex-1 p-4 rounded-2xl bg-lime-400 ${updating ? "opacity-50" : ""}`}
           onPress={handleConfirm}
-          disabled={fetching || saving}
+          disabled={updating}
         >
-          {saving ? (
+          {updating ? (
             <ActivityIndicator size="small" color="#000" />
           ) : (
             <Text className="text-black text-center font-bold">Confirm</Text>

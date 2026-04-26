@@ -31,12 +31,14 @@ export interface VerificationResult {
 }
 
 const CHALLENGES: LivenessChallenge[] = ["look_left", "look_right", "blink"];
-const CHALLENGE_TIMEOUT_MS = 25000;
+const CHALLENGE_TIMEOUT_MS = process.env.FACE_DETECTION_CHALLENGE_TIMEOUT
+  ? Number.parseInt(process.env.FACE_DETECTION_CHALLENGE_TIMEOUT, 10)
+  : 30000;
 
 export const CHALLENGE_LABELS: Record<LivenessChallenge | "done", string> = {
-  look_left: "Turn Your head left",
-  look_right: "Turn Your head right",
-  blink: "Blink Your eyes",
+  look_left: "Turn Your Head Left",
+  look_right: "Turn Your Head Right",
+  blink: "Blink Your Eyes",
   done: "All Done!",
 };
 
@@ -81,7 +83,10 @@ export function useLiveness(bvn?: string) {
     base64: string;
   } | null> => {
     if (!cameraRef.current) return null;
-    const photo = await cameraRef.current.takePhoto({ flash: "off" });
+    const photo = await cameraRef.current.takePhoto({
+      flash: "off",
+      enableShutterSound: false,
+    });
     if (!photo?.path) return null;
     const uri = `file://${photo.path}`;
 
@@ -138,6 +143,7 @@ export function useLiveness(bvn?: string) {
 
         setSelfieUri(selfie.uri);
         setIdentityToken(response.details.identityToken ?? "");
+        isDetectingRef.current = false;
         setStatus("passed");
         return;
       }
@@ -226,7 +232,7 @@ export function useLiveness(bvn?: string) {
     if (!hasPermission) {
       const granted = await requestPermission();
       if (!granted) {
-        setError("Camera permission denied.");
+        setError("Camera Permission Denied.");
         setStatus("failed");
         return;
       }
@@ -278,5 +284,7 @@ export function useLiveness(bvn?: string) {
     error,
     start,
     reset,
+    requestPermission,
+    hasPermission,
   };
 }

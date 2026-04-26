@@ -23,7 +23,7 @@ global {
 
   type KYCStatus = "VERIFIED" | "PENDING" | "FAILED" | "UNVERIFIED";
 
-  type TwoFAType = "DEFAULT" | "OTP" | "BYPASS" | "FACIAL_RECOGNITION";
+  type TwoFAType = "OTP" | "BYPASS" | "FACIAL_RECOGNITION";
 
   type PaymentMode =
     | "CARD"
@@ -160,6 +160,15 @@ global {
     accountId: string;
     role: "consumer" | "merchant";
     merchant?: MerchantProfile;
+    transactionLimits: {
+      dailyLimit: number;
+      singleTransactionLimit: number;
+    };
+    notifications?: {
+      devicePush: boolean;
+      sms: boolean;
+      email: boolean;
+    };
     kycStatus?: KYCStatus;
     kycLevel?: number;
   }
@@ -177,7 +186,8 @@ global {
 
   interface Bank {
     name: string;
-    code: string;
+    bankCode: string;
+    cbnCode: string;
     logoData: string;
     uptimePrediction: number;
   }
@@ -375,7 +385,8 @@ global {
 
   interface Banks {
     name: string;
-    code: string;
+    bankCode: string;
+    cbnCode: string;
   }
 
   interface Beneficiary {

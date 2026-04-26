@@ -28,7 +28,7 @@ const TransactionFailure: React.FC<TransactionFailureProps> = ({
           Transaction Failed. We Couldn&apos;t Complete Your Transaction
         </Text>
         <Text
-          className={`text-lg text-center px-4 ${isDark ? "text-gray-400" : "text-gray-600"}`}
+          className={`text-xl text-center px-2 ${isDark ? "text-gray-400" : "text-gray-600"}`}
         >
           {error}
         </Text>

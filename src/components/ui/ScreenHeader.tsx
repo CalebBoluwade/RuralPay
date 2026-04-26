@@ -1,3 +1,4 @@
+import { useProfileHandlers } from "@/src/hooks/useProfileHandlers";
 import { MenuItemBase, menuItemsStore } from "@/src/lib/menuItemsStore";
 import { router } from "expo-router";
 import {
@@ -5,8 +6,9 @@ import {
   Bell,
   LucideIcon,
   MoreHorizontal,
+  Power,
 } from "lucide-react-native";
-import React from "react";
+import React, { useCallback } from "react";
 import { Pressable, Text, View, useColorScheme } from "react-native";
 import { useAuth } from "../context/AuthSessionProvider";
 import SelectLanguageModal from "./Modals/SelectLanguageModal";
@@ -32,7 +34,27 @@ const ScreenHeader: React.FC<ScreenHeaderProps> = ({
 }) => {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
-  const { user, isAuthenticated } = useAuth();
+  const {
+    isAuthenticated,
+    logout,
+    updateNativeAuthSettings,
+    nativeAuthLogin,
+    nativeAuthTransactions,
+    user,
+  } = useAuth();
+
+  // Use profile handlers hook
+  const { handleLogout } = useProfileHandlers({
+    logout,
+    updateNativeAuthSettings,
+    nativeAuthLogin,
+    nativeAuthTransactions,
+    user,
+  });
+
+  const handleLogoutPress = useCallback(() => {
+    handleLogout();
+  }, [handleLogout]);
 
   return (
     <View className="px-6 mt-2 mb-3">
@@ -70,16 +92,29 @@ const ScreenHeader: React.FC<ScreenHeaderProps> = ({
         </View>
 
         {isAuthenticated ? (
-          <Pressable
-            className={`w-12 h-12 rounded-2xl items-center justify-center mr-4 backdrop-blur-xl ${
-              isDark
-                ? "bg-white/10 border border-white/20"
-                : "bg-white/60 border border-gray-200/50"
-            }`}
-            onPress={() => router.push("/notifications")}
-          >
-            <Bell size={16} color={isDark ? "white" : "black"} />
-          </Pressable>
+          <>
+            <Pressable
+              className={`w-10 h-10 rounded-2xl items-center justify-center mr-4 backdrop-blur-xl ${
+                isDark
+                  ? "bg-white/10 border border-white/20"
+                  : "bg-white/60 border border-gray-200/50"
+              }`}
+              onPress={() => router.push("/notifications")}
+            >
+              <Bell size={16} color={isDark ? "white" : "black"} />
+            </Pressable>
+
+            <Pressable
+              className={`w-10 h-10 rounded-2xl items-center justify-center mr-4 backdrop-blur-xl ${
+                isDark
+                  ? "bg-white/10 border border-white/20"
+                  : "bg-white/60 border border-gray-200/50"
+              }`}
+              onPress={handleLogoutPress}
+            >
+              <Power size={16} color="#ef4444" />
+            </Pressable>
+          </>
         ) : null}
 
         {/* Language Selection */}

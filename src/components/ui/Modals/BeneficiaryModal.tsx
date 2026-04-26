@@ -9,9 +9,10 @@ import {
   Text,
   TextInput,
   useColorScheme,
-  View
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import Button from "../Button";
 import Loading from "./Loading";
 
 const FREQ_KEY = "frequent_beneficiaries";
@@ -160,24 +161,11 @@ const BeneficiaryModal: React.FC<Props> = ({ visible, onClose, onSelect }) => {
               screenName="Beneficiaries"
             />
           ) : fetchError ? (
-            <View className="flex-1 items-center justify-center py-16 gap-3">
-              <Text className={`text-base ${textSecondary}`}>
+            <View className="flex-1 items-center justify-center py-16 px-6 gap-3">
+              <Text className={`text-lg ${textSecondary}`}>
                 Failed To Load Beneficiaries
               </Text>
-              <Pressable
-                onPress={fetchAll}
-                className={`px-5 py-2 rounded-xl ${
-                  isDark ? "bg-emerald-500/20" : "bg-emerald-100"
-                }`}
-              >
-                <Text
-                  className={`font-semibold ${
-                    isDark ? "text-emerald-400" : "text-emerald-700"
-                  }`}
-                >
-                  Retry
-                </Text>
-              </Pressable>
+              <Button label="Retry" onPress={fetchAll} />
             </View>
           ) : (
             <FlatList
@@ -215,8 +203,8 @@ const BeneficiaryModal: React.FC<Props> = ({ visible, onClose, onSelect }) => {
                 </Pressable>
               )}
               ListEmptyComponent={
-                <View className="flex-1 items-center justify-center py-16">
-                  <Text className={`text-base ${textSecondary}`}>
+                <View className="flex-1 items-center justify-center py-16 px-6">
+                  <Text className={`text-lg ${textSecondary}`}>
                     {showFrequent
                       ? "No Frequent Beneficiaries Yet"
                       : "No Beneficiaries Found"}

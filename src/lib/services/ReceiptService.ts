@@ -1,6 +1,8 @@
+import { File, Paths } from "expo-file-system";
 import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
 import { Alert } from "react-native";
+import { maskAccountNumber, maskCardNumber } from "../utils";
 
 export class ReceiptService {
   static async DownloadTransactionReceipt(receipt: ReceiptData): Promise<void> {
@@ -9,10 +11,9 @@ export class ReceiptService {
         ? new Date(receipt.transactionDate).toLocaleString()
         : new Date().toLocaleString();
 
-      const merchantId = receipt.merchantName || "MID123456789";
-      const terminalId = receipt.terminalId || "TID987654321";
-      const cardMask = receipt.cardLast4
-        ? `****-****-****-${receipt.cardLast4}`
+      const merchant = receipt.merchantName || "MID123456789";
+      const receipentMask = receipt.fromAccount
+        ? maskCardNumber(receipt.fromAccount)
         : "****-****-****-1234";
 
       const htmlContent = `
@@ -44,12 +45,12 @@ export class ReceiptService {
     <h1>RuralPay</h1>
   </div>
   <div class="body">
-    <h2 style="font-size:22px;margin:0 0 4px;">Transaction Receipt ✅</h2>
+    <h2 style="font-size:22px;margin:0 0 4px;">Transaction Receipt</h2>
     <p style="color:#4b5563;margin:0 0 20px;">Here's a Summary Of Your Transaction.</p>
 
     <div class="amount-box">
       <p style="margin:0 0 2px;font-size:12px;color:#4d7c0f;font-weight:600;text-transform:uppercase;letter-spacing:.5px;">Amount</p>
-      <div class="amount">₦${parseFloat(receipt.amount).toLocaleString("en-NG", { minimumFractionDigits: 2 })}</div>
+      <div class="amount">₦${Number.parseFloat(receipt.amount).toLocaleString("en-NG", { minimumFractionDigits: 2 })}</div>
       <div style="margin-top:6px;"><span class="status-badge">Approved</span></div>
     </div>
 
@@ -58,16 +59,12 @@ export class ReceiptService {
         receipt.paymentMode === "CARD"
           ? `
       <div class="detail-row">
-        <span class="label">Merchant ID</span>
-        <span class="value">${merchantId}</span>
-      </div>
-      <div class="detail-row">
-        <span class="label">Terminal ID</span>
-        <span class="value">${terminalId}</span>
+        <span class="label">Merchant</span>
+        <span class="value">${merchant}</span>
       </div>
       <div class="detail-row">
         <span class="label">Card Number</span>
-        <span class="value">${cardMask}</span>
+        <span class="value">${receipentMask}</span>
       </div>`
           : ""
       }
@@ -76,8 +73,8 @@ export class ReceiptService {
         receipt.paymentMode === "QR"
           ? `
       <div class="detail-row">
-        <span class="label">Merchant ID</span>
-        <span class="value">${merchantId}</span>
+        <span class="label">Merchant</span>
+        <span class="value">${merchant}</span>
       </div>`
           : ""
       }
@@ -87,7 +84,7 @@ export class ReceiptService {
           ? `
       <div class="detail-row">
         <span class="label">Sender Account</span>
-        <span class="value">${receipt.senderAccount}</span>
+        <span class="value">${maskAccountNumber(receipt.senderAccount)}</span>
       </div>`
           : ""
       }
@@ -168,24 +165,35 @@ export class ReceiptService {
         base64: false,
       });
 
+      // generate unique name
+      const fileName = `RuralPay_Receipt_${Date.now()}_${Math.random()
+        .toString(36)
+        .slice(2)}.pdf`;
+
+      const sourceFile = new File(uri);
+      const newFile = new File(Paths.document, fileName);
+
+      // move the file
+      sourceFile.move(newFile);
+
       // Check if sharing is available and share the PDF
       if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(uri, {
+        await Sharing.shareAsync(newFile.uri, {
           mimeType: "application/pdf",
-          dialogTitle: "Transaction Receipt",
+          dialogTitle: "RuralPay Transaction Receipt",
         });
       } else {
         Alert.alert(
           "Receipt Generated",
-          `Receipt PDF has been saved to: ${uri}`,
+          `Receipt PDF Has Been Saved To: ${newFile.uri}`,
           [{ text: "OK" }],
         );
       }
     } catch (error) {
-      if (__DEV__) console.error("Error generating receipt PDF:", error);
+      if (__DEV__) console.error("Error Generating Receipt PDF:", error);
       Alert.alert(
         "Error",
-        "Failed to generate receipt PDF. Please try again.",
+        "Failed to Generate Receipt PDF. Please try again.",
         [{ text: "OK" }],
       );
     }

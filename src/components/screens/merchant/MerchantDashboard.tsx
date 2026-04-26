@@ -1,9 +1,10 @@
 import { useAuth } from "@/src/components/context/AuthSessionProvider";
-import { useClearLoadingOnLock } from "@/src/hooks/useClearLoadingOnLock";
 import NFCPayments from "@/src/components/screens/merchant/CardTapNFCPayments";
 import MerchantQRModal from "@/src/components/screens/merchant/MerchantQR";
 import VirtualAccounts from "@/src/components/screens/merchant/VirtualAccounts";
+import { MerchantDashboardSkeleton } from "@/src/components/ui/DashboardSkeleton";
 import ScreenHeader from "@/src/components/ui/ScreenHeader";
+import { useClearLoadingOnLock } from "@/src/hooks/useClearLoadingOnLock";
 import MerchantService from "@/src/lib/services/MerchantService";
 import PaymentService from "@/src/lib/services/PaymentService";
 import { router } from "expo-router";
@@ -29,7 +30,6 @@ import {
   useColorScheme,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { MerchantDashboardSkeleton } from "@/src/components/ui/DashboardSkeleton";
 
 const QUICK_ACTIONS: {
   id: string;
@@ -37,7 +37,12 @@ const QUICK_ACTIONS: {
   icon: React.FC<{ size: number; color: string }>;
   route: string;
 }[] = [
-  { id: "analytics", label: "Analytics", icon: BarChart2, route: "merchant/sales-analytics" },
+  {
+    id: "analytics",
+    label: "Analytics",
+    icon: BarChart2,
+    route: "merchant/sales-analytics",
+  },
   { id: "services", label: "Services", icon: Zap, route: "merchant/services" },
 ];
 
@@ -47,8 +52,18 @@ function useFadeSlide(delay: number) {
 
   useEffect(() => {
     Animated.parallel([
-      Animated.timing(anim, { toValue: 1, duration: 420, delay, useNativeDriver: true }),
-      Animated.timing(translateY, { toValue: 0, duration: 420, delay, useNativeDriver: true }),
+      Animated.timing(anim, {
+        toValue: 1,
+        duration: 420,
+        delay,
+        useNativeDriver: true,
+      }),
+      Animated.timing(translateY, {
+        toValue: 0,
+        duration: 420,
+        delay,
+        useNativeDriver: true,
+      }),
     ]).start();
   }, []);
 
@@ -67,7 +82,9 @@ export default function MerchantDashboard() {
   const [refreshing, setRefreshing] = useState(false);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [stats, setStats] = useState<MerchantDetails | null>(null);
-  const [recentTransactions, setRecentTransactions] = useState<TransactionHistoryItem[]>([]);
+  const [recentTransactions, setRecentTransactions] = useState<
+    TransactionHistoryItem[]
+  >([]);
   useClearLoadingOnLock(setLoading, setRefreshing);
 
   const headerAnim = useFadeSlide(0);
@@ -144,7 +161,9 @@ export default function MerchantDashboard() {
 
   if (isInitialLoad) {
     return (
-      <SafeAreaView className={isDark ? "flex-1 bg-slate-950" : "flex-1 bg-slate-50"}>
+      <SafeAreaView
+        className={isDark ? "flex-1 bg-slate-950" : "flex-1 bg-slate-50"}
+      >
         <ScreenHeader
           goBack={false}
           title={user?.merchant?.businessName || "Your Business"}
@@ -177,14 +196,23 @@ export default function MerchantDashboard() {
             value: String(stats?.todayCompletedCount ?? 0),
           },
         ].map((stat) => (
-          <View key={stat.label} className={`flex-1 p-4 rounded-2xl ${cardClass}`}>
-            <Text className={`text-xs font-semibold mb-2 ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+          <View
+            key={stat.label}
+            className={`flex-1 p-4 rounded-2xl ${cardClass}`}
+          >
+            <Text
+              className={`text-xs font-semibold mb-2 ${isDark ? "text-slate-400" : "text-slate-500"}`}
+            >
               {stat.label}
             </Text>
             {loading ? (
-              <View className={`h-8 w-24 rounded-lg mt-1 ${isDark ? "bg-white/10" : "bg-slate-200"}`} />
+              <View
+                className={`h-8 w-24 rounded-lg mt-1 ${isDark ? "bg-white/10" : "bg-slate-200"}`}
+              />
             ) : (
-              <Text className={`text-2xl font-bold ${isDark ? "text-white" : "text-slate-900"}`}>
+              <Text
+                className={`text-2xl font-bold ${isDark ? "text-white" : "text-slate-900"}`}
+              >
                 {stat.value}
               </Text>
             )}
@@ -194,7 +222,7 @@ export default function MerchantDashboard() {
 
       {/* Quick Actions */}
       <Animated.View style={actionsAnim} className="mb-6">
-        <View className="flex-row gap-3">
+        <View className="flex-row items-start gap-3">
           {QUICK_ACTIONS.map((action) => (
             <Pressable
               key={action.id}
@@ -210,7 +238,9 @@ export default function MerchantDashboard() {
               >
                 <action.icon size={28} color={accentColor} />
               </View>
-              <Text className={`text-xs font-semibold ${isDark ? "text-slate-300" : "text-slate-600"}`}>
+              <Text
+                className={`text-xs font-semibold ${isDark ? "text-slate-300" : "text-slate-600"}`}
+              >
                 {action.label}
               </Text>
             </Pressable>
@@ -220,7 +250,9 @@ export default function MerchantDashboard() {
 
       {/* Menu Items */}
       <Animated.View style={menuAnim} className="mb-6">
-        <Text className={`text-base font-bold mb-3 ${isDark ? "text-white" : "text-slate-900"}`}>
+        <Text
+          className={`text-base font-bold mb-3 ${isDark ? "text-white" : "text-slate-900"}`}
+        >
           Actions
         </Text>
         <View className={`rounded-2xl overflow-hidden ${cardClass}`}>
@@ -244,10 +276,14 @@ export default function MerchantDashboard() {
                 <item.icon size={24} color={accentColor} />
               </View>
               <View className="flex-1">
-                <Text className={`text-sm font-bold ${isDark ? "text-white" : "text-slate-900"}`}>
+                <Text
+                  className={`text-sm font-bold ${isDark ? "text-white" : "text-slate-900"}`}
+                >
                   {item.label}
                 </Text>
-                <Text className={`text-xs mt-0.5 ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+                <Text
+                  className={`text-xs mt-0.5 ${isDark ? "text-slate-400" : "text-slate-500"}`}
+                >
                   {item.subtitle}
                 </Text>
               </View>
@@ -263,11 +299,15 @@ export default function MerchantDashboard() {
           className="flex-row justify-between items-center mb-3"
           onPress={() => router.push("/transaction-history")}
         >
-          <Text className={`text-base font-brand font-bold ${isDark ? "text-white" : "text-slate-900"}`}>
+          <Text
+            className={`text-base font-brand font-bold ${isDark ? "text-white" : "text-slate-900"}`}
+          >
             Recent Transactions
           </Text>
           <View className="flex-row items-center gap-1">
-            <Text className={`text-xs font-brand font-semibold ${isDark ? "text-lime-400" : "text-lime-600"}`}>
+            <Text
+              className={`text-xs font-brand font-semibold ${isDark ? "text-lime-400" : "text-lime-600"}`}
+            >
               See all
             </Text>
             <ChevronRight size={14} color={accentColor} />
@@ -278,7 +318,9 @@ export default function MerchantDashboard() {
   );
 
   return (
-    <SafeAreaView className={isDark ? "flex-1 bg-slate-950" : "flex-1 bg-slate-50"}>
+    <SafeAreaView
+      className={isDark ? "flex-1 bg-slate-950" : "flex-1 bg-slate-50"}
+    >
       <FlatList
         data={recentTransactions}
         keyExtractor={(item) => item.transactionId + item.transactionDate}
@@ -294,7 +336,11 @@ export default function MerchantDashboard() {
         ListHeaderComponent={ListHeader}
         contentContainerStyle={{ paddingHorizontal: 20 }}
         ItemSeparatorComponent={() => (
-          <View className={isDark ? "border-b border-white/10" : "border-b border-slate-100"} />
+          <View
+            className={
+              isDark ? "border-b border-white/10" : "border-b border-slate-100"
+            }
+          />
         )}
         renderItem={({ item }) => (
           <Pressable
@@ -311,12 +357,16 @@ export default function MerchantDashboard() {
               >
                 {item.paymentMode}
               </Text>
-              <Text className={`text-xs mt-0.5 ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+              <Text
+                className={`text-xs mt-0.5 ${isDark ? "text-slate-400" : "text-slate-500"}`}
+              >
                 {new Date(item.transactionDate).toLocaleDateString()}
               </Text>
             </View>
             <View className="flex-col gap-2 items-end">
-              <Text className={`text-sm font-bold ${isDark ? "text-red-400" : "text-red-500"}`}>
+              <Text
+                className={`text-sm font-bold ${isDark ? "text-red-400" : "text-red-500"}`}
+              >
                 -₦{item.amount.toLocaleString()}
               </Text>
               <View
@@ -332,7 +382,9 @@ export default function MerchantDashboard() {
               >
                 <Text
                   className={`text-sm font-bold ${
-                    item.status === "COMPLETED" ? "text-green-500" : "text-orange-500"
+                    item.status === "COMPLETED"
+                      ? "text-green-500"
+                      : "text-orange-500"
                   }`}
                 >
                   {item.status}
@@ -344,19 +396,24 @@ export default function MerchantDashboard() {
         ListEmptyComponent={
           <View className="py-10 items-center gap-2">
             <Receipt size={40} color={isDark ? "#334155" : "#cbd5e1"} />
-            <Text className={`text-sm font-medium ${isDark ? "text-slate-500" : "text-slate-400"}`}>
-              No recent transactions
+            <Text
+              className={`text-sm font-medium ${isDark ? "text-slate-500" : "text-slate-400"}`}
+            >
+              No Recent Transactions
             </Text>
           </View>
         }
-        ListFooterComponent={<View className="h-24" />}
+        // ListFooterComponent={<View className="h-24" />}
       />
 
       <NFCPayments
         showMerchantPayModal={showMerchantPayModal}
         setShowMerchantPayModal={setShowMerchantPayModal}
       />
-      <VirtualAccounts showVAModal={showVAModal} setShowVAModal={setShowVAModal} />
+      <VirtualAccounts
+        showVAModal={showVAModal}
+        setShowVAModal={setShowVAModal}
+      />
       <MerchantQRModal
         showMerchantQRModal={showMerchantQRModal}
         setShowMerchantQRModal={setShowMerchantQRModal}

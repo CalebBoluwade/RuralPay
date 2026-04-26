@@ -1,4 +1,5 @@
 import { useAuth } from "@/src/components/context/AuthSessionProvider";
+import { maskCardNumber } from "@/src/lib/utils";
 import { formatAmount } from "@/src/lib/utils/formatAmount";
 import React from "react";
 import { Text, View, useColorScheme } from "react-native";
@@ -238,7 +239,9 @@ const TransactionReceipt: React.FC<TransactionReceiptProps> = ({
             <Text
               className={`text-lg font-semibold text-right flex-1 ml-4 ${isDark ? "text-white" : "text-gray-900"}`}
             >
-              {transaction.fromAccount}
+              {transaction.paymentMode === "CARD"
+                ? maskCardNumber(transaction.fromAccount)
+                : transaction.fromAccount}
             </Text>
           </View>
         )}

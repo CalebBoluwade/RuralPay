@@ -5,12 +5,12 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-    Alert,
-    Pressable,
-    ScrollView,
-    Text,
-    View,
-    useColorScheme,
+  Alert,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+  useColorScheme,
 } from "react-native";
 import { SvgUri } from "react-native-svg";
 
@@ -82,7 +82,7 @@ export default function ManageLinkedAccounts() {
               ? "bg-lime-500/20 border-2 border-lime-500"
               : "bg-lime-50 border-2 border-lime-500"
           }`}
-          onPress={() => router.push("/(common)/LinkBankAccount")}
+          onPress={() => router.push("/link-account")}
         >
           <View className="flex-row items-center justify-center gap-3">
             <Ionicons name="add-circle" size={28} color={"#84cc16"} />

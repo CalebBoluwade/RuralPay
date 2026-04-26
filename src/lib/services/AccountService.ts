@@ -100,14 +100,13 @@ class AccountService {
     }
   }
 
-  async SendUserOTP(action: string, channel: string): Promise<APIResponse<{}>> {
-    if (__DEV__) console.log(action, channel);
+  async SendUserOTP(action: string): Promise<APIResponse<{}>> {
+    if (__DEV__) console.log(action);
     try {
       const response = await axiosInstance.post<APIResponse<{}>>(
         "/account/send-otp",
         {
           action,
-          channel,
         },
       );
 
@@ -158,16 +157,9 @@ class AccountService {
     }
   }
 
-  async getSpendingLimits(): Promise<{ dailyLimit: number; monthlyLimit: number }> {
-    const response = await axiosInstance.get<
-      APIResponse<{ dailyLimit: number; monthlyLimit: number }>
-    >("/account/spending-limits");
-    return response.details;
-  }
-
   async updateSpendingLimits(limits: {
     dailyLimit: number;
-    monthlyLimit: number;
+    singleTransactionLimit: number;
   }): Promise<APIResponse<{}>> {
     try {
       const response = await axiosInstance.patch<APIResponse<{}>>(
@@ -180,21 +172,6 @@ class AccountService {
         error.response?.data?.message || "Failed to update spending limits";
       return { success: false, message, details: {} };
     }
-  }
-
-  async getNotificationSettings(): Promise<{
-    pushNotifications: boolean;
-    smsNotifications: boolean;
-    emailNotifications: boolean;
-  }> {
-    const response = await axiosInstance.get<
-      APIResponse<{
-        pushNotifications: boolean;
-        smsNotifications: boolean;
-        emailNotifications: boolean;
-      }>
-    >("/account/notification-settings");
-    return response.details;
   }
 
   async updateNotificationSettings(settings: {
@@ -210,7 +187,8 @@ class AccountService {
       return response;
     } catch (error: any) {
       const message =
-        error.response?.data?.message || "Failed to update notification settings";
+        error.response?.data?.message ||
+        "Failed to update notification settings";
       return { success: false, message, details: {} };
     }
   }

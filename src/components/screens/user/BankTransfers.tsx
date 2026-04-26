@@ -1,13 +1,13 @@
+import { useLanguage } from "@/src/components/context/LanguageContext";
+import Button from "@/src/components/ui/Button";
+import Card from "@/src/components/ui/Card";
 import AmountInput from "@/src/components/ui/Input/AmountInput";
 import OptimizedInput from "@/src/components/ui/Input/OptimizedInput";
 import BanksModal from "@/src/components/ui/Modals/BanksModal";
 import BeneficiaryModal from "@/src/components/ui/Modals/BeneficiaryModal";
 import PaymentMethodModal from "@/src/components/ui/Modals/Transaction/PaymentMethodModal";
 import TransactionPin from "@/src/components/ui/Modals/Transaction/TransactionPinModal";
-import Button from "@/src/components/ui/Button";
-import Card from "@/src/components/ui/Card";
 import ScreenHeader from "@/src/components/ui/ScreenHeader";
-import { useLanguage } from "@/src/components/context/LanguageContext";
 import { useAbortable } from "@/src/hooks/useAbortable";
 import { useClearLoadingOnLock } from "@/src/hooks/useClearLoadingOnLock";
 import { TransferFormData, transferSchema } from "@/src/lib/schema/validations";
@@ -91,10 +91,10 @@ const BankTransfers = () => {
     setAccountName(null);
 
     try {
-      const selectedBank = banks.find((bank) => bank.code === bankCode);
+      const selectedBank = banks.find((bank) => bank.bankCode === bankCode);
       if (selectedBank) {
         const account = await AccountService.ResolveAccountName(
-          selectedBank.code,
+          selectedBank.bankCode,
           accountNumber,
           abortController.signal,
         );
@@ -171,7 +171,7 @@ const BankTransfers = () => {
     if (!transferData) throw new Error("No Transfer Data Found");
 
     const selectedBank = banks.find(
-      (bank) => bank.code === transferData.bankCode,
+      (bank) => bank.bankCode === transferData.bankCode,
     );
 
     if (!transferData.fromAccount) {
@@ -190,7 +190,7 @@ const BankTransfers = () => {
       beneficiaryAccountNumber: transferData.accountNumber,
       narration: transferData.narration || `Transfer to ${accountName}`,
       beneficiaryBankName: selectedBank?.name || "",
-      beneficiaryBankCode: selectedBank?.code || "",
+      beneficiaryBankCode: selectedBank?.bankCode || "",
       beneficiaryAccountName: accountName || "",
       saveBeneficiary,
       OneTimeCode: TwoFA_VerificationCode,
@@ -200,9 +200,11 @@ const BankTransfers = () => {
 
     const payment = await PaymentService.B2BTransfer(payload);
 
+    console.log(payment);
+
     // Check if response indicates an error
     if (!payment.success) {
-      if (__DEV__) console.log(payment);
+      setErrorMessage(payment.errorMessage!);
       throw new Error(payment.errorMessage);
     }
 
@@ -243,7 +245,7 @@ const BankTransfers = () => {
             b.bankCode === transferData.bankCode,
         );
         if (!exists) {
-          const bank = banks.find((b) => b.code === transferData.bankCode);
+          const bank = banks.find((b) => b.bankCode === transferData.bankCode);
           list.push({
             accountNumber: transferData.accountNumber,
             accountName,
@@ -261,8 +263,12 @@ const BankTransfers = () => {
 
       return !!result;
     } catch (error: any) {
-      if (__DEV__) console.log("Transfer error:", error);
-      setErrorMessage(error.message || "Transfer Failed. Please Try Again.");
+      const APIErr = error as APIResponse<{}>;
+      if (__DEV__) console.log("Transfer error:", APIErr);
+
+      setErrorMessage(
+        APIErr.errorMessage || "Transaction Failed. Please Try Again.",
+      );
 
       setLoading(false);
       return false;
@@ -288,7 +294,7 @@ const BankTransfers = () => {
   };
 
   const handleBankSelection = (bank: Bank) => {
-    setValue("bankCode", bank.code);
+    setValue("bankCode", bank.bankCode);
     setSelectedBankName(bank.name);
     setShowBankModal(false);
   };

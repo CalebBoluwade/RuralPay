@@ -2,7 +2,6 @@ import { useAuth } from "@/src/components/context/AuthSessionProvider";
 import { useLanguage } from "@/src/components/context/LanguageContext";
 import BalanceCard from "@/src/components/ui/BalanceCard";
 import { DashboardSkeleton } from "@/src/components/ui/DashboardSkeleton";
-import PinSetupModal from "@/src/components/ui/Modals/PinSetupModal";
 import ScreenHeader from "@/src/components/ui/ScreenHeader";
 import { useAbortable } from "@/src/hooks/useAbortable";
 import { useClearLoadingOnLock } from "@/src/hooks/useClearLoadingOnLock";
@@ -25,7 +24,15 @@ import {
   Store,
   Zap,
 } from "lucide-react-native";
-import { useEffect, useRef, useState } from "react";
+import {
+  Suspense,
+  lazy,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+
 import {
   Animated,
   FlatList,
@@ -36,6 +43,9 @@ import {
   useColorScheme,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+const PinSetupModal = lazy(
+  () => import("@/src/components/ui/Modals/PinSetupModal"),
+);
 
 const QUICK_ACTIONS: {
   id: string;
@@ -43,10 +53,15 @@ const QUICK_ACTIONS: {
   icon: React.FC<{ size: number; color: string }>;
   route: string;
 }[] = [
-  { id: "send", label: "Send", icon: ArrowUp, route: "user/bankTransfers" },
-  { id: "qr", label: "QR Pay", icon: QrCode, route: "/transaction/QRPayments" },
-  { id: "history", label: "History", icon: Clock, route: "/transaction-history" },
-  { id: "card", label: "Cards", icon: CreditCard, route: "/transaction/Cards" },
+  { id: "send", label: "Send", icon: ArrowUp, route: "user/bank-transfers" },
+  { id: "qr", label: "QR Pay", icon: QrCode, route: "/user/qrPayments" },
+  {
+    id: "history",
+    label: "History",
+    icon: Clock,
+    route: "/transaction-history",
+  },
+  { id: "card", label: "Cards", icon: CreditCard, route: "user/cards" },
   { id: "tap", label: "Tap Pay", icon: Nfc, route: "user/tapPayments" },
 ] as const;
 
@@ -56,8 +71,18 @@ function useFadeSlide(delay: number) {
 
   useEffect(() => {
     Animated.parallel([
-      Animated.timing(anim, { toValue: 1, duration: 420, delay, useNativeDriver: true }),
-      Animated.timing(translateY, { toValue: 0, duration: 420, delay, useNativeDriver: true }),
+      Animated.timing(anim, {
+        toValue: 1,
+        duration: 420,
+        delay,
+        useNativeDriver: true,
+      }),
+      Animated.timing(translateY, {
+        toValue: 0,
+        duration: 420,
+        delay,
+        useNativeDriver: true,
+      }),
     ]).start();
   }, []);
 
@@ -69,7 +94,9 @@ export default function Index() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const { abortController } = useAbortable("home-dashboard");
-  const [recentTransactions, setRecentTransactions] = useState<TransactionHistoryItem[]>([]);
+  const [recentTransactions, setRecentTransactions] = useState<
+    TransactionHistoryItem[]
+  >([]);
   const [accountEnquiry, setAccountEnquiry] = useState<AccountBalanceEnquiry>();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -158,140 +185,179 @@ export default function Index() {
     ? "bg-white/10 border border-white/20"
     : "bg-white border border-slate-200 shadow-sm";
 
+  const ListHeader = useCallback(
+    () => (
+      <>
+        <Animated.View style={headerAnim}>
+          <ScreenHeader
+            goBack={false}
+            title={getGreeting()}
+            subtitle={user?.firstName || "User"}
+          />
+        </Animated.View>
+
+        <Animated.View style={balanceAnim}>
+          <BalanceCard accountEnquiry={accountEnquiry!} loading={loading} />
+        </Animated.View>
+
+        <View className="mt-4">
+          {/* Quick Actions */}
+          <Animated.View style={actionsAnim} className="mb-6">
+            <View className="flex-row gap-3">
+              {QUICK_ACTIONS.map((action) => (
+                <Pressable
+                  key={action.id}
+                  className="flex-1 items-center"
+                  onPress={() => router.push(action.route as any)}
+                >
+                  <View
+                    className={`w-16 h-16 rounded-2xl items-center justify-center mb-2 ${
+                      isDark
+                        ? "bg-white/10 border border-white/20"
+                        : "bg-white border border-slate-200 shadow-sm"
+                    }`}
+                  >
+                    <action.icon
+                      size={28}
+                      color={isDark ? "#a3e635" : "#65a30d"}
+                    />
+                  </View>
+                  <Text
+                    className={`text-xs font-brand font-semibold ${
+                      isDark ? "text-slate-300" : "text-slate-600"
+                    }`}
+                  >
+                    {action.label}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          </Animated.View>
+
+          {/* To-Dos */}
+          {todos.length > 0 && (
+            <Animated.View style={todosAnim} className="mb-6">
+              <Text
+                className={`text-base font-brand font-bold mb-3 ${
+                  isDark ? "text-white" : "text-slate-900"
+                }`}
+              >
+                My To-Do&apos;s ✨
+              </Text>
+              <View className={`rounded-2xl overflow-hidden ${cardClass}`}>
+                {todos.map((todo, index) => (
+                  <Pressable
+                    key={todo.key}
+                    className={`flex-row items-center px-4 py-4 gap-4 ${
+                      index < todos.length - 1
+                        ? isDark
+                          ? "border-b border-white/10"
+                          : "border-b border-slate-100"
+                        : ""
+                    }`}
+                    onPress={() =>
+                      todo.key === "pin"
+                        ? setShowPinModal(true)
+                        : router.push(todo.route as any)
+                    }
+                  >
+                    <View
+                      className={`w-12 h-12 rounded-xl items-center justify-center ${
+                        isDark ? "bg-lime-500/20" : "bg-lime-50"
+                      }`}
+                    >
+                      {todo.icon}
+                    </View>
+                    <View className="flex-1">
+                      <Text
+                        className={`text-sm font-brand font-bold ${
+                          isDark ? "text-white" : "text-slate-900"
+                        }`}
+                      >
+                        {todo.title}
+                      </Text>
+                      <Text
+                        className={`text-xs mt-0.5 ${isDark ? "text-slate-400" : "text-slate-500"}`}
+                      >
+                        {todo.subtitle}
+                      </Text>
+                    </View>
+                    <ChevronRight
+                      size={18}
+                      color={isDark ? "#64748b" : "#94a3b8"}
+                    />
+                  </Pressable>
+                ))}
+              </View>
+            </Animated.View>
+          )}
+
+          {/* Recent Transactions header */}
+          <Animated.View style={txAnim}>
+            <Pressable
+              className="flex-row justify-between items-center mb-3"
+              onPress={() => router.push("/transaction-history")}
+            >
+              <Text
+                className={`text-base font-brand font-bold ${
+                  isDark ? "text-white" : "text-slate-900"
+                }`}
+              >
+                Recent Transactions
+              </Text>
+              <View className="flex-row items-center gap-1">
+                <Text
+                  className={`text-xs font-brand font-semibold ${
+                    isDark ? "text-lime-400" : "text-lime-600"
+                  }`}
+                >
+                  See all
+                </Text>
+                <ChevronRight
+                  size={14}
+                  color={isDark ? "#a3e635" : "#65a30d"}
+                />
+              </View>
+            </Pressable>
+          </Animated.View>
+        </View>
+      </>
+    ),
+    [
+      isDark,
+      headerAnim,
+      balanceAnim,
+      actionsAnim,
+      todosAnim,
+      txAnim,
+      accountEnquiry,
+      loading,
+      todos,
+      cardClass,
+      user,
+      t,
+    ],
+  );
+
   if (isInitialLoad) {
     return (
-      <SafeAreaView className={isDark ? "flex-1 bg-slate-950" : "flex-1 bg-slate-50"}>
-        <ScreenHeader goBack={false} title={getGreeting()} subtitle={user?.firstName || "User"} />
+      <SafeAreaView
+        className={isDark ? "flex-1 bg-slate-950" : "flex-1 bg-slate-50"}
+      >
+        <ScreenHeader
+          goBack={false}
+          title={getGreeting()}
+          subtitle={user?.firstName || "User"}
+        />
         <DashboardSkeleton isDark={isDark} />
       </SafeAreaView>
     );
   }
 
-  const ListHeader = (
-    <>
-      <Animated.View style={headerAnim}>
-        <ScreenHeader goBack={false} title={getGreeting()} subtitle={user?.firstName || "User"} />
-      </Animated.View>
-
-      <Animated.View style={balanceAnim}>
-        <BalanceCard accountEnquiry={accountEnquiry!} loading={loading} />
-      </Animated.View>
-
-      <View className="px-5 mt-4">
-        {/* Quick Actions */}
-        <Animated.View style={actionsAnim} className="mb-6">
-          <View className="flex-row gap-3">
-            {QUICK_ACTIONS.map((action) => (
-              <Pressable
-                key={action.id}
-                className="flex-1 items-center"
-                onPress={() => router.push(action.route as any)}
-              >
-                <View
-                  className={`w-16 h-16 rounded-2xl items-center justify-center mb-2 ${
-                    isDark
-                      ? "bg-white/10 border border-white/20"
-                      : "bg-white border border-slate-200 shadow-sm"
-                  }`}
-                >
-                  <action.icon size={28} color={isDark ? "#a3e635" : "#65a30d"} />
-                </View>
-                <Text
-                  className={`text-xs font-brand font-semibold ${
-                    isDark ? "text-slate-300" : "text-slate-600"
-                  }`}
-                >
-                  {action.label}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
-        </Animated.View>
-
-        {/* To-Dos */}
-        {todos.length > 0 && (
-          <Animated.View style={todosAnim} className="mb-6">
-            <Text
-              className={`text-base font-brand font-bold mb-3 ${
-                isDark ? "text-white" : "text-slate-900"
-              }`}
-            >
-              My To-Do&apos;s ✨
-            </Text>
-            <View className={`rounded-2xl overflow-hidden ${cardClass}`}>
-              {todos.map((todo, index) => (
-                <Pressable
-                  key={todo.key}
-                  className={`flex-row items-center px-4 py-4 gap-4 ${
-                    index < todos.length - 1
-                      ? isDark
-                        ? "border-b border-white/10"
-                        : "border-b border-slate-100"
-                      : ""
-                  }`}
-                  onPress={() =>
-                    todo.key === "pin" ? setShowPinModal(true) : router.push(todo.route as any)
-                  }
-                >
-                  <View
-                    className={`w-12 h-12 rounded-xl items-center justify-center ${
-                      isDark ? "bg-lime-500/20" : "bg-lime-50"
-                    }`}
-                  >
-                    {todo.icon}
-                  </View>
-                  <View className="flex-1">
-                    <Text
-                      className={`text-sm font-brand font-bold ${
-                        isDark ? "text-white" : "text-slate-900"
-                      }`}
-                    >
-                      {todo.title}
-                    </Text>
-                    <Text
-                      className={`text-xs mt-0.5 ${isDark ? "text-slate-400" : "text-slate-500"}`}
-                    >
-                      {todo.subtitle}
-                    </Text>
-                  </View>
-                  <ChevronRight size={18} color={isDark ? "#64748b" : "#94a3b8"} />
-                </Pressable>
-              ))}
-            </View>
-          </Animated.View>
-        )}
-
-        {/* Recent Transactions header */}
-        <Animated.View style={txAnim}>
-          <Pressable
-            className="flex-row justify-between items-center mb-3"
-            onPress={() => router.push("/transaction-history")}
-          >
-            <Text
-              className={`text-base font-brand font-bold ${
-                isDark ? "text-white" : "text-slate-900"
-              }`}
-            >
-              Recent Transactions
-            </Text>
-            <View className="flex-row items-center gap-1">
-              <Text
-                className={`text-xs font-brand font-semibold ${
-                  isDark ? "text-lime-400" : "text-lime-600"
-                }`}
-              >
-                See all
-              </Text>
-              <ChevronRight size={14} color={isDark ? "#a3e635" : "#65a30d"} />
-            </View>
-          </Pressable>
-        </Animated.View>
-      </View>
-    </>
-  );
-
   return (
-    <SafeAreaView className={isDark ? "flex-1 bg-slate-950" : "flex-1 bg-slate-50"}>
+    <SafeAreaView
+      className={isDark ? "flex-1 bg-slate-950" : "flex-1 bg-slate-50"}
+    >
       <FlatList
         data={recentTransactions}
         keyExtractor={(item) => item.transactionId + item.transactionDate}
@@ -307,7 +373,11 @@ export default function Index() {
         ListHeaderComponent={ListHeader}
         contentContainerStyle={{ paddingHorizontal: 20 }}
         ItemSeparatorComponent={() => (
-          <View className={isDark ? "border-b border-white/10" : "border-b border-slate-100"} />
+          <View
+            className={
+              isDark ? "border-b border-white/10" : "border-b border-slate-100"
+            }
+          />
         )}
         renderItem={({ item }) => (
           <Pressable
@@ -331,7 +401,9 @@ export default function Index() {
               </Text>
             </View>
             <View className="flex-col gap-2 items-end">
-              <Text className={`text-sm font-bold ${isDark ? "text-red-400" : "text-red-500"}`}>
+              <Text
+                className={`text-sm font-bold ${isDark ? "text-red-400" : "text-red-500"}`}
+              >
                 -₦{item.amount.toLocaleString()}
               </Text>
               <View
@@ -347,7 +419,9 @@ export default function Index() {
               >
                 <Text
                   className={`text-sm font-bold ${
-                    item.status === "COMPLETED" ? "text-green-500" : "text-orange-500"
+                    item.status === "COMPLETED"
+                      ? "text-green-500"
+                      : "text-orange-500"
                   }`}
                 >
                   {item.status}
@@ -359,7 +433,9 @@ export default function Index() {
         ListEmptyComponent={
           <View className="py-10 items-center gap-2">
             <Receipt size={40} color={isDark ? "#334155" : "#cbd5e1"} />
-            <Text className={`text-sm font-medium ${isDark ? "text-slate-500" : "text-slate-400"}`}>
+            <Text
+              className={`text-sm font-medium ${isDark ? "text-slate-500" : "text-slate-400"}`}
+            >
               No recent transactions
             </Text>
           </View>
@@ -367,12 +443,18 @@ export default function Index() {
         ListFooterComponent={<View className="h-24" />}
       />
 
-      <PinSetupModal
-        visible={showPinModal}
-        onComplete={() => { setShowPinModal(false); setHasPIN(true); }}
-        onCancel={() => setShowPinModal(false)}
-      />
-
+      {showPinModal && (
+        <Suspense fallback={null}>
+          <PinSetupModal
+            visible={showPinModal}
+            onComplete={() => {
+              setShowPinModal(false);
+              setHasPIN(true);
+            }}
+            onCancel={() => setShowPinModal(false)}
+          />
+        </Suspense>
+      )}
     </SafeAreaView>
   );
 }

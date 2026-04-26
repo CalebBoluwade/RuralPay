@@ -1,7 +1,8 @@
 import { formatAmount } from "@/src/lib/utils/formatAmount";
 import { CheckCircle2 } from "lucide-react-native";
 import React from "react";
-import { Pressable, Share, Text, View, useColorScheme } from "react-native";
+import { Share, Text, View, useColorScheme } from "react-native";
+import Button from "../../Button";
 
 interface TransactionSuccessProps {
   transactionResult: TransactionHistoryItem;
@@ -109,15 +110,12 @@ const TransactionSuccess: React.FC<TransactionSuccessProps> = ({
         </View>
       </View>
 
-      <View className="flex-row space-x-2 gap-2 mb-4">
-        <Pressable
-          className={`flex-1 rounded-2xl py-5 px-1 items-center ${isDark ? "bg-lime-600" : "bg-lime-500"}`}
+      <View className="flex-col gap-3">
+        <Button
+          label="Download Receipt"
+          // variant="primary"
           onPress={handleDownloadReceipt}
-        >
-          <Text className="text-white text-base font-semibold break-words text-wrap">
-            Download Receipt
-          </Text>
-        </Pressable>
+        />
         {/* <Pressable
           className={`flex-1 rounded-2xl py-5 px-1 items-center backdrop-blur-xl ${
             isDark
@@ -133,14 +131,16 @@ const TransactionSuccess: React.FC<TransactionSuccessProps> = ({
           </Text>
         </Pressable> */}
 
-        <Pressable
+        <Button label="Close" variant="danger" onPress={onClose} />
+
+        {/* <Pressable
           onPress={() => onClose()}
           className={`flex-1 p-5 rounded-2xl border border-red-400`}
         >
           <Text className="text-center text-xl text-red-500 font-bold">
             Close
           </Text>
-        </Pressable>
+        </Pressable> */}
       </View>
     </View>
   );

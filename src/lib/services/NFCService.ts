@@ -497,8 +497,9 @@ class NFCService {
       const cardInfo = await this.readCard();
 
       if (!cardInfo.success || !cardInfo?.PAN || !cardInfo?.BIN) {
-        ToastService.error("Failed to Read Card 3");
-        throw new Error("Failed to Read Card 4");
+        if (__DEV__) console.log("Card Read Failed:", cardInfo);
+        ToastService.error("Card Read Failed");
+        throw new Error("Card Read Failed:");
       }
 
       // Just return the card info without PIN processing
@@ -857,32 +858,57 @@ class NFCService {
         throw new Error("No Payment Provider Found on Card");
       }
 
-      // Step 3: Select First Available Application
+      // Step 3: Select application — reuse the response from discovery to avoid double-select
       const selectedApp = applications[0];
+      // We already successfully selected this AID during discovery.
+      // Re-selecting resets card state on some cards and causes GPO 6985.
+      // Instead, re-select once and capture the FCI for PDOL extraction.
       const selectAppResponse = await this.selectApplication(selectedApp.aid);
 
-      // Step 4: Get Processing Options (optional - can fail and we still get data from SELECT response)
+      // Extract PDOL from FCI if present (tag 9F38 inside A5 inside 6F)
+      let pdolHex: string | undefined;
+      try {
+        const fciTlv = this.parseTLV(selectAppResponse.slice(0, -2));
+        const a5Hex = fciTlv["6F"] ? this.parseTLV(this.hexStringToBytes(fciTlv["6F"]))["A5"] : undefined;
+        if (a5Hex) {
+          pdolHex = this.parseTLV(this.hexStringToBytes(a5Hex))["9F38"];
+        }
+        if (__DEV__) console.log("PDOL:", pdolHex ?? "none");
+      } catch (e) {
+        if (__DEV__) console.log("PDOL extraction failed:", e);
+      }
+
+      // Step 4: Get Processing Options — build GPO with correct PDOL data
       let processingOptions: { afl?: string; aip?: string } = {};
       let cardData: number[][] = [selectAppResponse];
 
       try {
-        const gpoResponse = await this.sendAPDU(APDU_COMMANDS.GPO);
+        // Build PDOL response data if card provided a PDOL
+        const pdolData = pdolHex ? this.buildPDOLData(pdolHex) : [];
+        const pdolLen = pdolData.length;
+        // GPO: CLA=80 INS=A8 P1=00 P2=00 Lc=len+2 83=tag len=pdolLen data Le=00
+        const gpoCommand = [0x80, 0xa8, 0x00, 0x00, pdolLen + 2, 0x83, pdolLen, ...pdolData, 0x00];
+        const gpoResponse = await this.sendAPDU(gpoCommand);
+        if (__DEV__) console.log("GPO response:", gpoResponse);
         processingOptions = this.parseGPO(gpoResponse);
+        if (__DEV__) console.log("GPO parsed:", processingOptions);
 
-        // Step 5: Try to read application data if AFL is available
         if (processingOptions.afl) {
           const aflData = await this.readApplicationData(processingOptions);
-          if (aflData.length > 0) {
-            cardData = aflData;
-          }
+          if (aflData.length > 0) cardData = aflData;
+        } else {
+          if (__DEV__) console.log("No AFL, attempting brute-force SFI read");
+          const bruteRecords = await this.bruteForceReadRecords();
+          if (bruteRecords.length > 0) cardData = bruteRecords;
         }
       } catch (gpoError) {
-        if (__DEV__)
-          console.log(
-            "GPO/AFL reading skipped, using SELECT response:",
-            gpoError,
-          );
-        // Continue with SELECT response data
+        if (__DEV__) console.log("GPO failed:", gpoError);
+        try {
+          const bruteRecords = await this.bruteForceReadRecords();
+          if (bruteRecords.length > 0) cardData = bruteRecords;
+        } catch (bruteError) {
+          if (__DEV__) console.log("Brute-force SFI read also failed:", bruteError);
+        }
       }
 
       // Step 6: Parse card information
@@ -894,7 +920,8 @@ class NFCService {
       try {
         const rawStream: number[] = [];
         cardData.forEach((record) => {
-          const clean = record[record.length - 2] === 0x90 ? record.slice(0, -2) : record;
+          const clean =
+            record[record.length - 2] === 0x90 ? record.slice(0, -2) : record;
           const fb = clean[0];
           if (fb === 0x70 || fb === 0x77 || fb === 0x6f) {
             let off = 1;
@@ -910,8 +937,11 @@ class NFCService {
         if (cdol1) {
           const txResult = await this.performTransaction(cdol1, 0);
           cardInfo.cryptogram = txResult.cryptogram;
-          cardInfo.issuerAppData = txResult.issuerAppData || cardInfo.issuerAppData;
-          cardInfo.ATC = txResult.atc ? parseInt(txResult.atc, 16) : cardInfo.ATC;
+          cardInfo.issuerAppData =
+            txResult.issuerAppData || cardInfo.issuerAppData;
+          cardInfo.ATC = txResult.atc
+            ? parseInt(txResult.atc, 16)
+            : cardInfo.ATC;
           // Re-extract CVR from fresh IAD
           if (cardInfo.issuerAppData && cardInfo.issuerAppData.length >= 10) {
             cardInfo.CVR = cardInfo.issuerAppData.substring(4, 10);
@@ -1007,6 +1037,28 @@ class NFCService {
     return records;
   }
 
+  // Fallback: try common SFI (1-3) and record (1-3) combinations when GPO/AFL unavailable
+  private async bruteForceReadRecords(): Promise<number[][]> {
+    const records: number[][] = [];
+    for (let sfi = 1; sfi <= 3; sfi++) {
+      for (let rec = 1; rec <= 3; rec++) {
+        try {
+          const cmd = [0x00, 0xb2, rec, (sfi << 3) | 0x04, 0x00];
+          const data = await this.sendAPDU(cmd);
+          const sw1 = data[data.length - 2];
+          const sw2 = data[data.length - 1];
+          if (sw1 === 0x90 && sw2 === 0x00) {
+            records.push(data);
+          }
+        } catch {
+          // Record doesn't exist, continue
+        }
+      }
+    }
+    if (__DEV__) console.log(`Brute-force found ${records.length} records`);
+    return records;
+  }
+
   private parsePPSE(response: number[]): { aid: number[]; label: string }[] {
     // Parse PPSE response to extract AIDs
     const applications: { aid: number[]; label: string }[] = [];
@@ -1064,7 +1116,8 @@ class NFCService {
 
         // Step B: Unwrap known EMV template tags (0x70, 0x77, 0x6F, 0x80)
         const firstByte = cleanRecord[0];
-        const isTemplate = firstByte === 0x70 || firstByte === 0x77 || firstByte === 0x6f;
+        const isTemplate =
+          firstByte === 0x70 || firstByte === 0x77 || firstByte === 0x6f;
 
         if (isTemplate) {
           let offset = 1; // Skip Tag byte
@@ -1425,7 +1478,6 @@ class NFCService {
     while (i < cdolHex.length) {
       let tag = cdolHex.substr(i, 2);
       i += 2;
-      // Handle 2-byte tags (e.g., 9F02)
       if ((parseInt(tag, 16) & 0x1f) === 0x1f) {
         tag += cdolHex.substr(i, 2);
         i += 2;
@@ -1435,6 +1487,36 @@ class NFCService {
       fields.push({ tag, length: len });
     }
     return fields;
+  }
+
+  // Build PDOL response data from PDOL tag list using same terminal values as CDOL
+  private buildPDOLData(pdolHex: string): number[] {
+    const fields = this.parseCDOL(pdolHex);
+    const now = new Date();
+    const dateYYMMDD = now.toISOString().slice(2, 10).replace(/-/g, "");
+    const [b0, b1, b2, b3] = Crypto.getRandomBytes(4);
+    const nonce = (((b0 << 24) | (b1 << 16) | (b2 << 8) | b3) >>> 0)
+      .toString(16).padStart(8, "0").toUpperCase();
+
+    let hex = "";
+    for (const { tag, length } of fields) {
+      switch (tag.toUpperCase()) {
+        case "9F66": hex += "B6204000".padStart(length * 2, "0"); break; // TTQ
+        case "9F02": hex += "000000000000".slice(-(length * 2)); break; // Amount
+        case "9F03": hex += "000000000000".slice(-(length * 2)); break; // Amount Other
+        case "9F1A": hex += "0566".slice(-(length * 2)); break;          // Terminal Country
+        case "5F2A": hex += "0566".slice(-(length * 2)); break;          // Currency
+        case "9A":   hex += dateYYMMDD.slice(-(length * 2)); break;      // Date
+        case "9C":   hex += "00".padStart(length * 2, "0"); break;       // Tx Type
+        case "9F37": hex += nonce.slice(-(length * 2)); break;           // Unpredictable Number
+        case "9F35": hex += "22".padStart(length * 2, "0"); break;       // Terminal Type
+        case "9F45": hex += "0000".slice(-(length * 2)); break;          // Data Auth Code
+        case "9F4C": hex += "0000000000000000".slice(-(length * 2)); break; // ICC Dynamic Number
+        case "9F34": hex += "000000".slice(-(length * 2)); break;        // CVM Results
+        default:     hex += "00".repeat(length);
+      }
+    }
+    return this.hexToBytes(hex);
   }
 
   /**
@@ -1537,10 +1619,22 @@ class NFCService {
         off += l > 0x7f ? 1 + (l & 0x7f) : 1;
         const body = clean.slice(off);
         tlv = {
-          "9F27": body.slice(0, 1).map(b => b.toString(16).padStart(2, "0")).join(""),
-          "9F36": body.slice(1, 3).map(b => b.toString(16).padStart(2, "0")).join(""),
-          "9F26": body.slice(3, 11).map(b => b.toString(16).padStart(2, "0")).join(""),
-          "9F10": body.slice(11).map(b => b.toString(16).padStart(2, "0")).join(""),
+          "9F27": body
+            .slice(0, 1)
+            .map((b) => b.toString(16).padStart(2, "0"))
+            .join(""),
+          "9F36": body
+            .slice(1, 3)
+            .map((b) => b.toString(16).padStart(2, "0"))
+            .join(""),
+          "9F26": body
+            .slice(3, 11)
+            .map((b) => b.toString(16).padStart(2, "0"))
+            .join(""),
+          "9F10": body
+            .slice(11)
+            .map((b) => b.toString(16).padStart(2, "0"))
+            .join(""),
         };
       } else {
         tlv = this.parseTLV(clean);

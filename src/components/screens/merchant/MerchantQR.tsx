@@ -4,19 +4,19 @@ import Card from "@/src/components/ui/Card";
 import QRCodeService from "@/src/lib/services/QRCodeService";
 import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
-import { Download, QrCode, Share, Store, X } from "lucide-react-native";
+import { QrCode, Store, X } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    Image,
-    Modal,
-    Pressable,
-    Share as RNShare,
-    ScrollView,
-    Text,
-    useColorScheme,
-    View,
+  ActivityIndicator,
+  Alert,
+  Image,
+  Modal,
+  Pressable,
+  Share as RNShare,
+  ScrollView,
+  Text,
+  useColorScheme,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -264,7 +264,7 @@ const MerchantQRDisplay = ({
             </Text>
           </Card>
 
-          {/* Actions */}}
+          {/* Actions */}
           <View className="flex-row gap-3 mb-8">
             <Button
               variant="secondary"
@@ -272,11 +272,7 @@ const MerchantQRDisplay = ({
               onPress={handleShare}
               className="flex-1 flex-row gap-2"
             />
-            <Button
-              label="Save PDF"
-              onPress={handlePrint}
-              className="flex-1"
-            />
+            <Button label="Save PDF" onPress={handlePrint} className="flex-1" />
           </View>
         </ScrollView>
       </SafeAreaView>

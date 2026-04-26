@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from "react";
 import * as SecureStore from "expo-secure-store";
+import { useCallback, useEffect, useState } from "react";
 import { version } from "../../package.json";
 import LoginScreen from "../components/screens/auth/Login";
 import OnboardingCarousel from "../components/screens/common/Carousel";
@@ -12,10 +12,14 @@ export default function Index() {
   useEffect(() => {
     (async () => {
       try {
-        const onboardingShown = await SecureStore.getItemAsync("onboarding_shown");
+        const onboardingShown =
+          await SecureStore.getItemAsync("onboarding_shown");
         setShowOnboarding(onboardingShown !== "true");
       } catch (error) {
-        console.error("Error reading onboarding state from SecureStore:", error);
+        console.error(
+          "Error reading onboarding state from SecureStore:",
+          error,
+        );
       } finally {
         setIsLoading(false);
       }
@@ -27,7 +31,8 @@ export default function Index() {
       await SecureStore.setItemAsync("onboarding_shown", "true");
       setShowOnboarding(false);
     } catch (error) {
-      console.error("Error saving onboarding state to SecureStore:", error);
+      if (__DEV__)
+        console.error("Error saving onboarding state to SecureStore:", error);
       setShowOnboarding(false);
     }
   }, []);
@@ -39,6 +44,6 @@ export default function Index() {
   return showOnboarding ? (
     <OnboardingCarousel onFinish={handleFinish} appVersion={version} />
   ) : (
-    <LoginScreen appVersion={version} />
+    <LoginScreen appVersion={version} environment={process.env.NODE_ENV} />
   );
 }

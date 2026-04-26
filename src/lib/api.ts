@@ -130,6 +130,8 @@ axiosInstance.interceptors.response.use(
       if (__DEV__) {
         console.log("[API] Request cancelled (AbortError)");
       }
+
+      console.log(error);
       return Promise.reject(error);
     }
 
@@ -200,7 +202,7 @@ axiosInstance.interceptors.response.use(
       originalRequest._retry = true;
       isRefreshing = true;
 
-      router.push("/auth/lock-screen");
+      router.push("/lock-screen");
       DeviceEventEmitter.emit("LOCK_SCREEN_SHOWN");
 
       try {
@@ -233,6 +235,18 @@ axiosInstance.interceptors.response.use(
       }
     }
 
-    return Promise.reject(error);
+    return error;
   },
 );
+
+function toError(error: unknown): Error {
+  if (error instanceof Error) return error;
+
+  const axiosError = error as any;
+  const message =
+    axiosError?.response?.data?.errorMessage ||
+    axiosError?.message ||
+    "An unexpected error occurred";
+
+  return new Error(message);
+}

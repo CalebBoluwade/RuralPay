@@ -1,17 +1,22 @@
 import { useAuth } from "@/src/components/context/AuthSessionProvider";
+import Unauthenticated from "@/src/components/screens/auth/Unauthenticated";
 import {
   FontAwesome,
-  FontAwesome6,
   Ionicons,
   MaterialCommunityIcons,
 } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
+import { HandCoins, LucideLightbulb } from "lucide-react-native";
 import { useColorScheme } from "react-native";
 
 export default function MerchantLayout() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const { user, isAuthenticated } = useAuth();
+
+  if (!isAuthenticated || user?.role !== "consumer") {
+    return <Unauthenticated />;
+  }
 
   return (
     <Tabs
@@ -47,15 +52,11 @@ export default function MerchantLayout() {
         />
 
         <Tabs.Screen
-          name="transactions"
+          name="bank-transfers"
           options={{
-            title: "Transactions",
+            title: "Bank Transfers",
             tabBarIcon: ({ color, focused }) => (
-              <Ionicons
-                size={focused ? 28 : 26}
-                name={focused ? "list" : "list-outline"}
-                color={color}
-              />
+              <HandCoins size={focused ? 28 : 26} color={color} />
             ),
           }}
         />
@@ -65,9 +66,9 @@ export default function MerchantLayout() {
           options={{
             title: "Services",
             tabBarIcon: ({ color, focused }) => (
-              <FontAwesome6
+              <LucideLightbulb
                 size={focused ? 28 : 26}
-                name={focused ? "plug-circle-bolt" : "plug-circle"}
+                // name={focused ? "plug-circle-bolt" : "plug-circle-minus"}
                 color={color}
               />
             ),
@@ -88,6 +89,13 @@ export default function MerchantLayout() {
           }}
         />
       </Tabs.Protected>
+
+      {/* Hide non-tab screens from tab bar */}
+      {/* <Tabs.Screen name="bank-transfers" options={{ href: null }} /> */}
+      <Tabs.Screen name="cards" options={{ href: null }} />
+      <Tabs.Screen name="manageLinkedAccounts" options={{ href: null }} />
+      <Tabs.Screen name="qrPayments" options={{ href: null }} />
+      <Tabs.Screen name="tapPayments" options={{ href: null }} />
     </Tabs>
   );
 }

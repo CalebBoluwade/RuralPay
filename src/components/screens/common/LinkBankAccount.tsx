@@ -1,6 +1,6 @@
-import BanksModal from "@/src/components/ui/Modals/BanksModal";
 import Button from "@/src/components/ui/Button";
 import Card from "@/src/components/ui/Card";
+import BanksModal from "@/src/components/ui/Modals/BanksModal";
 import ScreenHeader from "@/src/components/ui/ScreenHeader";
 import AccountService from "@/src/lib/services/AccountService";
 import PaymentService from "@/src/lib/services/PaymentService";
@@ -8,14 +8,14 @@ import { router } from "expo-router";
 import { ChevronDown, ShieldCheck } from "lucide-react-native";
 import { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    Modal,
-    Pressable,
-    ScrollView,
-    Text,
-    TextInput,
-    View,
-    useColorScheme,
+  ActivityIndicator,
+  Modal,
+  Pressable,
+  ScrollView,
+  Text,
+  TextInput,
+  View,
+  useColorScheme,
 } from "react-native";
 
 export default function LinkBankAccount() {
@@ -67,7 +67,7 @@ export default function LinkBankAccount() {
 
     setVerifying(true);
     const result = await AccountService.ResolveAccountName(
-      selectedBank.code,
+      selectedBank.bankCode,
       accountNumber,
     );
     setAccountName(
@@ -91,7 +91,7 @@ export default function LinkBankAccount() {
       setLoading(true);
 
       const x = await AccountService.LinkAccount({
-        bankCode: selectedBank?.code!,
+        bankCode: selectedBank?.bankCode!,
         accountNumber,
         IsPrimary: false,
       });
@@ -142,7 +142,8 @@ export default function LinkBankAccount() {
 
             <Card
               lightClass="bg-gray-50 border-2 border-gray-200"
-              className="px-6 py-6 mb-6">
+              className="px-6 py-6 mb-6"
+            >
               <Text
                 className={`text-base font-semibold mb-4 ${
                   isDark ? "text-gray-300" : "text-gray-700"

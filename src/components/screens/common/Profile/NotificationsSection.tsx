@@ -1,7 +1,8 @@
+import { useAuth } from "@/src/components/context/AuthSessionProvider";
 import AccountService from "@/src/lib/services/AccountService";
 import ToastService from "@/src/lib/services/ToastService";
 import { Bell } from "lucide-react-native";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { ActivityIndicator, Switch, Text, View } from "react-native";
 
 interface NotificationSettings {
@@ -16,21 +17,17 @@ interface NotificationsSectionProps {
   isDark: boolean;
 }
 
-export function NotificationsSection({ isDark }: NotificationsSectionProps) {
-  const [settings, setSettings] = useState<NotificationSettings>({
-    pushNotifications: true,
-    smsNotifications: true,
-    emailNotifications: true,
-  });
-  const [loading, setLoading] = useState(true);
-  const [updating, setUpdating] = useState<SettingKey | null>(null);
+export function NotificationsSection({
+  isDark,
+}: Readonly<NotificationsSectionProps>) {
+  const { user } = useAuth();
 
-  useEffect(() => {
-    AccountService.getNotificationSettings()
-      .then((data) => setSettings(data))
-      .catch(() => ToastService.error("Failed to load notification settings"))
-      .finally(() => setLoading(false));
-  }, []);
+  const [settings, setSettings] = useState<NotificationSettings>({
+    pushNotifications: user?.notifications?.devicePush ?? true,
+    smsNotifications: user?.notifications?.sms ?? true,
+    emailNotifications: user?.notifications?.email ?? true,
+  });
+  const [updating, setUpdating] = useState<SettingKey | null>(null);
 
   const handleToggle = async (key: SettingKey, value: boolean) => {
     const previous = settings[key];
@@ -91,13 +88,13 @@ export function NotificationsSection({ isDark }: NotificationsSectionProps) {
         >
           Notifications
         </Text>
-        {loading && (
+        {/* {loading && (
           <ActivityIndicator
             size="small"
             color={isDark ? "#a3e635" : "#65a30d"}
             style={{ marginLeft: 8 }}
           />
-        )}
+        )} */}
       </View>
 
       {rows.map(({ key, title, description }, index) => (
@@ -116,7 +113,9 @@ export function NotificationsSection({ isDark }: NotificationsSectionProps) {
               >
                 {title}
               </Text>
-              <Text className={`text-sm ${isDark ? "text-slate-400" : "text-slate-600"}`}>
+              <Text
+                className={`text-sm ${isDark ? "text-slate-400" : "text-slate-600"}`}
+              >
                 {description}
               </Text>
             </View>
@@ -129,8 +128,11 @@ export function NotificationsSection({ isDark }: NotificationsSectionProps) {
               <Switch
                 value={settings[key]}
                 onValueChange={(value) => handleToggle(key, value)}
-                disabled={loading || updating !== null}
-                trackColor={{ false: isDark ? "#374151" : "#E5E7EB", true: "#84cc16" }}
+                disabled={updating !== null}
+                trackColor={{
+                  false: isDark ? "#374151" : "#E5E7EB",
+                  true: "#84cc16",
+                }}
                 thumbColor={settings[key] ? "#FFFFFF" : "#9CA3AF"}
               />
             )}

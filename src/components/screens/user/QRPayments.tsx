@@ -9,13 +9,7 @@ import ToastService from "@/src/lib/services/ToastService";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useRef, useState } from "react";
-import {
-  ActivityIndicator,
-  Pressable,
-  Text,
-  View,
-  useColorScheme,
-} from "react-native";
+import { ActivityIndicator, Text, View, useColorScheme } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const QRPayments = () => {
@@ -28,6 +22,7 @@ const QRPayments = () => {
 
   const [scanned, setScanned] = useState(false);
   const processingScan = useRef(false);
+  const paymentComplete = useRef(false);
   const [loading, setLoading] = useState(false);
   const [paymentResult, setPaymentResult] = useState<any>(null);
   const [error, setError] = useState("");
@@ -56,7 +51,7 @@ const QRPayments = () => {
     }
 
     if (!scannedQRData.accountNumber || !scannedQRData.bankCode) {
-      setError("Invalid QR code: missing merchant account details");
+      setError("Invalid QR Code: missing merchant account details");
       return false;
     }
 
@@ -73,7 +68,7 @@ const QRPayments = () => {
         beneficiaryAccountNumber: scannedQRData.accountNumber,
         beneficiaryAccountName: scannedQRData.merchantName,
         fromAccount: pendingPaymentData.accountNumber,
-        narration: `QR Payment to ${scannedQRData.merchantName}`,
+        narration: `QR Payment IFO ${scannedQRData.merchantName}`,
         OneTimeCode: twoFACode,
         saveBeneficiary: false,
         paymentMode: "QR",
@@ -83,6 +78,7 @@ const QRPayments = () => {
       });
 
       if (payment.success) {
+        paymentComplete.current = true;
         setPaymentResult({
           amount: scannedQRData.amount.toString(),
           recipient: scannedQRData.merchantName,
@@ -175,12 +171,8 @@ const QRPayments = () => {
   const handlePaymentComplete = () => {
     setShowPinModal(false);
     setPendingPaymentData(null);
-    // Navigate to success screen or show success message
     ToastService.success("Payment completed successfully");
-    // Optionally navigate back after successful payment
-    setTimeout(() => {
-      router.back();
-    }, 2000);
+    router.back();
   };
 
   const handleCancel = () => {
@@ -220,7 +212,7 @@ const QRPayments = () => {
               <CameraView
                 style={{ flex: 1 }}
                 onBarcodeScanned={
-                  scanned || showPaymentMethodModal || showPinModal
+                  scanned || showPaymentMethodModal || showPinModal || paymentComplete.current
                     ? undefined
                     : handleBarCodeScanned
                 }

@@ -11,7 +11,7 @@ const SelectLanguageModal = () => {
   return (
     <Pressable
       onPress={() => router.push("/select-language")}
-      className={`w-12 h-12 rounded-full items-center justify-center ${
+      className={`w-10 h-10 rounded-full items-center justify-center ${
         isDark
           ? "bg-white/10 border border-white/20"
           : "bg-black/20 border border-gray-200/50"

@@ -21,6 +21,7 @@ import {
 } from "lucide-react-native";
 import React, { useEffect } from "react";
 import {
+  Alert,
   Keyboard,
   Modal,
   Pressable,
@@ -78,7 +79,7 @@ const TransactionPin: React.FC<TransactionPINProps> = ({
   const [hasPin, setHasPin] = React.useState<boolean>(false);
   const [showPinSetup, setShowPinSetup] = React.useState<boolean>(false);
   const [currentStep, setCurrentStep] = React.useState<AuthStep>("PIN");
-  const [selected2FA, setSelected2FA] = React.useState<TwoFAType>("DEFAULT");
+  const [selected2FA, setSelected2FA] = React.useState<TwoFAType>();
   const [lockSeconds, setLockSeconds] = React.useState<number>(0);
   const [isVerifyingLiveness, setIsVerifyingLiveness] = React.useState(false);
   const isLocked = lockSeconds > 0;
@@ -103,7 +104,7 @@ const TransactionPin: React.FC<TransactionPINProps> = ({
     {
       id: "OTP",
       title: "OTP Verification",
-      sub: `Code will be sent to ${maskPhone(user?.phoneNumber)} and ${maskEmail(user?.email)} and will expire in 5 mins`,
+      sub: `Code will be sent to ${maskPhone(user?.phoneNumber)} and ${maskEmail(user?.email)} and will expire in 10 Mins`,
       icon: MessageSquare,
     },
     {
@@ -125,20 +126,22 @@ const TransactionPin: React.FC<TransactionPINProps> = ({
     },
   ];
 
-  const send2FACode = async (method: string) => {
+  const send2FACode = async () => {
     setIsLoading(true);
     try {
-      const response = await AccountService.SendUserOTP(method, selected2FA);
+      const response = await AccountService.SendUserOTP("2FA-CODE");
 
       if (response.success) {
         ToastService.success(`Verification Code Sent`);
         setCurrentStep("Verify-2FA");
       } else {
-        ToastService.error("Failed to Send verification code");
+        Alert.alert("Error", "Failed to Send verification code");
       }
     } catch {
-      ToastService.error("Failed to Send verification code");
+      Alert.alert("Error", "Failed to Send verification code");
     } finally {
+      setIsLoading(false);
+      setIsVerifyingLiveness(false);
       setIsLoading(false);
     }
   };
@@ -148,7 +151,7 @@ const TransactionPin: React.FC<TransactionPINProps> = ({
     try {
       // "2FA-CODE"
       const transactionResult = await initiateTransaction(
-        selected2FA,
+        selected2FA!,
         TwoFA_VerificationCode,
       );
       if (transactionResult) {
@@ -169,7 +172,6 @@ const TransactionPin: React.FC<TransactionPINProps> = ({
   useEffect(() => {
     if (!showPinModal) {
       setCode([]);
-      setSelected2FA("DEFAULT");
       return;
     }
 
@@ -404,8 +406,8 @@ const TransactionPin: React.FC<TransactionPINProps> = ({
           <Pressable
             key={option.id}
             onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
               setSelected2FA(option.id);
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
               if (option.id === "FACIAL_RECOGNITION") {
                 setIsVerifyingLiveness(true);
                 requireVerification(
@@ -428,8 +430,10 @@ const TransactionPin: React.FC<TransactionPINProps> = ({
                       ToastService.error("Biometric verification failed");
                     }
                   });
+              } else if (option.id === "OTP") {
+                send2FACode();
               } else {
-                send2FACode(option.id);
+                Alert.alert("Error", "Unsupported 2FA method selected");
               }
             }}
             disabled={isLoading}
@@ -528,7 +532,7 @@ const TransactionPin: React.FC<TransactionPINProps> = ({
       <Pressable
         onPress={() => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-          send2FACode("OTP");
+          send2FACode();
         }}
         disabled={isLoading}
         className="items-center mb-4"

@@ -54,6 +54,8 @@ export default function LivenessVerificationScreen({
     error,
     start,
     reset,
+    requestPermission,
+    hasPermission,
   } = useLiveness(bvn);
 
   const cardClass = isDark
@@ -61,6 +63,14 @@ export default function LivenessVerificationScreen({
     : "bg-white border border-slate-200 shadow-sm";
 
   const handleBegin = async () => {
+    // Request permission first, before changing screen step
+    if (!hasPermission) {
+      const granted = await requestPermission();
+      if (!granted) {
+        onFailure("Camera Permission Denied.");
+        return;
+      }
+    }
     setScreenStep("camera");
     await start();
   };
@@ -98,7 +108,7 @@ export default function LivenessVerificationScreen({
                 ? "Verification Failed"
                 : "Liveness Check In Progress"
         }
-        subtitle="Verify your identity using your Face"
+        subtitle="Verify Your Identity Using Your Face"
         goBack
         onBack={() => router.back()}
       />
@@ -164,7 +174,7 @@ export default function LivenessVerificationScreen({
             ref={cameraRef}
             style={{ flex: 1 }}
             device={device}
-            isActive
+            isActive={screenStep === "camera"}
             photo
             frameProcessor={frameProcessor}
             pixelFormat="yuv"
@@ -240,7 +250,7 @@ export default function LivenessVerificationScreen({
             <Text
               className={`text-sm text-center ${isDark ? "text-slate-400" : "text-slate-500"}`}
             >
-              Your face and BVN have been matched successfully.
+              Your Face and BVN Matched Successfully.
             </Text>
           </View>
         </View>

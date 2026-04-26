@@ -4,14 +4,14 @@ import { router } from "expo-router";
 import { Activity, Search, X } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    Pressable,
-    RefreshControl,
-    ScrollView,
-    Text,
-    TextInput,
-    View,
-    useColorScheme,
+  ActivityIndicator,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  Text,
+  TextInput,
+  View,
+  useColorScheme,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { SvgUri } from "react-native-svg";
@@ -150,7 +150,7 @@ const BankUptime = () => {
                 const uptime = Math.round(bank.uptimePrediction || 0);
                 return (
                   <View
-                    key={bank.code}
+                    key={bank.bankCode}
                     className={`flex-row items-center px-4 py-4 gap-3 ${
                       index < filteredBanks.length - 1
                         ? isDark

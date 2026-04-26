@@ -1,22 +1,23 @@
-import ScreenHeader from "@/src/components/ui/ScreenHeader";
-import Card from "@/src/components/ui/Card";
 import { useLanguage } from "@/src/components/context/LanguageContext";
+import Card from "@/src/components/ui/Card";
+import ScreenHeader from "@/src/components/ui/ScreenHeader";
 import MerchantService from "@/src/lib/services/MerchantService";
 import { formatNaira } from "@/src/lib/utils";
+import * as ScreenOrientation from "expo-screen-orientation";
 import React, { useEffect, useState } from "react";
 import {
-    Dimensions,
-    RefreshControl,
-    ScrollView,
-    Text,
-    useColorScheme,
-    View,
+  Dimensions,
+  RefreshControl,
+  ScrollView,
+  Text,
+  useColorScheme,
+  View,
 } from "react-native";
 import { BarChart, PieChart } from "react-native-gifted-charts";
 import Animated, {
-    useAnimatedStyle,
-    useSharedValue,
-    withTiming,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
 } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -35,7 +36,10 @@ const MerchantStatsGraph = () => {
   const labelClass = isDark ? "text-gray-400" : "text-gray-500";
   const valueClass = isDark ? "text-white" : "text-gray-900";
   const titleClass = isDark ? "text-white" : "text-gray-900";
-  const chartAxisStyle = { fontSize: 10, color: isDark ? "#9ca3af" : "#6b7280" };
+  const chartAxisStyle = {
+    fontSize: 10,
+    color: isDark ? "#9ca3af" : "#6b7280",
+  };
   const chartBg = isDark ? "#0a0a0f" : "#ffffff";
   const chartGridColor = isDark ? "#ffffff15" : "#e5e7eb";
   const chartRulesColor = isDark ? "#ffffff15" : "#e5e7eb";
@@ -67,7 +71,13 @@ const MerchantStatsGraph = () => {
   };
 
   useEffect(() => {
+    ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
+
     fade.value = withTiming(1, { duration: 800 });
+
+    return () => {
+      ScreenOrientation.unlockAsync(); // reset when leaving screen
+    };
   }, []);
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -111,17 +121,23 @@ const MerchantStatsGraph = () => {
       >
         <ScreenHeader goBack title={t("merchant.salesAnalytics")} />
         <Animated.View style={animatedStyle} className="px-4 pt-2">
-          <Text className={`text-2xl font-bold mb-6 ${titleClass}`}>{t("merchant.analytics")}</Text>
+          <Text className={`text-2xl font-bold mb-6 ${titleClass}`}>
+            {t("merchant.analytics")}
+          </Text>
 
           <View className="flex-row justify-between mb-6">
             <Card lightClass="bg-white shadow" className="p-4 w-[48%]">
-              <Text className={`text-xs ${labelClass}`}>{t("merchant.totalVolume")}</Text>
+              <Text className={`text-xs ${labelClass}`}>
+                {t("merchant.totalVolume")}
+              </Text>
               <Text className={`text-lg font-bold mt-1 ${valueClass}`}>
                 {formatNaira(merchant.totalCompletedVolume)}
               </Text>
             </Card>
             <Card lightClass="bg-white shadow" className="p-4 w-[48%]">
-              <Text className={`text-xs ${labelClass}`}>{t("merchant.totalProfit")}</Text>
+              <Text className={`text-xs ${labelClass}`}>
+                {t("merchant.totalProfit")}
+              </Text>
               <Text className={`text-lg font-bold mt-1 ${valueClass}`}>
                 {formatNaira(merchant.totalProfit)}
               </Text>
@@ -129,7 +145,9 @@ const MerchantStatsGraph = () => {
           </View>
 
           <Card lightClass="bg-white shadow" className="p-4 mb-6">
-            <Text className={`text-xs ${labelClass}`}>{t("merchant.totalTransactions")}</Text>
+            <Text className={`text-xs ${labelClass}`}>
+              {t("merchant.totalTransactions")}
+            </Text>
             <Text className={`text-xl font-bold mt-1 ${valueClass}`}>
               {merchant.totalCompletedCount}
             </Text>
@@ -168,7 +186,9 @@ const MerchantStatsGraph = () => {
               textColor={isDark ? "#f9fafb" : "#111827"}
               backgroundColor={chartBg}
               centerLabelComponent={() => (
-                <Text className={`text-xs ${labelClass}`}>{t("merchant.statusLabel")}</Text>
+                <Text className={`text-xs ${labelClass}`}>
+                  {t("merchant.statusLabel")}
+                </Text>
               )}
             />
           </Card>

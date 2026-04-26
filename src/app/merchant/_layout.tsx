@@ -1,4 +1,5 @@
 import { useAuth } from "@/src/components/context/AuthSessionProvider";
+import Unauthenticated from "@/src/components/screens/auth/Unauthenticated";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
 import { useColorScheme } from "react-native";
@@ -7,6 +8,10 @@ export default function MerchantLayout() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const { user, isAuthenticated } = useAuth();
+
+  if (!isAuthenticated || user?.role !== "merchant") {
+    return <Unauthenticated />;
+  }
 
   return (
     <Tabs

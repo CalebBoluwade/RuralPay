@@ -1,7 +1,7 @@
 {
   "name": "ruralpay",
   "main": "expo-router/entry",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "scripts": {
     "start": "expo start",
     "prebuild": "expo prebuild",
@@ -52,6 +52,7 @@
     "expo-notifications": "~55.0.13",
     "expo-print": "~55.0.9",
     "expo-router": "~55.0.6",
+    "expo-screen-orientation": "~55.0.13",
     "expo-secure-store": "~55.0.9",
     "expo-sharing": "~55.0.12",
     "expo-speech": "~55.0.9",

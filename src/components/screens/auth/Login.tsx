@@ -36,12 +36,14 @@ import { useNotification } from "../../context/NotificationContext";
 
 export default function LoginScreen({
   appVersion = "1.0.0",
-}: Readonly<{ appVersion?: string }>) {
+  environment = "development",
+}: Readonly<{ appVersion?: string; environment?: string }>) {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const { width } = useWindowDimensions();
 
   const { devicePushToken, expoPushToken, notification } = useNotification();
+  console.log(devicePushToken, expoPushToken, notification);
 
   const {
     login,
@@ -172,12 +174,12 @@ export default function LoginScreen({
           contentContainerClassName="flex-grow"
           keyboardShouldPersistTaps="handled"
         >
-          <View className="flex-1 justify-between px-6 pt-2 pb-1">
+          <View className="flex-1 justify-between px-5 pt-2 pb-1">
             {/* Header with Language Selector */}
             <View className="flex-row justify-between items-center mb-8">
               <View>
                 <Text
-                  className={`text-sm ${isDark ? "text-slate-400" : "text-slate-600"} mb-1`}
+                  className={`text-lg ${isDark ? "text-slate-400" : "text-slate-600"} mb-1`}
                 >
                   {t("auth.welcomeBack")}
                 </Text>
@@ -322,7 +324,7 @@ export default function LoginScreen({
               <Text
                 className={`text-center text-lg font-semibold ${isDark ? "text-slate-500" : "text-slate-400"}`}
               >
-                v{appVersion}
+                v{appVersion + " - " + environment.toUpperCase()}
               </Text>
 
               <View className="flex-row justify-center items-center gap-2">

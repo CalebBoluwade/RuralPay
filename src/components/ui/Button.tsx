@@ -11,7 +11,8 @@ interface ButtonProps extends Omit<PressableProps, "style"> {
   className?: string;
   label: string;
   loading?: boolean;
-  variant?: "primary" | "secondary";
+  variant?: "primary" | "secondary" | "danger";
+  disabled?: boolean;
 }
 
 const Button: React.FC<ButtonProps> = ({
@@ -34,7 +35,7 @@ const Button: React.FC<ButtonProps> = ({
           : "bg-slate-200"
         : isDark
           ? "bg-lime-400"
-          : "bg-lime-700",
+          : "bg-lime-500",
       text: isDisabled
         ? isDark
           ? "text-slate-500"
@@ -59,13 +60,28 @@ const Button: React.FC<ButtonProps> = ({
           : "text-slate-900",
       spinnerColor: isDark ? "#a78bfa" : "#7c3aed",
     },
+    danger: {
+      bg: isDisabled
+        ? isDark
+          ? "bg-red-500/20"
+          : "bg-red-100"
+        : isDark
+          ? "bg-red-500"
+          : "bg-red-600",
+      text: isDisabled
+        ? isDark
+          ? "text-red-300"
+          : "text-red-400"
+        : "text-white",
+      spinnerColor: "#ffffff",
+    },
   } as const;
 
   const { bg: bgClass, text: textClass } = styles[variant];
 
   return (
     <Pressable
-      className={`w-full rounded-2xl py-5 justify-center items-center ${bgClass} ${isDisabled ? "opacity-60" : ""}`}
+      className={`w-full rounded-2xl py-5 px-4 justify-center items-center ${bgClass} ${isDisabled ? "opacity-60" : ""}`}
       onPress={onPress}
       disabled={isDisabled}
       {...rest}

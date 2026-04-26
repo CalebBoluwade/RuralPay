@@ -213,11 +213,14 @@ const LockScreen = () => {
 
       if (!isMounted.current) return;
 
+      if (__DEV__) console.log("Refresh token response, user:", user);
+
       if (user) {
         router.canGoBack() ? router.back() : null;
         DeviceEventEmitter.emit("PIN_SUCCESS");
       } else {
-        router.replace("/auth/login");
+        authService.logout();
+        // router.replace("/auth/login")
       }
     } catch (error) {
       if (!isMounted.current) return;

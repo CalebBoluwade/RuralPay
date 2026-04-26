@@ -178,7 +178,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       "./plugins/withModularHeaders",
       "./plugins/withMavenCentral",
       "./plugins/withBLEPermissions",
-      "./plugins/withScreenSecurity",
+      ...(appEnv === "production" ? ["./plugins/withScreenSecurity"] : []),
       [
         "react-native-nfc-manager",
         { nfcReaderUsageDescription: "Allow NFC to Scan Devices." },

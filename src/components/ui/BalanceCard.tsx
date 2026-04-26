@@ -22,7 +22,7 @@ interface BalanceCardProps {
 }
 
 const { width } = Dimensions.get("window");
-const CARD_PADDING = 4;
+const CARD_PADDING = 0;
 const CARD_WIDTH = width - 50;
 const CARD_MARGIN = 8;
 
@@ -48,7 +48,7 @@ const BalanceCard: React.FC<BalanceCardProps> = ({
       setInternalLoading(false);
     } catch (error) {
       if (__DEV__) console.warn(error);
-      ToastService.error("Failed to load Balance");
+      ToastService.error("Failed To Load Balance");
       setInternalLoading(false);
     }
   };

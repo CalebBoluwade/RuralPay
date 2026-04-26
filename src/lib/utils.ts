@@ -35,6 +35,12 @@ export const maskEmail = (email?: string) => {
   return `${name[0]}••••@${domain}`;
 };
 
+export const maskAccountNumber = (accountNumber?: string) => {
+  if (!accountNumber) return "••••1234";
+  const last4 = accountNumber.slice(-4);
+  return `••••${last4}`;
+};
+
 export const maskCardNumber = (cardNumber?: string) => {
   if (!cardNumber) return "•••• •••• •••• 1234";
   const last4 = cardNumber.slice(-4);
