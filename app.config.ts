@@ -3,7 +3,7 @@ import { ConfigContext, ExpoConfig } from "expo/config";
 import { version } from "./package.json";
 
 const EAS_PROJECT_ID = "e4c8aac2-05e4-4310-9ed9-a70edcdadbe6";
-const PROJECT_SLUG = "ruralpay";
+const PROJECT_SLUG = "nfc-card-payments";
 const OWNER = "calebjnr";
 
 // App production config
@@ -174,14 +174,13 @@ export default ({ config }: ConfigContext): ExpoConfig => {
           mode: appEnv === "production" ? "production" : "development",
         },
       ],
-      // "./plugins/withAssetsBundle",
       "./plugins/withModularHeaders",
       "./plugins/withMavenCentral",
       "./plugins/withBLEPermissions",
-      ...(appEnv === "production" ? ["./plugins/withScreenSecurity"] : []),
+      // ...(appEnv === "production" ? ["./plugins/withScreenSecurity"] : []),
       [
         "react-native-nfc-manager",
-        { nfcReaderUsageDescription: "Allow NFC to Scan Devices." },
+        { nfcReaderUsageDescription: "Allow NFC to Scan Cards For Payment" },
       ],
       [
         "expo-location",

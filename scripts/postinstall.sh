@@ -21,27 +21,27 @@ else
 fi
 
 # Fix react-native-hce jcenter() removal
-echo "Applying react-native-hce patch..."
+# echo "Applying react-native-hce patch..."
 
-HCE_GRADLE_PATH="node_modules/react-native-hce/android/build.gradle"
+# HCE_GRADLE_PATH="node_modules/react-native-hce/android/build.gradle"
 
-if [ -f "$HCE_GRADLE_PATH" ]; then
-    sed -i.bak '/^[[:space:]]*jcenter()/d' "$HCE_GRADLE_PATH"
-    rm -f "$HCE_GRADLE_PATH.bak"
-    echo "✅ react-native-hce patch applied successfully"
-else
-    echo "❌ react-native-hce build.gradle not found"
-fi
+# if [ -f "$HCE_GRADLE_PATH" ]; then
+#     sed -i.bak '/^[[:space:]]*jcenter()/d' "$HCE_GRADLE_PATH"
+#     rm -f "$HCE_GRADLE_PATH.bak"
+#     echo "✅ react-native-hce patch applied successfully"
+# else
+#     echo "❌ react-native-hce build.gradle not found"
+# fi
 
-# Fix react-native-rsa-native jcenter() removal (incompatible with Gradle 9+)
-echo "Applying react-native-rsa-native patch..."
+# # Fix react-native-rsa-native jcenter() removal (incompatible with Gradle 9+)
+# echo "Applying react-native-rsa-native patch..."
 
-RSA_GRADLE_PATH="node_modules/react-native-rsa-native/android/build.gradle"
+# RSA_GRADLE_PATH="node_modules/react-native-rsa-native/android/build.gradle"
 
-if [ -f "$RSA_GRADLE_PATH" ]; then
-    sed -i.bak '/^[[:space:]]*jcenter()/d' "$RSA_GRADLE_PATH"
-    rm -f "$RSA_GRADLE_PATH.bak"
-    echo "✅ react-native-rsa-native patch applied successfully"
-else
-    echo "❌ react-native-rsa-native build.gradle not found"
-fi
+# if [ -f "$RSA_GRADLE_PATH" ]; then
+#     sed -i.bak '/^[[:space:]]*jcenter()/d' "$RSA_GRADLE_PATH"
+#     rm -f "$RSA_GRADLE_PATH.bak"
+#     echo "✅ react-native-rsa-native patch applied successfully"
+# else
+#     echo "❌ react-native-rsa-native build.gradle not found"
+# fi

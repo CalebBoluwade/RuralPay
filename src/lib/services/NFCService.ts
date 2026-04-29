@@ -1,5 +1,4 @@
 import * as Crypto from "expo-crypto";
-import { Platform } from "react-native";
 import * as Keychain from "react-native-keychain";
 import NfcManager, { Ndef, NfcTech } from "react-native-nfc-manager";
 
@@ -84,34 +83,34 @@ class NFCService {
     }
   }
 
-  TapToPayShareAndroid = async (content: string) => {
-    if (Platform.OS !== "android") {
-      if (__DEV__) console.warn("HCE is Only Supported on Android");
-      return;
-    }
-    try {
-      const HCE = await import("react-native-hce");
-      const {
-        NFCTagType4,
-        NFCTagType4NDEFContentType,
-        default: HCEDefault,
-      } = HCE;
+  // TapToPayShareAndroid = async (content: string) => {
+  //   if (Platform.OS !== "android") {
+  //     if (__DEV__) console.warn("HCE is Only Supported on Android");
+  //     return;
+  //   }
+  //   try {
+  //     const HCE = await import("react-native-hce");
+  //     const {
+  //       NFCTagType4,
+  //       NFCTagType4NDEFContentType,
+  //       default: HCEDefault,
+  //     } = HCE;
 
-      const tag = new NFCTagType4({
-        type: NFCTagType4NDEFContentType.Text,
-        content,
-        writable: false,
-      });
+  //     const tag = new NFCTagType4({
+  //       type: NFCTagType4NDEFContentType.Text,
+  //       content,
+  //       writable: false,
+  //     });
 
-      const hceSession = new HCEDefault.HCESession();
-      hceSession.setApplication(tag);
-      hceSession.setEnabled(true);
-      if (__DEV__)
-        console.log("HCE Session Active: Phone is now acting as a tag");
-    } catch (error) {
-      if (__DEV__) console.error("HCE Error:", error);
-    }
-  };
+  //     const hceSession = new HCEDefault.HCESession();
+  //     hceSession.setApplication(tag);
+  //     hceSession.setEnabled(true);
+  //     if (__DEV__)
+  //       console.log("HCE Session Active: Phone is now acting as a tag");
+  //   } catch (error) {
+  //     if (__DEV__) console.error("HCE Error:", error);
+  //   }
+  // };
 
   ReceiveSharedData = async () => {
     try {
@@ -869,7 +868,9 @@ class NFCService {
       let pdolHex: string | undefined;
       try {
         const fciTlv = this.parseTLV(selectAppResponse.slice(0, -2));
-        const a5Hex = fciTlv["6F"] ? this.parseTLV(this.hexStringToBytes(fciTlv["6F"]))["A5"] : undefined;
+        const a5Hex = fciTlv["6F"]
+          ? this.parseTLV(this.hexStringToBytes(fciTlv["6F"]))["A5"]
+          : undefined;
         if (a5Hex) {
           pdolHex = this.parseTLV(this.hexStringToBytes(a5Hex))["9F38"];
         }
@@ -887,7 +888,17 @@ class NFCService {
         const pdolData = pdolHex ? this.buildPDOLData(pdolHex) : [];
         const pdolLen = pdolData.length;
         // GPO: CLA=80 INS=A8 P1=00 P2=00 Lc=len+2 83=tag len=pdolLen data Le=00
-        const gpoCommand = [0x80, 0xa8, 0x00, 0x00, pdolLen + 2, 0x83, pdolLen, ...pdolData, 0x00];
+        const gpoCommand = [
+          0x80,
+          0xa8,
+          0x00,
+          0x00,
+          pdolLen + 2,
+          0x83,
+          pdolLen,
+          ...pdolData,
+          0x00,
+        ];
         const gpoResponse = await this.sendAPDU(gpoCommand);
         if (__DEV__) console.log("GPO response:", gpoResponse);
         processingOptions = this.parseGPO(gpoResponse);
@@ -907,7 +918,8 @@ class NFCService {
           const bruteRecords = await this.bruteForceReadRecords();
           if (bruteRecords.length > 0) cardData = bruteRecords;
         } catch (bruteError) {
-          if (__DEV__) console.log("Brute-force SFI read also failed:", bruteError);
+          if (__DEV__)
+            console.log("Brute-force SFI read also failed:", bruteError);
         }
       }
 
@@ -1496,24 +1508,51 @@ class NFCService {
     const dateYYMMDD = now.toISOString().slice(2, 10).replace(/-/g, "");
     const [b0, b1, b2, b3] = Crypto.getRandomBytes(4);
     const nonce = (((b0 << 24) | (b1 << 16) | (b2 << 8) | b3) >>> 0)
-      .toString(16).padStart(8, "0").toUpperCase();
+      .toString(16)
+      .padStart(8, "0")
+      .toUpperCase();
 
     let hex = "";
     for (const { tag, length } of fields) {
       switch (tag.toUpperCase()) {
-        case "9F66": hex += "B6204000".padStart(length * 2, "0"); break; // TTQ
-        case "9F02": hex += "000000000000".slice(-(length * 2)); break; // Amount
-        case "9F03": hex += "000000000000".slice(-(length * 2)); break; // Amount Other
-        case "9F1A": hex += "0566".slice(-(length * 2)); break;          // Terminal Country
-        case "5F2A": hex += "0566".slice(-(length * 2)); break;          // Currency
-        case "9A":   hex += dateYYMMDD.slice(-(length * 2)); break;      // Date
-        case "9C":   hex += "00".padStart(length * 2, "0"); break;       // Tx Type
-        case "9F37": hex += nonce.slice(-(length * 2)); break;           // Unpredictable Number
-        case "9F35": hex += "22".padStart(length * 2, "0"); break;       // Terminal Type
-        case "9F45": hex += "0000".slice(-(length * 2)); break;          // Data Auth Code
-        case "9F4C": hex += "0000000000000000".slice(-(length * 2)); break; // ICC Dynamic Number
-        case "9F34": hex += "000000".slice(-(length * 2)); break;        // CVM Results
-        default:     hex += "00".repeat(length);
+        case "9F66":
+          hex += "B6204000".padStart(length * 2, "0");
+          break; // TTQ
+        case "9F02":
+          hex += "000000000000".slice(-(length * 2));
+          break; // Amount
+        case "9F03":
+          hex += "000000000000".slice(-(length * 2));
+          break; // Amount Other
+        case "9F1A":
+          hex += "0566".slice(-(length * 2));
+          break; // Terminal Country
+        case "5F2A":
+          hex += "0566".slice(-(length * 2));
+          break; // Currency
+        case "9A":
+          hex += dateYYMMDD.slice(-(length * 2));
+          break; // Date
+        case "9C":
+          hex += "00".padStart(length * 2, "0");
+          break; // Tx Type
+        case "9F37":
+          hex += nonce.slice(-(length * 2));
+          break; // Unpredictable Number
+        case "9F35":
+          hex += "22".padStart(length * 2, "0");
+          break; // Terminal Type
+        case "9F45":
+          hex += "0000".slice(-(length * 2));
+          break; // Data Auth Code
+        case "9F4C":
+          hex += "0000000000000000".slice(-(length * 2));
+          break; // ICC Dynamic Number
+        case "9F34":
+          hex += "000000".slice(-(length * 2));
+          break; // CVM Results
+        default:
+          hex += "00".repeat(length);
       }
     }
     return this.hexToBytes(hex);
