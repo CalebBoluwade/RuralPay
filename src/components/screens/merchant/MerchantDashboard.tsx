@@ -7,6 +7,7 @@ import ScreenHeader from "@/src/components/ui/ScreenHeader";
 import { useClearLoadingOnLock } from "@/src/hooks/useClearLoadingOnLock";
 import MerchantService from "@/src/lib/services/MerchantService";
 import PaymentService from "@/src/lib/services/PaymentService";
+import QRCodeService from "@/src/lib/services/QRCodeService";
 import { router } from "expo-router";
 import {
   ArrowUpDown,
@@ -99,8 +100,10 @@ export default function MerchantDashboard() {
         PaymentService.FetchRecentTransactions(3),
         MerchantService.GetMerchantAnalytics(),
       ]);
-      setRecentTransactions(paginatedTransactions.transactions);
+      setRecentTransactions(paginatedTransactions?.transactions ?? []);
       setStats(merchantStats);
+      // Seed widget with fresh QR in the background — fire and forget
+      QRCodeService.GeneratePaymentQR().catch(() => {});
     } catch (error) {
       if (__DEV__) console.error("Error Fetching Merchant Data:", error);
     } finally {
@@ -406,18 +409,24 @@ export default function MerchantDashboard() {
         // ListFooterComponent={<View className="h-24" />}
       />
 
-      <NFCPayments
-        showMerchantPayModal={showMerchantPayModal}
-        setShowMerchantPayModal={setShowMerchantPayModal}
-      />
-      <VirtualAccounts
-        showVAModal={showVAModal}
-        setShowVAModal={setShowVAModal}
-      />
-      <MerchantQRModal
-        showMerchantQRModal={showMerchantQRModal}
-        setShowMerchantQRModal={setShowMerchantQRModal}
-      />
+      {showMerchantPayModal && (
+        <NFCPayments
+          showMerchantPayModal={showMerchantPayModal}
+          setShowMerchantPayModal={setShowMerchantPayModal}
+        />
+      )}
+      {showVAModal && (
+        <VirtualAccounts
+          showVAModal={showVAModal}
+          setShowVAModal={setShowVAModal}
+        />
+      )}
+      {showMerchantQRModal && (
+        <MerchantQRModal
+          showMerchantQRModal={showMerchantQRModal}
+          setShowMerchantQRModal={setShowMerchantQRModal}
+        />
+      )}
     </SafeAreaView>
   );
 }

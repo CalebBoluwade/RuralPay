@@ -17,12 +17,9 @@ class MerchantService {
   static async GetMerchantAnalytics(): Promise<MerchantDetails | null> {
     try {
       const response = await axiosInstance.get<MerchantAnaltics>(`/merchant`);
-
-      console.log(response);
-      return response.details;
+      return response.details ?? null;
     } catch (error) {
       if (__DEV__) console.log(error);
-
       return null;
     }
   }

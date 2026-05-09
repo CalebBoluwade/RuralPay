@@ -1,6 +1,6 @@
 import { useProfileHandlers } from "@/src/hooks/useProfileHandlers";
 import { MenuItemBase, menuItemsStore } from "@/src/lib/menuItemsStore";
-import { router } from "expo-router";
+import { router, useRouter } from "expo-router";
 import {
   ArrowLeft,
   Bell,
@@ -34,6 +34,8 @@ const ScreenHeader: React.FC<ScreenHeaderProps> = ({
 }) => {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
+  const nav = useRouter();
+  const canGoBack = router.canGoBack();
   const {
     isAuthenticated,
     logout,
@@ -59,14 +61,14 @@ const ScreenHeader: React.FC<ScreenHeaderProps> = ({
   return (
     <View className="px-6 mt-2 mb-3">
       <View className="flex-row items-center justify-between">
-        {goBack && (
+        {goBack && canGoBack && (
           <Pressable
             className={`w-12 h-12 rounded-2xl items-center justify-center mr-4 backdrop-blur-xl ${
               isDark
                 ? "bg-white/10 border border-white/20"
                 : "bg-white/60 border border-gray-200/50"
             }`}
-            onPress={() => onBack?.()}
+            onPress={() => (onBack ? onBack() : nav.back())}
           >
             <ArrowLeft size={18} color={isDark ? "white" : "black"} />
           </Pressable>

@@ -30,6 +30,12 @@ class EncryptionService {
   private readonly PUBLIC_KEY_PEM_ID = "RuralPayUserKey";
 
   async RetrieveUserKey() {
+    // Try cached key first — avoids an unauthenticated API call during login
+    try {
+      const cached = await this.GetUserKey();
+      if (cached) return cached;
+    } catch {}
+
     try {
       const response =
         await axiosInstance.get<APIResponse<UserKey>>("/encryption/keys");

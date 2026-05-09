@@ -1,6 +1,7 @@
 import { SessionExpiryModal } from "@/src/components/ui/Modals/SessionExpiryModal";
 import { authService } from "@/src/lib/services/AuthService";
 import { complianceService } from "@/src/lib/services/ComplianceService";
+import WidgetStorageService from "@/src/lib/services/WidgetStorageService";
 import { biometricService } from "@/src/lib/utils/SecureStorage";
 import { router } from "expo-router";
 import { jwtDecode } from "jwt-decode";
@@ -167,6 +168,14 @@ export function AuthSessionProvider({
     await biometricService.storeBiometricCredentials(identifier, password);
     setHasBiometricCredentials(true);
     setNativeAuthLogin(true);
+
+    // Sync role to widget shared storage
+    try {
+      WidgetStorageService.set(
+        "user_role",
+        authResponse.details.user.role ?? "consumer",
+      );
+    } catch {}
 
     if (authResponse.details.user.role === "merchant") {
       return router.replace("/merchant");

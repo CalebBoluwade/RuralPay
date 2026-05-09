@@ -1,0 +1,152 @@
+const { withAndroidManifest, withDangerousMod, withAppBuildGradle } = require("@expo/config-plugins");
+const fs = require("fs");
+const path = require("path");
+
+const PACKAGE_PATH = "com/zegiftedtechnologies/ruralpay";
+const WIDGET_UPDATE_ACTION = "com.zegiftedtechnologies.ruralpay.WIDGET_UPDATE";
+
+// Kotlin source files to copy from plugins/android-widget/ into the native project
+const KOTLIN_FILES = [
+  "WidgetStorage.kt",
+  "WidgetStorageModule.kt",
+  "WidgetStoragePackage.kt",
+  "PaymentActivityModule.kt",
+  "PaymentActivityPackage.kt",
+  "RuralPayConsumerWidget.kt",
+  "RuralPayMerchantWidget.kt",
+  "RuralPayWidgetUpdateReceiver.kt",
+];
+
+// XML resource files: [srcRelative, destDir]
+const RES_FILES = [
+  ["xml/widget_info_consumer.xml", "xml"],
+  ["xml/widget_info_merchant.xml", "xml"],
+  ["layout/widget_consumer.xml", "layout"],
+  ["layout/widget_merchant.xml", "layout"],
+  ["layout/notification_payment_activity.xml", "layout"],
+  ["drawable/widget_background.xml", "drawable"],
+  ["drawable/ic_qr_scan.xml", "drawable"],
+  ["drawable/ic_qr_placeholder.xml", "drawable"],
+  ["drawable/ruralpay_logo.png", "drawable"],
+];
+
+function withAndroidWidget(config) {
+  // 1. Copy native files
+  config = withDangerousMod(config, [
+    "android",
+    (config) => {
+      const root = config.modRequest.projectRoot;
+      const srcRoot = path.join(root, "plugins", "android-widget");
+      const javaDir = path.join(
+        root, "android", "app", "src", "main", "java", ...PACKAGE_PATH.split("/")
+      );
+      const resDir = path.join(root, "android", "app", "src", "main", "res");
+
+      // Copy Kotlin files
+      for (const file of KOTLIN_FILES) {
+        const src = path.join(srcRoot, "kotlin", file);
+        const dest = path.join(javaDir, file);
+        if (fs.existsSync(src)) {
+          fs.mkdirSync(path.dirname(dest), { recursive: true });
+          fs.copyFileSync(src, dest);
+        }
+      }
+
+      // Copy res files
+      for (const [srcRel, destSubdir] of RES_FILES) {
+        const src = path.join(srcRoot, "res", srcRel);
+        const destDir = path.join(resDir, destSubdir);
+        const dest = path.join(destDir, path.basename(srcRel));
+        if (fs.existsSync(src)) {
+          fs.mkdirSync(destDir, { recursive: true });
+          fs.copyFileSync(src, dest);
+        }
+      }
+
+      return config;
+    },
+  ]);
+
+  // 2. Inject manifest entries
+  config = withAndroidManifest(config, (config) => {
+    const app = config.modResults.manifest.application[0];
+
+    // Add ruralpay-dev scheme to existing intent filter if missing
+    const activity = app.activity?.find(
+      (a) => a.$["android:name"] === ".MainActivity"
+    );
+    if (activity) {
+      const filters = activity["intent-filter"] || [];
+      const schemeFilter = filters.find((f) =>
+        f.data?.some((d) => d.$["android:scheme"] === "ruralpay")
+      );
+      if (schemeFilter) {
+        const hasDevScheme = schemeFilter.data?.some(
+          (d) => d.$["android:scheme"] === "ruralpay-dev"
+        );
+        if (!hasDevScheme) {
+          schemeFilter.data = schemeFilter.data || [];
+          schemeFilter.data.push({ $: { "android:scheme": "ruralpay-dev" } });
+        }
+      }
+    }
+
+    // Add widget receivers if not already present
+    const receivers = app.receiver || [];
+    const receiverNames = receivers.map((r) => r.$["android:name"]);
+
+    if (!receiverNames.includes(".RuralPayConsumerWidget")) {
+      receivers.push({
+        $: { "android:name": ".RuralPayConsumerWidget", "android:exported": "true" },
+        "intent-filter": [{ action: [{ $: { "android:name": "android.appwidget.action.APPWIDGET_UPDATE" } }] }],
+        "meta-data": [{ $: { "android:name": "android.appwidget.provider", "android:resource": "@xml/widget_info_consumer" } }],
+      });
+    }
+
+    if (!receiverNames.includes(".RuralPayMerchantWidget")) {
+      receivers.push({
+        $: { "android:name": ".RuralPayMerchantWidget", "android:exported": "true" },
+        "intent-filter": [{ action: [{ $: { "android:name": "android.appwidget.action.APPWIDGET_UPDATE" } }] }],
+        "meta-data": [{ $: { "android:name": "android.appwidget.provider", "android:resource": "@xml/widget_info_merchant" } }],
+      });
+    }
+
+    if (!receiverNames.includes(".RuralPayWidgetUpdateReceiver")) {
+      receivers.push({
+        $: { "android:name": ".RuralPayWidgetUpdateReceiver", "android:exported": "false" },
+        "intent-filter": [{ action: [{ $: { "android:name": WIDGET_UPDATE_ACTION } }] }],
+      });
+    }
+
+    app.receiver = receivers;
+    return config;
+  });
+
+  // 3. Inject kotlinx-coroutines dependency
+  config = withAppBuildGradle(config, (config) => {
+    const dep = `implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")`;
+    if (!config.modResults.contents.includes("kotlinx-coroutines-android")) {
+      config.modResults.contents = config.modResults.contents.replace(
+        /dependencies\s*\{/,
+        `dependencies {\n    ${dep}`
+      );
+    }
+    return config;
+  });
+
+  // 4. Lock MainActivity to fullSensor so expo-screen-orientation can control per screen
+  config = withAndroidManifest(config, (config) => {
+    const app = config.modResults.manifest.application[0];
+    const activity = app.activity?.find(
+      (a) => a.$["android:name"] === ".MainActivity"
+    );
+    if (activity && !activity.$["android:screenOrientation"]) {
+      activity.$["android:screenOrientation"] = "fullSensor";
+    }
+    return config;
+  });
+
+  return config;
+}
+
+module.exports = withAndroidWidget;

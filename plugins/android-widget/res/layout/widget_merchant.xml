@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_merchant_root"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_background"
+    android:padding="10dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Receive Payment"
+        android:textSize="11sp"
+        android:textStyle="bold"
+        android:textColor="#1e293b"
+        android:layout_marginBottom="6dp" />
+
+    <ImageView
+        android:id="@+id/widget_merchant_qr"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:scaleType="fitCenter"
+        android:contentDescription="Payment QR Code"
+        android:src="@drawable/ic_qr_placeholder" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Scan to pay you"
+        android:textSize="9sp"
+        android:textColor="#64748b"
+        android:layout_marginTop="4dp" />
+
+</LinearLayout>

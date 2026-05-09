@@ -11,7 +11,7 @@ import * as Notifications from "expo-notifications";
 import { router, SplashScreen, Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
-import { useColorScheme } from "react-native";
+import { Linking, useColorScheme } from "react-native";
 import "react-native-reanimated";
 import { AuthSessionProvider } from "../components/context/AuthSessionProvider";
 import { LanguageProvider } from "../components/context/LanguageContext";
@@ -65,6 +65,25 @@ export default function RootLayout() {
     return () => subscription.remove();
   }, []);
 
+  // Widget deep-link handler
+  useEffect(() => {
+    const handleURL = ({ url }: { url: string }) => {
+      if (url === "ruralpay://scan" || url === "ruralpay-dev://scan") {
+        router.push("/qr-scan" as any);
+      } else if (
+        url === "ruralpay://merchant/qr" ||
+        url === "ruralpay-dev://merchant/qr"
+      ) {
+        router.push("/merchant");
+      }
+    };
+    const sub = Linking.addEventListener("url", handleURL);
+    Linking.getInitialURL().then((url) => {
+      if (url) handleURL({ url });
+    });
+    return () => sub.remove();
+  }, []);
+
   useEffect(() => {
     if (loaded || error) SplashScreen.hideAsync();
   }, [loaded, error]);
@@ -102,6 +121,8 @@ function RootNavigator() {
 
   return (
     <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="qr-scan" options={{ headerShown: false }} />
+
       <Stack.Screen
         name="screen-menu"
         options={{

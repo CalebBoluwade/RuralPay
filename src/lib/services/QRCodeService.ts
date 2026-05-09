@@ -1,4 +1,5 @@
 import { axiosInstance } from "@/src/lib/api";
+import WidgetStorageService from "@/src/lib/services/WidgetStorageService";
 
 class QRCodeService {
   async processScannedQR(data: string): Promise<ScannedQRData> {
@@ -7,18 +8,12 @@ class QRCodeService {
   }
 
   async GeneratePaymentQR(): Promise<string> {
-    try {
-      const response =
-        await axiosInstance.post<APIResponse<{ qrImage: string }>>(
-          "/account/qr",
-        );
-
-      return response.details.qrImage;
-    } catch (error) {
-      if (__DEV__) console.log(error);
-
-      return "";
-    }
+    const response = await axiosInstance.post<APIResponse<{ qrImage: string }>>(
+      "/account/qr",
+    );
+    const qr = response.details.qrImage;
+    try { WidgetStorageService.set("merchant_qr_b64", qr); } catch {}
+    return qr;
   }
 }
 

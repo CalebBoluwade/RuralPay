@@ -123,7 +123,8 @@
     "transactionsByStatus": "Transactions by Status",
     "statusDistribution": "Status Distribution",
     "volumeByStatus": "Volume by Status",
-    "statusLabel": "Status"
+    "statusLabel": "Status",
+    "noData": "No data available"
   },
   "onboarding": {
     "slide1Title": "Instant Card Payments",

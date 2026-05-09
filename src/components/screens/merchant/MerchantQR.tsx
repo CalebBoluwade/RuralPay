@@ -250,8 +250,11 @@ const MerchantQRDisplay = ({
                   resizeMode="contain"
                 />
               ) : (
-                <View className="w-96 h-96 p-3 items-center justify-center">
+                <View className="w-96 h-96 p-3 items-center justify-center gap-3">
                   <Text className="text-slate-400">Failed to Load QR Code</Text>
+                  <Pressable onPress={GetPaymentQR} className="px-4 py-2 bg-lime-500/20 rounded-xl">
+                    <Text className="text-lime-600 font-semibold text-sm">Retry</Text>
+                  </Pressable>
                 </View>
               )}
             </View>

@@ -3,9 +3,11 @@ import PaymentMethodModal from "@/src/components/ui/Modals/Transaction/PaymentMe
 import TransactionPin from "@/src/components/ui/Modals/Transaction/TransactionPinModal";
 import ScreenHeader from "@/src/components/ui/ScreenHeader";
 import { useClearLoadingOnLock } from "@/src/hooks/useClearLoadingOnLock";
+import PaymentActivityService from "@/src/lib/services/PaymentActivityService";
 import PaymentService from "@/src/lib/services/PaymentService";
 import QRCodeService from "@/src/lib/services/QRCodeService";
 import ToastService from "@/src/lib/services/ToastService";
+import WidgetStorageService from "@/src/lib/services/WidgetStorageService";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useRef, useState } from "react";
@@ -17,6 +19,8 @@ const QRPayments = () => {
   const isDark = colorScheme === "dark";
 
   const { token } = useLocalSearchParams<{ token?: string }>();
+
+  WidgetStorageService.set("pending_qr_payment_token", token || "");
 
   if (__DEV__) console.log(token);
 
@@ -58,6 +62,9 @@ const QRPayments = () => {
     setIsProcessingPayment(true);
     setError("");
 
+    const txId = PaymentService.generateTransactionId("QR");
+    PaymentActivityService.start(txId, `₦${scannedQRData.amount.toLocaleString()}`, scannedQRData.merchantName);
+
     try {
       const payment = await PaymentService.B2BTransfer({
         amount: scannedQRData.amount,
@@ -72,13 +79,14 @@ const QRPayments = () => {
         OneTimeCode: twoFACode,
         saveBeneficiary: false,
         paymentMode: "QR",
-        transactionID: PaymentService.generateTransactionId("QR"),
+        transactionID: txId,
         txType: "DEBIT",
         twoFAType: selected2FA,
       });
 
       if (payment.success) {
         paymentComplete.current = true;
+        PaymentActivityService.update("success", `₦${scannedQRData.amount.toLocaleString()}`, scannedQRData.merchantName);
         setPaymentResult({
           amount: scannedQRData.amount.toString(),
           recipient: scannedQRData.merchantName,
@@ -90,10 +98,12 @@ const QRPayments = () => {
         return true;
       }
 
+      PaymentActivityService.update("failed", `₦${scannedQRData.amount.toLocaleString()}`, scannedQRData.merchantName);
       setError(payment.errorMessage || "Payment processing failed");
       return false;
     } catch (error) {
       if (__DEV__) console.error(error);
+      PaymentActivityService.update("failed", `₦${scannedQRData.amount.toLocaleString()}`, scannedQRData.merchantName);
       setError((error as Error).message || "Failed to process payment");
       return false;
     } finally {
@@ -212,7 +222,10 @@ const QRPayments = () => {
               <CameraView
                 style={{ flex: 1 }}
                 onBarcodeScanned={
-                  scanned || showPaymentMethodModal || showPinModal || paymentComplete.current
+                  scanned ||
+                  showPaymentMethodModal ||
+                  showPinModal ||
+                  paymentComplete.current
                     ? undefined
                     : handleBarCodeScanned
                 }

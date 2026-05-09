@@ -136,10 +136,12 @@ axiosInstance.interceptors.response.use(
     }
 
     // Only log API errors, not network connectivity issues or expected auth failures
-    const isAuthEndpointError = originalRequest?.url?.startsWith("/auth/");
+    const isAuthEndpointError = originalRequest?.url?.startsWith("/auth/") ||
+      originalRequest?.url?.startsWith("/encryption/");
     if (
       error.response?.status &&
       error.response.status !== 0 &&
+      error.response.status !== 401 &&
       !isAuthEndpointError
     ) {
       await ErrorHandler.handle(
@@ -158,7 +160,8 @@ axiosInstance.interceptors.response.use(
 
     // Handle 401 Unauthorized — emit event for AuthSessionProvider instead of immediate redirect
     // Skip auth endpoints: a 401 on /auth/* means wrong credentials, not session expiry
-    const isAuthEndpoint = originalRequest?.url?.startsWith("/auth/");
+    const isAuthEndpoint = originalRequest?.url?.startsWith("/auth/") ||
+      originalRequest?.url?.startsWith("/encryption/");
     if (
       error.response?.status === 401 &&
       originalRequest &&
@@ -166,6 +169,12 @@ axiosInstance.interceptors.response.use(
       !isAuthEndpoint
     ) {
       originalRequest._retry = true;
+
+      // Only treat as session expiry if a token was actually stored
+      const existingToken = await SecureStore.getItemAsync(AUTH_TOKEN_KEY);
+      if (!existingToken) {
+        return Promise.reject(toError(error));
+      }
 
       // Clear auth data
       await SecureStore.deleteItemAsync(AUTH_TOKEN_KEY);
@@ -235,7 +244,7 @@ axiosInstance.interceptors.response.use(
       }
     }
 
-    return error;
+    return Promise.reject(toError(error));
   },
 );
 

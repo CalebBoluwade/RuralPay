@@ -1,8 +1,8 @@
 import { axiosInstance } from "@/src/lib/api";
 import Button from "@/src/components/ui/Button";
 import Card from "@/src/components/ui/Card";
-import { useStripe } from "@stripe/stripe-react-native";
-import { Reader, useStripeTerminal } from "@stripe/stripe-terminal-react-native";
+// import { useStripe } from "@stripe/stripe-react-native";
+// import { Reader, useStripeTerminal } from "@stripe/stripe-terminal-react-native";
 import { router } from "expo-router";
 import { CreditCard, Smartphone } from "lucide-react-native";
 import { useState } from "react";
@@ -20,7 +20,7 @@ import ScreenHeader from "../../ui/ScreenHeader";
 // ─── Wallet / Apple Pay / Google Pay ────────────────────────────────────────
 
 const WalletPaySection = () => {
-  const { initPaymentSheet, presentPaymentSheet } = useStripe();
+  // const { initPaymentSheet, presentPaymentSheet } = useStripe();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
 
@@ -33,22 +33,22 @@ const WalletPaySection = () => {
     setError(null);
     setSuccess(false);
     try {
-      const { clientSecret } = await axiosInstance.post<{
-        clientSecret: string;
-      }>("/payment/create-intent");
+      // const { clientSecret } = await axiosInstance.post<{
+      //   clientSecret: string;
+      // }>("/payment/create-intent");
 
-      const { error: initError } = await initPaymentSheet({
-        paymentIntentClientSecret: clientSecret,
-        merchantDisplayName: "RuralPay",
-        applePay: { merchantCountryCode: "NG" },
-        googlePay: { merchantCountryCode: "NG", testEnv: __DEV__ },
-        allowsDelayedPaymentMethods: false,
-      });
+      // const { error: initError } = await initPaymentSheet({
+      //   paymentIntentClientSecret: clientSecret,
+      //   merchantDisplayName: "RuralPay",
+      //   applePay: { merchantCountryCode: "NG" },
+      //   googlePay: { merchantCountryCode: "NG", testEnv: __DEV__ },
+      //   allowsDelayedPaymentMethods: false,
+      // });
 
-      if (initError) throw new Error(initError.message);
+      // if (initError) throw new Error(initError.message);
 
-      const { error: presentError } = await presentPaymentSheet();
-      if (presentError) throw new Error(presentError.message);
+      // const { error: presentError } = await presentPaymentSheet();
+      // if (presentError) throw new Error(presentError.message);
 
       setSuccess(true);
     } catch (e) {
@@ -107,10 +107,10 @@ const TapToPaySection = () => {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
 
-  const [discoveredReaders, setDiscoveredReaders] = useState<Reader.Type[]>([]);
-  const { discoverReaders, connectReader } = useStripeTerminal({
-    onUpdateDiscoveredReaders: (readers) => setDiscoveredReaders(readers),
-  });
+  // const [discoveredReaders, setDiscoveredReaders] = useState<Reader.Type[]>([]);
+  // const { discoverReaders, connectReader } = useStripeTerminal({
+  //   onUpdateDiscoveredReaders: (readers) => setDiscoveredReaders(readers),
+  // });
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -120,21 +120,21 @@ const TapToPaySection = () => {
     setLoading(true);
     setError(null);
     try {
-      const { error: discoverError } = await discoverReaders({
-        discoveryMethod: "tapToPay",
-      });
+      // const { error: discoverError } = await discoverReaders({
+      //   discoveryMethod: "tapToPay",
+      // });
 
-      if (discoverError) throw new Error(discoverError.message);
-      if (!discoveredReaders.length)
-        throw new Error("No Tap to Pay reader found on this device");
+      // if (discoverError) throw new Error(discoverError.message);
+      // if (!discoveredReaders.length)
+      //   throw new Error("No Tap to Pay reader found on this device");
 
-      const { error: connectError } = await connectReader({
-        discoveryMethod: "tapToPay",
-        reader: discoveredReaders[0],
-        locationId: process.env.EXPO_PUBLIC_STRIPE_LOCATION_ID!,
-      });
+      // const { error: connectError } = await connectReader({
+      //   discoveryMethod: "tapToPay",
+      //   reader: discoveredReaders[0],
+      //   locationId: process.env.EXPO_PUBLIC_STRIPE_LOCATION_ID!,
+      // });
 
-      if (connectError) throw new Error(connectError.message);
+      // if (connectError) throw new Error(connectError.message);
       setReady(true);
     } catch (e) {
       setError((e as Error).message);
