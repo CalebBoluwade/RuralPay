@@ -11,7 +11,7 @@ import React, {
 interface NotificationContextType {
   expoPushToken: string | null;
   devicePushToken: string | null;
-  notification: Notifications.Notification | null;
+  notification: Notifications.Notification[] | null;
   error: Error | null;
 }
 
@@ -38,8 +38,9 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
 }) => {
   const [expoPushToken, setExpoPushToken] = useState<string | null>(null);
   const [devicePushToken, setDevicePushToken] = useState<string | null>(null);
-  const [notification, setNotification] =
-    useState<Notifications.Notification | null>(null);
+  const [notification, setNotification] = useState<
+    Notifications.Notification[] | null
+  >(null);
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
@@ -61,7 +62,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
     const notificationListener = Notifications.addNotificationReceivedListener(
       (notification) => {
         if (__DEV__) console.log("🔔 Notification Received: ", notification);
-        setNotification(notification);
+        setNotification((prev) => [...(prev || []), notification]);
       },
     );
 

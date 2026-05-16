@@ -2,5 +2,11 @@
 module.exports = config => ({
   type: "widget",
   icon: '../../assets/images/RuralPay.png',
-  entitlements: { /* Add entitlements */ },
+  entitlements: {
+    "com.apple.security.application-groups": config.ios.entitlements["com.apple.security.application-groups"],
+  },
+  colors: {
+    light: "#FFFFFF",
+    dark: "#000000",
+  },
 });

@@ -2,6 +2,7 @@ import { SessionExpiryModal } from "@/src/components/ui/Modals/SessionExpiryModa
 import { authService } from "@/src/lib/services/AuthService";
 import { complianceService } from "@/src/lib/services/ComplianceService";
 import WidgetStorageService from "@/src/lib/services/WidgetStorageService";
+import QRCodeService from "@/src/lib/services/QRCodeService";
 import { biometricService } from "@/src/lib/utils/SecureStorage";
 import { router } from "expo-router";
 import { jwtDecode } from "jwt-decode";
@@ -170,16 +171,24 @@ export function AuthSessionProvider({
     setNativeAuthLogin(true);
 
     // Sync role to widget shared storage
+    const role = authResponse.details.user.role ?? "consumer";
     try {
-      WidgetStorageService.set(
-        "user_role",
-        authResponse.details.user.role ?? "consumer",
-      );
-    } catch {}
+      WidgetStorageService.set("user_role", role);
+      if (role === "merchant") {
+        const bizName = authResponse.details.user.merchant?.businessName ?? "";
+        WidgetStorageService.set("merchant_name", bizName);
+      }
+    } catch (e) {
+      if (__DEV__) console.error("[AuthSession] Failed to write user_role", e);
+    }
 
-    if (authResponse.details.user.role === "merchant") {
+    // Pre-fetch QR so widget has it immediately after login
+    if (role === "merchant") {
+      QRCodeService.GeneratePaymentQR().catch((e) => {
+        if (__DEV__) console.warn("[AuthSession] Pre-fetch QR failed", e);
+      });
       return router.replace("/merchant");
-    } else if (authResponse.details.user.role === "consumer") {
+    } else if (role === "consumer") {
       return router.replace("/user");
     }
   };
@@ -207,9 +216,23 @@ export function AuthSessionProvider({
     setRefreshToken(authResponse.details.refreshToken);
     setUser(authResponse.details.user);
 
-    if (authResponse.details.user.role === "merchant") {
+    const role = authResponse.details.user.role ?? "consumer";
+    try {
+      WidgetStorageService.set("user_role", role);
+      if (role === "merchant") {
+        const bizName = authResponse.details.user.merchant?.businessName ?? "";
+        WidgetStorageService.set("merchant_name", bizName);
+      }
+    } catch (e) {
+      if (__DEV__) console.error("[AuthSession] biometricLogin: Failed to write user_role", e);
+    }
+
+    if (role === "merchant") {
+      QRCodeService.GeneratePaymentQR().catch((e) => {
+        if (__DEV__) console.warn("[AuthSession] biometricLogin: Pre-fetch QR failed", e);
+      });
       return router.replace("/merchant");
-    } else if (authResponse.details.user.role === "consumer") {
+    } else if (role === "consumer") {
       return router.replace("/user");
     }
   };

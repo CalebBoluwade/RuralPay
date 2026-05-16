@@ -8,11 +8,29 @@ class QRCodeService {
   }
 
   async GeneratePaymentQR(): Promise<string> {
-    const response = await axiosInstance.post<APIResponse<{ qrImage: string }>>(
-      "/account/qr",
-    );
+    if (__DEV__) console.log("[QRCodeService] GeneratePaymentQR called");
+    const response =
+      await axiosInstance.post<APIResponse<{ qrImage: string }>>("/account/qr");
     const qr = response.details.qrImage;
-    try { WidgetStorageService.set("merchant_qr_b64", qr); } catch {}
+    if (__DEV__)
+      console.log(`[QRCodeService] QR received, length=${qr?.length ?? 0}`);
+
+    // Validate base64 before storing
+    if (qr) {
+      const cleanQR = qr.trim(); // Remove whitespace/newlines
+      if (__DEV__)
+        console.log(`[QRCodeService] QR cleaned, length=${cleanQR.length}`);
+
+      try {
+        WidgetStorageService.set("merchant_qr_b64", cleanQR);
+      } catch (e) {
+        console.error(
+          "[QRCodeService] Failed to write merchant_qr_b64 to widget storage",
+          e,
+        );
+      }
+    }
+
     return qr;
   }
 }

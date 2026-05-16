@@ -122,7 +122,53 @@ function withAndroidWidget(config) {
     return config;
   });
 
-  // 3. Inject kotlinx-coroutines dependency
+  // 3. Register packages in MainApplication.kt
+  config = withDangerousMod(config, [
+    "android",
+    (config) => {
+      const root = config.modRequest.projectRoot;
+      const mainAppPath = path.join(
+        root, "android", "app", "src", "main", "java", ...PACKAGE_PATH.split("/"), "MainApplication.kt"
+      );
+
+      if (fs.existsSync(mainAppPath)) {
+        let contents = fs.readFileSync(mainAppPath, "utf-8");
+
+        // Add import statements if not already present
+        if (!contents.includes("import com.zegiftedtechnologies.ruralpay.WidgetStoragePackage")) {
+          const lastImportMatch = contents.match(/import expo\.modules\.ExpoReactHostFactory\n/);
+          if (lastImportMatch) {
+            contents = contents.replace(
+              /import expo\.modules\.ExpoReactHostFactory\n/,
+              `import expo.modules.ExpoReactHostFactory\nimport com.zegiftedtechnologies.ruralpay.WidgetStoragePackage\nimport com.zegiftedtechnologies.ruralpay.PaymentActivityPackage\n`
+            );
+          }
+        }
+
+        // Inject package registrations
+        if (!contents.includes("add(WidgetStoragePackage())")) {
+          contents = contents.replace(
+            /packageList =\s*PackageList\(this\)\.packages\.apply\s*\{\s*\/\/ Packages that cannot be autolinked/,
+            `packageList = PackageList(this).packages.apply { // Packages that cannot be autolinked`
+          );
+
+          contents = contents.replace(
+            /\/\/ add\(MyReactNativePackage\(\)\)\s*\}/,
+            `// add(MyReactNativePackage())
+          add(WidgetStoragePackage())
+          add(PaymentActivityPackage())
+        }`
+          );
+        }
+
+        fs.writeFileSync(mainAppPath, contents, "utf-8");
+      }
+
+      return config;
+    },
+  ]);
+
+  // 4. Inject kotlinx-coroutines dependency
   config = withAppBuildGradle(config, (config) => {
     const dep = `implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")`;
     if (!config.modResults.contents.includes("kotlinx-coroutines-android")) {
@@ -134,7 +180,7 @@ function withAndroidWidget(config) {
     return config;
   });
 
-  // 4. Lock MainActivity to fullSensor so expo-screen-orientation can control per screen
+  // 5. Lock MainActivity to fullSensor so expo-screen-orientation can control per screen
   config = withAndroidManifest(config, (config) => {
     const app = config.modResults.manifest.application[0];
     const activity = app.activity?.find(

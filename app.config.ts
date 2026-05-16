@@ -192,6 +192,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       "./plugins/withMavenCentral",
       "./plugins/withBLEPermissions",
       "./plugins/withAndroidWidget",
+      "./plugins/withIOSWidget",
       // ...(appEnv === "production" ? ["./plugins/withScreenSecurity"] : []),
       [
         "react-native-nfc-manager",

@@ -15,7 +15,8 @@
     "build:dev:ios": "./scripts/build.sh development ios",
     "build:prod:ios": "./scripts/build.sh production ios",
     "clean": "./scripts/clean.sh",
-    "postinstall": "./scripts/postinstall.sh"
+    "postinstall": "./scripts/postinstall.sh",
+    "build-widget": "bunx expo prebuild --template ./node_modules/@bacons/apple-targets/prebuild-blank.tgz --clean"
   },
   "dependencies": {
     "@bacons/apple-targets": "^4.0.6",
