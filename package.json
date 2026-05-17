@@ -61,6 +61,7 @@
     "expo-store-review": "~55.0.9",
     "expo-symbols": "~55.0.5",
     "expo-system-ui": "~55.0.10",
+    "expo-updates": "~55.0.22",
     "expo-web-browser": "~55.0.10",
     "firebase": "^12.7.0",
     "jwt-decode": "^4.0.0",

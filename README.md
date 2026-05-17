@@ -5,6 +5,10 @@ review my code at /Users/calebboluwade/Downloads/Dev/RuralPay excluding native i
 bunx expo prebuild --clean
 bunx expo prebuild --clean --platform android
 
+# Fix: ReactNativeHostWrapper removed in expo-modules-core v55 (SDK 52+)
+# Handled automatically via plugins/withMainApplicationFix.js on every prebuild
+# No manual intervention needed after android folder is deleted or rebuilt
+
 rm -rf android/.gradle
 rm -rf ~/.gradle/caches
 rm -rf ~/.gradle/daemon

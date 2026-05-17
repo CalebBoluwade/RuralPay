@@ -134,31 +134,36 @@ function withAndroidWidget(config) {
       if (fs.existsSync(mainAppPath)) {
         let contents = fs.readFileSync(mainAppPath, "utf-8");
 
-        // Add import statements if not already present
+        // Add imports if not already present
         if (!contents.includes("import com.zegiftedtechnologies.ruralpay.WidgetStoragePackage")) {
-          const lastImportMatch = contents.match(/import expo\.modules\.ExpoReactHostFactory\n/);
-          if (lastImportMatch) {
-            contents = contents.replace(
-              /import expo\.modules\.ExpoReactHostFactory\n/,
-              `import expo.modules.ExpoReactHostFactory\nimport com.zegiftedtechnologies.ruralpay.WidgetStoragePackage\nimport com.zegiftedtechnologies.ruralpay.PaymentActivityPackage\n`
-            );
+          // Try new-arch anchor first, fall back to old-arch anchor
+          const newAnchor = "import expo.modules.ExpoReactHostFactory";
+          const oldAnchor = "import expo.modules.ApplicationLifecycleDispatcher";
+          if (contents.includes(newAnchor)) {
+            contents = contents.replace(newAnchor,
+              `import com.zegiftedtechnologies.ruralpay.WidgetStoragePackage\nimport com.zegiftedtechnologies.ruralpay.PaymentActivityPackage\n${newAnchor}`);
+          } else if (contents.includes(oldAnchor)) {
+            contents = contents.replace(oldAnchor,
+              `import com.zegiftedtechnologies.ruralpay.WidgetStoragePackage\nimport com.zegiftedtechnologies.ruralpay.PaymentActivityPackage\n${oldAnchor}`);
           }
         }
 
-        // Inject package registrations
-        if (!contents.includes("add(WidgetStoragePackage())")) {
-          contents = contents.replace(
-            /packageList =\s*PackageList\(this\)\.packages\.apply\s*\{\s*\/\/ Packages that cannot be autolinked/,
-            `packageList = PackageList(this).packages.apply { // Packages that cannot be autolinked`
-          );
+        // Inject package registrations — handle both template variants
+        if (!contents.includes("WidgetStoragePackage()")) {
+          // New-arch: apply {} block
+          const applyBefore = "          // add(MyReactNativePackage())\n        }";
+          const applyAfter  = "          // add(MyReactNativePackage())\n          add(WidgetStoragePackage())\n          add(PaymentActivityPackage())\n        }";
+          // Old-arch: flat val packages + return
+          const flatBefore = "          val packages = PackageList(this).packages\n          return packages";
+          const flatAfter  = "          val packages = PackageList(this).packages\n          packages.add(WidgetStoragePackage())\n          packages.add(PaymentActivityPackage())\n          return packages";
 
-          contents = contents.replace(
-            /\/\/ add\(MyReactNativePackage\(\)\)\s*\}/,
-            `// add(MyReactNativePackage())
-          add(WidgetStoragePackage())
-          add(PaymentActivityPackage())
-        }`
-          );
+          if (contents.includes(applyBefore)) {
+            contents = contents.replace(applyBefore, applyAfter);
+          } else if (contents.includes(flatBefore)) {
+            contents = contents.replace(flatBefore, flatAfter);
+          } else {
+            throw new Error("[withAndroidWidget] Could not find package injection point in MainApplication.kt — please check the template structure");
+          }
         }
 
         fs.writeFileSync(mainAppPath, contents, "utf-8");

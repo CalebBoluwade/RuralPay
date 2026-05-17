@@ -86,6 +86,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
           },
         ],
         LSApplicationCategoryType: "public.app-category.finance",
+        NSSupportsLiveActivities: true,
+        NSSupportsLiveActivitiesFrequentUpdates: true,
       },
     },
     android: {
@@ -145,6 +147,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       favicon: "./assets/images/favicon.png",
     },
     plugins: [
+      "./plugins/withMainApplicationFix",
       "expo-audio",
       [
         "expo-font",

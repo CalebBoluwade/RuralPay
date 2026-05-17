@@ -83,7 +83,9 @@ struct MerchantQRView: View {
                 
                 if let ui = UIImage(data: data) {
                     NSLog("[MerchantQR] Successfully created UIImage: %@", NSCoder.string(for: ui.size))
-                    return Image(uiImage: ui)
+                    // Force original rendering to prevent dark mode tinting
+                    let originalUI = ui.withRenderingMode(.alwaysOriginal)
+                    return Image(uiImage: originalUI)
                 } else {
                     NSLog("[MerchantQR] Failed to create UIImage from decoded data")
                 }
@@ -98,7 +100,7 @@ struct MerchantQRView: View {
         NSLog("[MerchantQR] Using hardcoded test QR code")
         if let testData = Data(base64Encoded: hardcodedTestQR),
            let testUI = UIImage(data: testData) {
-            return Image(uiImage: testUI)
+            return Image(uiImage: testUI.withRenderingMode(.alwaysOriginal))
         }
         
         return nil
@@ -111,16 +113,20 @@ struct MerchantQRView: View {
         Group {
             if isWide, let img = qrImage {
                 HStack(spacing: 8) {
-                    img
-                        .resizable()
-                        .interpolation(.none)
-                        .scaledToFit()
-                        .clipShape(RoundedRectangle(cornerRadius: 6))
+                    ZStack {
+                        Color.white
+                        img
+                            .resizable()
+                            .interpolation(.none)
+                            .scaledToFit()
+                    }
+                    .clipShape(RoundedRectangle(cornerRadius: 6))
 
                     VStack(alignment: .center, spacing: 6) {
                         HStack(spacing: 4) {
                             Image("RuralPayLogo")
                                 .resizable()
+                                .renderingMode(.original)
                                 .scaledToFit()
                                 .frame(width: 18, height: 18)
                                 .clipShape(Circle())
@@ -148,6 +154,7 @@ struct MerchantQRView: View {
                         HStack(spacing: 3) {
                             Image("RuralPayLogo")
                                 .resizable()
+                                .renderingMode(.original)
                                 .scaledToFit()
                                 .frame(width: 10, height: 10)
                                 .clipShape(Circle())
@@ -158,15 +165,19 @@ struct MerchantQRView: View {
                     }
 
                     if let img = qrImage {
-                        img
-                            .resizable()
-                            .interpolation(.none)
-                            .scaledToFit()
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                            .clipShape(RoundedRectangle(cornerRadius: 4))
+                        ZStack {
+                            Color.white
+                            img
+                                .resizable()
+                                .interpolation(.none)
+                                .scaledToFit()
+                        }
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .clipShape(RoundedRectangle(cornerRadius: 4))
                     } else {
                         Image("RuralPayLogo")
                             .resizable()
+                            .renderingMode(.original)
                             .scaledToFit()
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                             .clipShape(Circle())
@@ -206,6 +217,7 @@ struct ConsumerScanView: View {
                     AccessoryWidgetBackground()
                     Image("RuralPayLogo")
                         .resizable()
+                        .renderingMode(.original)
                         .scaledToFit()
                         .frame(width: 24, height: 24)
                         .clipShape(Circle())
@@ -214,6 +226,7 @@ struct ConsumerScanView: View {
                 HStack(spacing: 6) {
                     Image("RuralPayLogo")
                         .resizable()
+                        .renderingMode(.original)
                         .scaledToFit()
                         .frame(width: 20, height: 20)
                         .clipShape(Circle())
@@ -231,6 +244,7 @@ struct ConsumerScanView: View {
             default:
                 Image("RuralPayLogo")
                     .resizable()
+                    .renderingMode(.original)
                     .scaledToFit()
                     .frame(width: 20, height: 20)
                     .clipShape(Circle())
@@ -249,6 +263,7 @@ struct ConsumerScanView: View {
                 HStack(spacing: 12) {
                     Image("RuralPayLogo")
                         .resizable()
+                        .renderingMode(.original)
                         .scaledToFit()
                         .frame(width: 56, height: 56)
                         .clipShape(Circle())
@@ -272,6 +287,7 @@ struct ConsumerScanView: View {
                 VStack(spacing: isSmall ? 6 : 10) {
                     Image("RuralPayLogo")
                         .resizable()
+                        .renderingMode(.original)
                         .scaledToFit()
                         .frame(width: isSmall ? 52 : 64, height: isSmall ? 52 : 64)
                         .clipShape(Circle())
@@ -305,8 +321,13 @@ struct RuralPayWidget: Widget {
         ) { entry in
             RuralPayWidgetView(entry: entry)
                 .containerBackground(for: .widget) {
-                    RoundedRectangle(cornerRadius: 20)
-                        .fill(Color(.systemBackground))
+                    if entry.role == "merchant" {
+                        // Force white background in all appearances to prevent QR inversion
+                        Color.white
+                            .colorScheme(.light)
+                    } else {
+                        Color(.systemBackground)
+                    }
                 }
         }
         .configurationDisplayName("RuralPay")

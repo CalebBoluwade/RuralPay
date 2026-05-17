@@ -1,37 +1,65 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_merchant_root"
-    android:orientation="vertical"
-    android:gravity="center"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/widget_background"
     android:padding="10dp">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Receive Payment"
-        android:textSize="11sp"
-        android:textStyle="bold"
-        android:textColor="#1e293b"
-        android:layout_marginBottom="6dp" />
-
     <ImageView
         android:id="@+id/widget_merchant_qr"
         android:layout_width="0dp"
-        android:layout_height="0dp"
+        android:layout_height="match_parent"
         android:layout_weight="1"
         android:scaleType="fitCenter"
         android:contentDescription="Payment QR Code"
         android:src="@drawable/ic_qr_placeholder" />
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Scan to pay you"
-        android:textSize="9sp"
-        android:textColor="#64748b"
-        android:layout_marginTop="4dp" />
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1.2"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:paddingStart="12dp"
+        android:paddingEnd="6dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="RuralPay"
+            android:textSize="21sp"
+            android:textStyle="bold"
+            android:textColor="#1e293b"
+            android:letterSpacing="0.03"
+            android:lineSpacingExtra="2dp" />
+
+        <TextView
+            android:id="@+id/widget_merchant_name"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:textColor="#0f172a"
+            android:layout_marginTop="6dp"
+            android:maxLines="2"
+            android:ellipsize="end"
+            android:letterSpacing="0.01"
+            android:lineSpacingExtra="3dp"
+            android:visibility="gone" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Scan to pay"
+            android:textSize="16sp"
+            android:textColor="#64748b"
+            android:layout_marginTop="6dp"
+            android:letterSpacing="0.02"
+            android:lineSpacingExtra="2dp" />
+
+    </LinearLayout>
 
 </LinearLayout>

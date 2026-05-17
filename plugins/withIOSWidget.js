@@ -2,7 +2,12 @@ const { withDangerousMod } = require("@expo/config-plugins");
 const fs = require("fs");
 const path = require("path");
 
-const IOS_FILES = ["WidgetStorageModule.swift", "WidgetStorageModule.m"];
+const IOS_FILES = [
+  "WidgetStorageModule.swift",
+  "WidgetStorageModule.m",
+  "LiveActivityModule.swift",
+  "LiveActivityModule.m",
+];
 
 function withIOSWidget(config) {
   return withDangerousMod(config, [
