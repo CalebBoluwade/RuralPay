@@ -36,6 +36,8 @@ export class DeviceService {
       Constants.expoConfig?.extra?.eas?.projectId ??
       Constants.easConfig?.projectId;
 
+    if (!projectId) throw new Error("EAS projectId is missing from app config");
+
     const token = (await Notifications.getExpoPushTokenAsync({ projectId }))
       .data;
 

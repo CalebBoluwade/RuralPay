@@ -2,14 +2,14 @@ import PaymentService from "@/src/lib/services/PaymentService";
 import * as SecureStore from "expo-secure-store";
 import React, { useEffect, useState } from "react";
 import {
-  FlatList,
-  Modal,
-  Pressable,
-  Switch,
-  Text,
-  TextInput,
-  useColorScheme,
-  View,
+    FlatList,
+    Modal,
+    Pressable,
+    Switch,
+    Text,
+    TextInput,
+    useColorScheme,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Button from "../Button";
@@ -133,7 +133,7 @@ const BeneficiaryModal: React.FC<Props> = ({ visible, onClose, onSelect }) => {
             />
 
             <View className="flex-row items-center justify-between">
-              <Text className={`text-sm font-medium ${textSecondary}`}>
+              <Text className={`text-base font-medium ${textSecondary}`}>
                 {showFrequent ? "Frequent Beneficiaries" : "All Beneficiaries"}
               </Text>
               <View className="flex-row items-center gap-2">
@@ -182,7 +182,7 @@ const BeneficiaryModal: React.FC<Props> = ({ visible, onClose, onSelect }) => {
                     }`}
                   >
                     <Text
-                      className={`font-bold text-sm ${isDark ? "text-emerald-400" : "text-emerald-700"}`}
+                      className={`font-bold text-base ${isDark ? "text-emerald-400" : "text-emerald-700"}`}
                     >
                       {item.accountName.charAt(0).toUpperCase()}
                     </Text>

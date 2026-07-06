@@ -145,13 +145,13 @@ const TransactionHistory = () => {
         onPress={() => router.push(`/transaction/${item.transactionId}`)}
       >
         <View
-          className={`w-12 h-12 rounded-xl items-center justify-center ${isDark ? "bg-lime-500/20" : "bg-lime-50"}`}
+          className={`w-12 h-12 rounded-xl items-center justify-center ${isDark ? "bg-lime-500/20" : "bg-lime-200/10"}`}
         >
           <typeInfo.icon size={22} color={isCredit ? "#22c55e" : "#ef4444"} />
         </View>
         <View className="flex-1">
           <Text
-            className={`text-sm font-brand font-bold ${isDark ? "text-white" : "text-slate-900"}`}
+            className={`text-base font-brand font-bold ${isDark ? "text-white" : "text-slate-900"}`}
             numberOfLines={1}
           >
             {item.transactionId || typeInfo.label}
@@ -165,7 +165,7 @@ const TransactionHistory = () => {
         </View>
         <View className="items-end gap-1">
           <Text
-            className={`text-sm font-bold ${isCredit ? "text-green-500" : "text-red-500"}`}
+            className={`text-base font-bold ${isCredit ? "text-green-500" : "text-red-500"}`}
           >
             {formatAmount(item.amount, item.currency, true, isCredit)}
           </Text>
@@ -256,7 +256,7 @@ const TransactionHistory = () => {
                     From
                   </Text>
                   <Text
-                    className={`text-sm font-brand font-bold ${isDark ? "text-white" : "text-slate-900"}`}
+                    className={`text-base font-brand font-bold ${isDark ? "text-white" : "text-slate-900"}`}
                   >
                     {startDate
                       ? startDate.toLocaleDateString()
@@ -284,7 +284,7 @@ const TransactionHistory = () => {
                     To
                   </Text>
                   <Text
-                    className={`text-sm font-brand font-bold ${isDark ? "text-white" : "text-slate-900"}`}
+                    className={`text-base font-brand font-bold ${isDark ? "text-white" : "text-slate-900"}`}
                   >
                     {endDate ? endDate.toLocaleDateString() : "Select end date"}
                   </Text>
@@ -351,7 +351,7 @@ const TransactionHistory = () => {
               >
                 <X size={14} color={isDark ? "#f87171" : "#ef4444"} />
                 <Text
-                  className={`text-sm font-semibold ${isDark ? "text-red-400" : "text-red-500"}`}
+                  className={`text-base font-semibold ${isDark ? "text-red-400" : "text-red-500"}`}
                 >
                   Clear Filters
                 </Text>
@@ -377,7 +377,7 @@ const TransactionHistory = () => {
               No Transactions Yet
             </Text>
             <Text
-              className={`text-sm text-center ${isDark ? "text-slate-400" : "text-slate-500"}`}
+              className={`text-base text-center ${isDark ? "text-slate-400" : "text-slate-500"}`}
             >
               Your transaction history will appear here once you start making
               payments

@@ -1,18 +1,16 @@
-import { axiosInstance } from "@/src/lib/api";
 import Button from "@/src/components/ui/Button";
 import Card from "@/src/components/ui/Card";
+import InfoChip from "@/src/components/ui/InfoChip";
 // import { useStripe } from "@stripe/stripe-react-native";
 // import { Reader, useStripeTerminal } from "@stripe/stripe-terminal-react-native";
 import { router } from "expo-router";
 import { CreditCard, Smartphone } from "lucide-react-native";
 import { useState } from "react";
 import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  Text,
-  View,
-  useColorScheme,
+    ScrollView,
+    Text,
+    View,
+    useColorScheme
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import ScreenHeader from "../../ui/ScreenHeader";
@@ -82,14 +80,14 @@ const WalletPaySection = () => {
 
       {error && (
         <View className="mb-3 px-4 py-3 rounded-2xl bg-red-500/10 border border-red-500/20">
-          <Text className="text-red-500 text-sm">{error}</Text>
+          <Text className="text-red-500 text-base">{error}</Text>
         </View>
       )}
 
       {success && (
         <View className="mb-3 px-4 py-3 rounded-2xl bg-lime-500/10 border border-lime-500/20">
           <Text
-            className={`text-sm font-semibold ${isDark ? "text-lime-400" : "text-lime-700"}`}
+            className={`text-base font-semibold ${isDark ? "text-lime-400" : "text-lime-700"}`}
           >
             ✓ Payment confirmed
           </Text>
@@ -177,7 +175,7 @@ const TapToPaySection = () => {
 
       {error && (
         <View className="mb-3 px-4 py-3 rounded-2xl bg-red-500/10 border border-red-500/20">
-          <Text className="text-red-500 text-sm">{error}</Text>
+          <Text className="text-red-500 text-base">{error}</Text>
         </View>
       )}
 
@@ -201,18 +199,19 @@ const TapPaymentsScreen = () => {
     <SafeAreaView
       className={`flex-1 ${isDark ? "bg-slate-950" : "bg-slate-50"}`}
     >
-      <ScreenHeader title="Tap Payments" goBack onBack={() => router.back()} />
+      <ScreenHeader title="Tap to Pay" goBack onBack={() => router.back()} />
 
       <ScrollView
         className="flex-1 px-5"
         showsVerticalScrollIndicator={false}
         contentContainerClassName="pb-10"
       >
-        <Text
-          className={`text-sm mb-5 ${isDark ? "text-slate-400" : "text-slate-500"}`}
-        >
-          Choose a contactless payment method below.
-        </Text>
+        <View className="mb-4">
+          <InfoChip
+            label="What is Tap to Pay?"
+            explanation="Hold the back of your phone against a payment terminal or another phone. Your phone uses NFC (a short-range radio signal) to send the payment — no internet needed, no QR code to scan."
+          />
+        </View>
 
         <WalletPaySection />
         <TapToPaySection />

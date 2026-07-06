@@ -8,20 +8,20 @@ import { router } from "expo-router";
 import { Fingerprint, ScanFace, ScanLine } from "lucide-react-native";
 import React, { useEffect, useRef } from "react";
 import {
-  DeviceEventEmitter,
-  Pressable,
-  Text,
-  useColorScheme,
-  View,
+    DeviceEventEmitter,
+    Pressable,
+    Text,
+    useColorScheme,
+    View,
 } from "react-native";
 import Animated, {
-  FadeIn,
-  FadeInDown,
-  useAnimatedStyle,
-  useSharedValue,
-  withRepeat,
-  withSequence,
-  withTiming,
+    FadeIn,
+    FadeInDown,
+    useAnimatedStyle,
+    useSharedValue,
+    withRepeat,
+    withSequence,
+    withTiming,
 } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "../../context/AuthSessionProvider";
@@ -288,7 +288,7 @@ const LockScreen = () => {
           // entering={FadeInDown.delay(200).duration(600)}
           >
             <Text
-              className={`text-sm mb-6 ${isDark ? "text-gray-200" : "text-gray-500"}`}
+              className={`text-base mb-6 ${isDark ? "text-gray-200" : "text-gray-500"}`}
             >
               {isLocked
                 ? `Too Many Attempts. Try Again In ${lockSeconds}s`

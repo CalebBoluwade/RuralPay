@@ -1,4 +1,5 @@
 import Button from "@/src/components/ui/Button";
+import InfoChip from "@/src/components/ui/InfoChip";
 import PaymentMethodModal from "@/src/components/ui/Modals/Transaction/PaymentMethodModal";
 import TransactionPin from "@/src/components/ui/Modals/Transaction/TransactionPinModal";
 import ScreenHeader from "@/src/components/ui/ScreenHeader";
@@ -63,7 +64,12 @@ const QRPayments = () => {
     setError("");
 
     const txId = PaymentService.generateTransactionId("QR");
-    PaymentActivityService.start(txId, `₦${scannedQRData.amount.toLocaleString()}`, scannedQRData.merchantName);
+    PaymentActivityService.start(
+      txId,
+      "QR",
+      `₦${scannedQRData.amount.toLocaleString()}`,
+      scannedQRData.merchantName,
+    );
 
     try {
       const payment = await PaymentService.B2BTransfer({
@@ -86,7 +92,11 @@ const QRPayments = () => {
 
       if (payment.success) {
         paymentComplete.current = true;
-        PaymentActivityService.update("success", `₦${scannedQRData.amount.toLocaleString()}`, scannedQRData.merchantName);
+        PaymentActivityService.update(
+          "success",
+          `₦${scannedQRData.amount.toLocaleString()}`,
+          scannedQRData.merchantName,
+        );
         setPaymentResult({
           amount: scannedQRData.amount.toString(),
           recipient: scannedQRData.merchantName,
@@ -98,12 +108,20 @@ const QRPayments = () => {
         return true;
       }
 
-      PaymentActivityService.update("failed", `₦${scannedQRData.amount.toLocaleString()}`, scannedQRData.merchantName);
+      PaymentActivityService.update(
+        "failed",
+        `₦${scannedQRData.amount.toLocaleString()}`,
+        scannedQRData.merchantName,
+      );
       setError(payment.errorMessage || "Payment processing failed");
       return false;
     } catch (error) {
       if (__DEV__) console.error(error);
-      PaymentActivityService.update("failed", `₦${scannedQRData.amount.toLocaleString()}`, scannedQRData.merchantName);
+      PaymentActivityService.update(
+        "failed",
+        `₦${scannedQRData.amount.toLocaleString()}`,
+        scannedQRData.merchantName,
+      );
       setError((error as Error).message || "Failed to process payment");
       return false;
     } finally {
@@ -200,7 +218,13 @@ const QRPayments = () => {
       <SafeAreaView
         className={`flex-1 ${isDark ? "bg-[#0a0a0f]" : "bg-[#f5f5fa]"}`}
       >
-        <ScreenHeader title="Scan QR Code" onBack={() => router.back()} />
+        <ScreenHeader title="Scan to Pay" onBack={() => router.back()} />
+        <View className="px-5 pb-2">
+          <InfoChip
+            label="How does this work?"
+            explanation="Point your phone camera at the QR code displayed at the shop or on the merchant's screen. The app will automatically read it and show you the payment details before you confirm."
+          />
+        </View>
 
         <View className="flex-1 justify-center items-center px-6">
           {loading && !scannedQRData ? (

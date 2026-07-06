@@ -1,6 +1,12 @@
-import { ChevronRight, Link2, MessageSquareHeart, Pencil, Power } from "lucide-react-native";
-import { Pressable, Text, View } from "react-native";
 import { router } from "expo-router";
+import {
+  ChevronRight,
+  Link2,
+  MessageSquareHeart,
+  Pencil,
+  Power,
+} from "lucide-react-native";
+import { Pressable, Text, View } from "react-native";
 
 interface ProfileHeaderProps {
   readonly isDark: boolean;
@@ -16,7 +22,8 @@ const themeClasses = {
     `p-3 rounded-2xl ${isDark ? "bg-slate-800 border border-slate-700" : "bg-slate-100 border border-slate-200"}`,
   text: {
     title: (isDark: boolean) => (isDark ? "text-white" : "text-slate-900"),
-    subtitle: (isDark: boolean) => (isDark ? "text-slate-400" : "text-slate-600"),
+    subtitle: (isDark: boolean) =>
+      isDark ? "text-slate-400" : "text-slate-600",
   },
   icon: {
     light: (isDark: boolean) => (isDark ? "#a3e635" : "#65a30d"),
@@ -26,7 +33,8 @@ const themeClasses = {
 function UserAvatar({ user }: Readonly<{ user: User | null }>) {
   const initials =
     user?.role === "merchant" && user.merchant
-      ? (user.merchant.businessName[0] || "U") + (user.merchant.businessName[1] || "M")
+      ? (user.merchant.businessName[0] || "U") +
+        (user.merchant.businessName[1] || "M")
       : (user?.firstName?.[0] || "U") + (user?.lastName?.[0] || "N");
 
   return (
@@ -68,7 +76,11 @@ export function ProfileHeader({
       <View className={`${themeClasses.card(isDark)} px-6 py-3 mb-4`}>
         <View className="flex-row justify-between items-center">
           <UserAvatar user={user} />
-          <ProfileActionButtons isDark={isDark} onEdit={onEdit} onLogout={onLogout} />
+          <ProfileActionButtons
+            isDark={isDark}
+            onEdit={onEdit}
+            onLogout={onLogout}
+          />
         </View>
         <ProfileInfoDisplay user={user} isDark={isDark} />
       </View>
@@ -80,10 +92,14 @@ export function ProfileHeader({
         <View className="flex-row items-center gap-4">
           <Link2 size={26} color={themeClasses.icon.light(isDark)} />
           <View className="flex-1">
-            <Text className={`text-lg font-brand font-bold ${themeClasses.text.title(isDark)}`}>
+            <Text
+              className={`text-lg font-brand font-bold ${themeClasses.text.title(isDark)}`}
+            >
               Manage Linked Accounts
             </Text>
-            <Text className={`text-sm mt-1 ${themeClasses.text.subtitle(isDark)}`}>
+            <Text
+              className={`text-base mt-1 ${themeClasses.text.subtitle(isDark)}`}
+            >
               Link & Manage your Bank Accounts
             </Text>
           </View>
@@ -96,12 +112,19 @@ export function ProfileHeader({
         onPress={() => router.push("/feedback")}
       >
         <View className="flex-row items-center gap-4">
-          <MessageSquareHeart size={26} color={themeClasses.icon.light(isDark)} />
+          <MessageSquareHeart
+            size={26}
+            color={themeClasses.icon.light(isDark)}
+          />
           <View className="flex-1">
-            <Text className={`text-lg font-brand font-bold ${themeClasses.text.title(isDark)}`}>
+            <Text
+              className={`text-lg font-brand font-bold ${themeClasses.text.title(isDark)}`}
+            >
               Share Feedback
             </Text>
-            <Text className={`text-sm mt-1 ${themeClasses.text.subtitle(isDark)}`}>
+            <Text
+              className={`text-base mt-1 ${themeClasses.text.subtitle(isDark)}`}
+            >
               Help us build the product you deserve
             </Text>
           </View>
@@ -116,7 +139,13 @@ function ProfileInfoDisplay({
   user,
   isDark,
 }: Readonly<{ user: User | null; isDark: boolean }>) {
-  const { Mail, Phone, ShieldCheck, ShieldX, User } = require("lucide-react-native");
+  const {
+    Mail,
+    Phone,
+    ShieldCheck,
+    ShieldX,
+    User,
+  } = require("lucide-react-native");
   const iconColor = isDark ? "#9ca3af" : "#6b7280";
 
   return (
@@ -150,12 +179,14 @@ function ProfileInfoDisplay({
           ) : (
             <ShieldX size={14} color="#84cc16" />
           )}
-          <Text className="text-lime-400 text-sm font-semibold">
+          <Text className="text-lime-400 text-base font-semibold">
             {user?.kycLevel ?? "NOT VERIFIED"}
           </Text>
         </View>
         <View className="bg-slate-700/40 border border-slate-600/40 rounded-xl px-3 py-1">
-          <Text className={`text-sm font-semibold ${themeClasses.text.subtitle(isDark)}`}>
+          <Text
+            className={`text-base font-semibold ${themeClasses.text.subtitle(isDark)}`}
+          >
             KYC Level {user?.kycLevel ?? 1}
           </Text>
         </View>

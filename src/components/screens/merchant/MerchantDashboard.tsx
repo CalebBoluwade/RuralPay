@@ -71,6 +71,19 @@ function useFadeSlide(delay: number) {
   return { opacity: anim, transform: [{ translateY }] };
 }
 
+function humanisePaymentMode(mode: string): string {
+  const map: Record<string, string> = {
+    BANK_TRANSFER: "Bank Transfer",
+    QR: "QR Payment",
+    NFC: "Tap Card Payment",
+    USSD: "USSD Payment",
+    BLUETOOTH: "Nearby Payment",
+    CARD: "Card Payment",
+    WALLET: "Wallet Payment",
+  };
+  return map[mode?.toUpperCase()] ?? mode;
+}
+
 export default function MerchantDashboard() {
   const { user } = useAuth();
   const colorScheme = useColorScheme();
@@ -141,15 +154,15 @@ export default function MerchantDashboard() {
     },
     {
       id: "nfc",
-      label: "Accept NFC Payments",
-      subtitle: "Tap Customer Card To Receive Payment",
+      label: "Tap to Accept Card",
+      subtitle: "Customer taps their card on your phone to pay",
       icon: CreditCard,
       onPress: () => setShowMerchantPayModal(true),
     },
     {
       id: "qr",
-      label: "QR Generator",
-      subtitle: "Generate your business QR code",
+      label: "Show My QR Code",
+      subtitle: "Customer scans this to pay you instantly",
       icon: QrCode,
       onPress: () => setShowMerchantQRModal(true),
     },
@@ -280,7 +293,7 @@ export default function MerchantDashboard() {
               </View>
               <View className="flex-1">
                 <Text
-                  className={`text-sm font-bold ${isDark ? "text-white" : "text-slate-900"}`}
+                  className={`text-base font-bold ${isDark ? "text-white" : "text-slate-900"}`}
                 >
                   {item.label}
                 </Text>
@@ -355,10 +368,10 @@ export default function MerchantDashboard() {
             </View>
             <View className="flex-1">
               <Text
-                className={`text-sm font-semibold ${isDark ? "text-white" : "text-slate-900"}`}
+                className={`text-base font-semibold ${isDark ? "text-white" : "text-slate-900"}`}
                 numberOfLines={1}
               >
-                {item.paymentMode}
+                {humanisePaymentMode(item.paymentMode)}
               </Text>
               <Text
                 className={`text-xs mt-0.5 ${isDark ? "text-slate-400" : "text-slate-500"}`}
@@ -368,7 +381,7 @@ export default function MerchantDashboard() {
             </View>
             <View className="flex-col gap-2 items-end">
               <Text
-                className={`text-sm font-bold ${isDark ? "text-red-400" : "text-red-500"}`}
+                className={`text-base font-bold ${isDark ? "text-red-400" : "text-red-500"}`}
               >
                 -₦{item.amount.toLocaleString()}
               </Text>
@@ -384,7 +397,7 @@ export default function MerchantDashboard() {
                 }`}
               >
                 <Text
-                  className={`text-sm font-bold ${
+                  className={`text-base font-bold ${
                     item.status === "COMPLETED"
                       ? "text-green-500"
                       : "text-orange-500"
@@ -400,7 +413,7 @@ export default function MerchantDashboard() {
           <View className="py-10 items-center gap-2">
             <Receipt size={40} color={isDark ? "#334155" : "#cbd5e1"} />
             <Text
-              className={`text-sm font-medium ${isDark ? "text-slate-500" : "text-slate-400"}`}
+              className={`text-base font-medium ${isDark ? "text-slate-500" : "text-slate-400"}`}
             >
               No Recent Transactions
             </Text>

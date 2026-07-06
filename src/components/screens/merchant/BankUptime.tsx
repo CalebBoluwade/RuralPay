@@ -4,14 +4,14 @@ import { router } from "expo-router";
 import { Activity, Search, X } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  Text,
-  TextInput,
-  View,
-  useColorScheme,
+    ActivityIndicator,
+    Pressable,
+    RefreshControl,
+    ScrollView,
+    Text,
+    TextInput,
+    View,
+    useColorScheme,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { SvgUri } from "react-native-svg";
@@ -82,7 +82,7 @@ const BankUptime = () => {
           <View className="flex-row items-center px-4 py-3 gap-3">
             <Search size={18} color={isDark ? "#64748b" : "#94a3b8"} />
             <TextInput
-              className={`flex-1 text-sm font-brand ${isDark ? "text-white" : "text-slate-900"}`}
+              className={`flex-1 text-base font-brand ${isDark ? "text-white" : "text-slate-900"}`}
               placeholder="Search Banks..."
               placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
               value={searchQuery}
@@ -104,7 +104,7 @@ const BankUptime = () => {
             color={isDark ? "#a3e635" : "#65a30d"}
           />
           <Text
-            className={`text-sm ${isDark ? "text-slate-400" : "text-slate-500"}`}
+            className={`text-base ${isDark ? "text-slate-400" : "text-slate-500"}`}
           >
             Loading bank status...
           </Text>
@@ -138,7 +138,7 @@ const BankUptime = () => {
                   No Banks Found
                 </Text>
                 <Text
-                  className={`text-sm text-center px-8 ${isDark ? "text-slate-400" : "text-slate-500"}`}
+                  className={`text-base text-center px-8 ${isDark ? "text-slate-400" : "text-slate-500"}`}
                 >
                   {searchQuery
                     ? "Try adjusting your search"
@@ -166,7 +166,7 @@ const BankUptime = () => {
                     </View>
                     <View className="flex-1">
                       <Text
-                        className={`text-sm font-brand font-bold ${isDark ? "text-white" : "text-slate-900"}`}
+                        className={`text-base font-brand font-bold ${isDark ? "text-white" : "text-slate-900"}`}
                         numberOfLines={1}
                       >
                         {bank.name}

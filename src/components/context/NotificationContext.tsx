@@ -46,7 +46,10 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
   useEffect(() => {
     DeviceService.registerForPushNotificationsAsync().then(
       (token) => setExpoPushToken(token),
-      (error) => setError(error),
+      (error) => {
+        if (__DEV__) console.warn("❌ Expo push token failed:", error.message);
+        setError(error);
+      },
     );
 
     Notifications.getDevicePushTokenAsync().then(

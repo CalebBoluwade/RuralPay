@@ -3,14 +3,16 @@ import WidgetStorageService from "@/src/lib/services/WidgetStorageService";
 
 class QRCodeService {
   async processScannedQR(data: string): Promise<ScannedQRData> {
-    const response = await axiosInstance.get(`/account/qr?token=${data}`);
+    const response = await axiosInstance.get(`/merchant/qr?token=${data}`);
     return response.details;
   }
 
   async GeneratePaymentQR(): Promise<string> {
     if (__DEV__) console.log("[QRCodeService] GeneratePaymentQR called");
     const response =
-      await axiosInstance.post<APIResponse<{ qrImage: string }>>("/account/qr");
+      await axiosInstance.post<APIResponse<{ qrImage: string }>>(
+        "/merchant/qr",
+      );
     const qr = response.details.qrImage;
     if (__DEV__)
       console.log(`[QRCodeService] QR received, length=${qr?.length ?? 0}`);

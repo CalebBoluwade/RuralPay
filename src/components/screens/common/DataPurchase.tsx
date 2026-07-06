@@ -1,15 +1,15 @@
 import { useAuth } from "@/src/components/context/AuthSessionProvider";
+import Button from "@/src/components/ui/Button";
+import Card from "@/src/components/ui/Card";
 import ContactsModal from "@/src/components/ui/Modals/ContactsModal";
 import PaymentMethodModal from "@/src/components/ui/Modals/Transaction/PaymentMethodModal";
 import TransactionPin from "@/src/components/ui/Modals/Transaction/TransactionPinModal";
 import {
-  AirtelLogo,
-  GloLogo,
-  MTNLogo,
-  NineMobileLogo,
+    AirtelLogo,
+    GloLogo,
+    MTNLogo,
+    NineMobileLogo,
 } from "@/src/components/ui/NetworkLogos";
-import Button from "@/src/components/ui/Button";
-import Card from "@/src/components/ui/Card";
 import ScreenHeader from "@/src/components/ui/ScreenHeader";
 import { useClearLoadingOnLock } from "@/src/hooks/useClearLoadingOnLock";
 import AppLogger, { LogLevel } from "@/src/lib/services/AppLogger";
@@ -21,15 +21,15 @@ import * as Contacts from "expo-contacts";
 import { Database, Phone, Users } from "lucide-react-native";
 import React, { useEffect, useRef, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  Animated,
-  Pressable,
-  ScrollView,
-  Text,
-  TextInput,
-  View,
-  useColorScheme,
+    ActivityIndicator,
+    Alert,
+    Animated,
+    Pressable,
+    ScrollView,
+    Text,
+    TextInput,
+    View,
+    useColorScheme,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -100,7 +100,9 @@ const DataPurchase = () => {
     setSelectedPlan("");
     setPlansLoading(true);
     PaymentService.FetchDataPlans(selectedNetwork.toUpperCase())
-      .then((plans) => { if (plans.length) setDataPlans(plans); })
+      .then((plans) => {
+        if (plans.length) setDataPlans(plans);
+      })
       .finally(() => setPlansLoading(false));
   }, [selectedNetwork]);
 
@@ -241,7 +243,7 @@ const DataPurchase = () => {
                 >
                   <network.Logo size={36} />
                   <Text
-                    className={`font-brand font-semibold text-sm ${isDark ? "text-white" : "text-slate-900"}`}
+                    className={`font-brand font-semibold text-base ${isDark ? "text-white" : "text-slate-900"}`}
                   >
                     {network.name}
                   </Text>
@@ -274,7 +276,7 @@ const DataPurchase = () => {
                 </View>
                 <View className="flex-1">
                   <Text
-                    className={`text-sm font-brand font-bold ${isDark ? "text-white" : "text-slate-900"}`}
+                    className={`text-base font-brand font-bold ${isDark ? "text-white" : "text-slate-900"}`}
                   >
                     Use My Number
                   </Text>
@@ -294,7 +296,7 @@ const DataPurchase = () => {
                   placeholder="08012345678"
                   placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
                   keyboardType="phone-pad"
-                  className={`flex-1 text-sm font-brand py-2 ${isDark ? "text-white" : "text-slate-900"}`}
+                  className={`flex-1 text-base font-brand py-2 ${isDark ? "text-white" : "text-slate-900"}`}
                 />
                 <Pressable
                   className={`w-10 h-10 rounded-xl items-center justify-center ${isDark ? "bg-lime-500/20" : "bg-lime-50"}`}
@@ -324,52 +326,52 @@ const DataPurchase = () => {
             {plansLoading ? (
               <ActivityIndicator color={isDark ? "#a3e635" : "#65a30d"} />
             ) : (
-            <Card className="overflow-hidden">
-              {dataPlans.map((plan, index) => (
-                <Pressable
-                  key={plan.id}
-                  onPress={() => setSelectedPlan(plan.id)}
-                  className={`flex-row items-center px-4 py-4 gap-4 ${
-                    index < dataPlans.length - 1
-                      ? isDark
-                        ? "border-b border-white/10"
-                        : "border-b border-slate-100"
-                      : ""
-                  } ${selectedPlan === plan.id ? (isDark ? "bg-lime-500/10" : "bg-lime-50") : ""}`}
-                >
-                  <View
-                    className={`w-12 h-12 rounded-xl items-center justify-center ${isDark ? "bg-lime-500/20" : "bg-lime-50"}`}
+              <Card className="overflow-hidden">
+                {dataPlans.map((plan, index) => (
+                  <Pressable
+                    key={plan.id}
+                    onPress={() => setSelectedPlan(plan.id)}
+                    className={`flex-row items-center px-4 py-4 gap-4 ${
+                      index < dataPlans.length - 1
+                        ? isDark
+                          ? "border-b border-white/10"
+                          : "border-b border-slate-100"
+                        : ""
+                    } ${selectedPlan === plan.id ? (isDark ? "bg-lime-500/10" : "bg-lime-50") : ""}`}
                   >
-                    <Database
-                      size={22}
-                      color={isDark ? "#a3e635" : "#65a30d"}
-                    />
-                  </View>
-                  <View className="flex-1">
-                    <Text
-                      className={`text-sm font-brand font-bold ${isDark ? "text-white" : "text-slate-900"}`}
+                    <View
+                      className={`w-12 h-12 rounded-xl items-center justify-center ${isDark ? "bg-lime-500/20" : "bg-lime-50"}`}
                     >
-                      {plan.size}
-                    </Text>
-                    <Text
-                      className={`text-xs mt-0.5 ${isDark ? "text-slate-400" : "text-slate-500"}`}
-                    >
-                      Valid for {plan.validity}
-                    </Text>
-                  </View>
-                  <View className="items-end gap-1">
-                    <Text
-                      className={`text-sm font-bold ${isDark ? "text-white" : "text-slate-900"}`}
-                    >
-                      ₦{plan.price.toLocaleString()}
-                    </Text>
-                    {selectedPlan === plan.id && (
-                      <View className="w-2 h-2 rounded-full bg-lime-500" />
-                    )}
-                  </View>
-                </Pressable>
-              ))}
-            </Card>
+                      <Database
+                        size={22}
+                        color={isDark ? "#a3e635" : "#65a30d"}
+                      />
+                    </View>
+                    <View className="flex-1">
+                      <Text
+                        className={`text-base font-brand font-bold ${isDark ? "text-white" : "text-slate-900"}`}
+                      >
+                        {plan.size}
+                      </Text>
+                      <Text
+                        className={`text-xs mt-0.5 ${isDark ? "text-slate-400" : "text-slate-500"}`}
+                      >
+                        Valid for {plan.validity}
+                      </Text>
+                    </View>
+                    <View className="items-end gap-1">
+                      <Text
+                        className={`text-base font-bold ${isDark ? "text-white" : "text-slate-900"}`}
+                      >
+                        ₦{plan.price.toLocaleString()}
+                      </Text>
+                      {selectedPlan === plan.id && (
+                        <View className="w-2 h-2 rounded-full bg-lime-500" />
+                      )}
+                    </View>
+                  </Pressable>
+                ))}
+              </Card>
             )}
           </Animated.View>
 

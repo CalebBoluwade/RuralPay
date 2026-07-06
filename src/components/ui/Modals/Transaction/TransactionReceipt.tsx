@@ -54,7 +54,7 @@ const TransactionReceipt: React.FC<TransactionReceiptProps> = ({
             }`}
           >
             <Text
-              className={`text-sm font-bold ${
+              className={`text-base font-bold ${
                 transaction.status === "COMPLETED"
                   ? "text-green-500"
                   : "text-orange-500"

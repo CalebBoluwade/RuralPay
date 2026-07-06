@@ -20,12 +20,12 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
+const SLIDE_COUNT = 4;
+
 interface Slide {
   id: string;
-  icon: string;
   title: string;
   subtitle: string;
-  accent: string;
 }
 
 interface OnboardingCarouselProps {
@@ -33,76 +33,377 @@ interface OnboardingCarouselProps {
   appVersion: string;
 }
 
-// ─── Slide 1 animated visuals ─────────────────────────────────────────────────
+// ─── Phone frame wrapper ──────────────────────────────────────────────────────
 
-function NfcRing({
-  size,
-  color,
-  delay,
-}: Readonly<{ size: number; color: string; delay: number }>) {
-  const scale = useSharedValue(0.6);
-  const opacity = useSharedValue(0.8);
-
-  useEffect(() => {
-    const t = setTimeout(() => {
-      scale.value = withRepeat(withTiming(1.8, { duration: 1800 }), -1, false);
-      opacity.value = withRepeat(withTiming(0, { duration: 1800 }), -1, false);
-    }, delay);
-    return () => clearTimeout(t);
-  }, []);
-
-  const style = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-    opacity: opacity.value,
-  }));
-
+function PhoneFrame({
+  isDark,
+  children,
+}: {
+  isDark: boolean;
+  children: React.ReactNode;
+}) {
   return (
-    <Animated.View
-      style={[
-        style,
-        {
-          width: size,
-          height: size,
-          borderRadius: size / 2,
-          borderWidth: 1.5,
-          borderColor: color,
-          position: "absolute",
-        },
-      ]}
-    />
+    <View
+      style={{ width: SCREEN_WIDTH * 0.62, height: SCREEN_WIDTH * 0.62 * 1.78 }}
+      className={`rounded-[32px] overflow-hidden border-2 ${
+        isDark ? "border-white/20 bg-slate-900" : "border-slate-300 bg-white"
+      }`}
+    >
+      <View
+        className={`flex-row justify-between px-4 pt-2 pb-1 ${isDark ? "bg-slate-900" : "bg-white"}`}
+      >
+        <Text
+          style={{ fontSize: 9 }}
+          className={isDark ? "text-slate-400" : "text-slate-500"}
+        >
+          9:41
+        </Text>
+        <Text
+          style={{ fontSize: 9 }}
+          className={isDark ? "text-slate-400" : "text-slate-500"}
+        >
+          ●●●
+        </Text>
+      </View>
+      {children}
+    </View>
   );
 }
 
-function Slide1Visual() {
-  const translateY = useSharedValue(0);
+// ─── Slide 1: Dashboard mockup ────────────────────────────────────────────────
 
+function Slide1Visual({ isDark }: { isDark: boolean }) {
+  const pulse = useSharedValue(1);
   useEffect(() => {
-    translateY.value = withRepeat(
-      withTiming(-10, { duration: 2000, easing: Easing.inOut(Easing.ease) }),
+    pulse.value = withRepeat(
+      withTiming(1.04, { duration: 1600, easing: Easing.inOut(Easing.ease) }),
+      -1,
+      true,
+    );
+  }, []);
+  const pulseStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: pulse.value }],
+  }));
+
+  return (
+    <PhoneFrame isDark={isDark}>
+      <View
+        className={`flex-1 px-3 pt-1 ${isDark ? "bg-slate-900" : "bg-slate-50"}`}
+      >
+        <Text
+          style={{ fontSize: 8 }}
+          className={isDark ? "text-slate-400" : "text-slate-500"}
+        >
+          Good Morning
+        </Text>
+        <Text
+          style={{ fontSize: 11 }}
+          className={`font-bold mb-2 ${isDark ? "text-white" : "text-slate-900"}`}
+        >
+          Ada 👋
+        </Text>
+        <Animated.View
+          style={pulseStyle}
+          className="bg-lime-500 rounded-2xl p-3 mb-3"
+        >
+          <Text style={{ fontSize: 7 }} className="text-lime-900">
+            Total Balance
+          </Text>
+          <Text style={{ fontSize: 14 }} className="text-white font-bold">
+            ₦24,500.00
+          </Text>
+          <Text style={{ fontSize: 7 }} className="text-lime-100 mt-1">
+            **** **** 4821
+          </Text>
+        </Animated.View>
+        <View className="flex-row justify-between mb-3">
+          {["Send", "Scan", "History", "Cards"].map((label) => (
+            <View key={label} className="items-center gap-1">
+              <View
+                className={`w-8 h-8 rounded-xl items-center justify-center ${isDark ? "bg-white/10" : "bg-white border border-slate-200"}`}
+              />
+              <Text
+                style={{ fontSize: 6 }}
+                className={isDark ? "text-slate-400" : "text-slate-500"}
+              >
+                {label}
+              </Text>
+            </View>
+          ))}
+        </View>
+        {[
+          ["Bank Transfer", "-₦5,000"],
+          ["QR Payment", "-₦1,200"],
+        ].map(([label, amt]) => (
+          <View
+            key={label}
+            className={`flex-row items-center justify-between py-1.5 ${isDark ? "border-b border-white/10" : "border-b border-slate-100"}`}
+          >
+            <View
+              className={`w-5 h-5 rounded-lg mr-2 ${isDark ? "bg-lime-500/20" : "bg-lime-50"}`}
+            />
+            <Text
+              style={{ fontSize: 7 }}
+              className={`flex-1 ${isDark ? "text-slate-300" : "text-slate-700"}`}
+            >
+              {label}
+            </Text>
+            <Text style={{ fontSize: 7 }} className="text-red-400 font-bold">
+              {amt}
+            </Text>
+          </View>
+        ))}
+      </View>
+    </PhoneFrame>
+  );
+}
+
+// ─── Slide 2: Transfer form mockup ───────────────────────────────────────────
+
+function Slide2Visual({ isDark }: { isDark: boolean }) {
+  const arrowX = useSharedValue(0);
+  useEffect(() => {
+    arrowX.value = withRepeat(
+      withTiming(6, { duration: 800, easing: Easing.inOut(Easing.ease) }),
+      -1,
+      true,
+    );
+  }, []);
+  const arrowStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: arrowX.value }],
+  }));
+
+  return (
+    <PhoneFrame isDark={isDark}>
+      <View
+        className={`flex-1 px-3 pt-1 ${isDark ? "bg-slate-900" : "bg-slate-50"}`}
+      >
+        <Text
+          style={{ fontSize: 11 }}
+          className={`font-bold mb-3 ${isDark ? "text-white" : "text-slate-900"}`}
+        >
+          Send Money
+        </Text>
+        <View
+          className={`rounded-xl p-2 mb-2 ${isDark ? "bg-white/10" : "bg-white border border-slate-200"}`}
+        >
+          <Text
+            style={{ fontSize: 6 }}
+            className={isDark ? "text-slate-400" : "text-slate-500"}
+          >
+            Amount
+          </Text>
+          <Text
+            style={{ fontSize: 13 }}
+            className={`font-bold ${isDark ? "text-white" : "text-slate-900"}`}
+          >
+            ₦10,000
+          </Text>
+        </View>
+        <View
+          className={`rounded-xl p-2 mb-2 ${isDark ? "bg-white/10" : "bg-white border border-slate-200"}`}
+        >
+          <Text
+            style={{ fontSize: 6 }}
+            className={isDark ? "text-slate-400" : "text-slate-500"}
+          >
+            Bank
+          </Text>
+          <Text
+            style={{ fontSize: 8 }}
+            className={isDark ? "text-white" : "text-slate-900"}
+          >
+            Access Bank
+          </Text>
+        </View>
+        <View className="rounded-xl p-2 mb-3 bg-emerald-500/20 border border-emerald-500/30">
+          <Text style={{ fontSize: 6 }} className="text-emerald-500">
+            Account Name
+          </Text>
+          <Text style={{ fontSize: 8 }} className="text-emerald-400 font-bold">
+            CHUKWU EMEKA
+          </Text>
+        </View>
+        <Animated.View
+          style={arrowStyle}
+          className="bg-lime-400 rounded-xl py-2 items-center"
+        >
+          <Text style={{ fontSize: 8 }} className="text-black font-bold">
+            💸 Send Money →
+          </Text>
+        </Animated.View>
+      </View>
+    </PhoneFrame>
+  );
+}
+
+// ─── Slide 3: QR scanner mockup ──────────────────────────────────────────────
+
+function Slide3Visual({ isDark }: { isDark: boolean }) {
+  const scanLine = useSharedValue(0);
+  useEffect(() => {
+    scanLine.value = withRepeat(
+      withTiming(80, { duration: 1400, easing: Easing.inOut(Easing.ease) }),
       -1,
       true,
     );
   }, []);
 
-  const cardStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: translateY.value }],
+  const scanStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: scanLine.value }],
   }));
 
   return (
-    <View style={{ width: 240, height: 180 }} className="items-center justify-center">
-      {/* NFC rings behind the card */}
-      <NfcRing size={80} color="#93c5fd" delay={0} />
-      <NfcRing size={120} color="#bfdbfe" delay={400} />
-      <NfcRing size={160} color="#dbeafe" delay={800} />
-      {/* Card on top */}
-      <Animated.View
-        style={[cardStyle, { width: 220, height: 130 }]}
-        className="bg-lime-600 rounded-2xl p-4 justify-between shadow-2xl"
+    <PhoneFrame isDark={isDark}>
+      <View
+        className={`flex-1 px-3 pt-1 ${isDark ? "bg-slate-900" : "bg-slate-50"}`}
       >
-        <Text className="text-white text-base font-bold">**** **** **** 1234</Text>
-        <Text className="text-white font-semibold">Jane Doe</Text>
-      </Animated.View>
-    </View>
+        <Text
+          style={{ fontSize: 11 }}
+          className={`font-bold mb-2 ${isDark ? "text-white" : "text-slate-900"}`}
+        >
+          Scan to Pay
+        </Text>
+        <Text
+          style={{ fontSize: 7 }}
+          className={`mb-3 ${isDark ? "text-slate-400" : "text-slate-500"}`}
+        >
+          Point camera at merchant QR code
+        </Text>
+        <View
+          className={`rounded-2xl overflow-hidden items-center justify-center ${isDark ? "bg-black" : "bg-slate-800"}`}
+          style={{ height: 110 }}
+        >
+          {(
+            [
+              [0, 0],
+              [0, 1],
+              [1, 0],
+              [1, 1],
+            ] as [number, number][]
+          ).map(([r, c], i) => (
+            <View
+              key={i}
+              style={{
+                position: "absolute",
+                top: r ? undefined : 8,
+                bottom: r ? 8 : undefined,
+                left: c ? undefined : 8,
+                right: c ? 8 : undefined,
+                width: 16,
+                height: 16,
+                borderTopWidth: r ? 0 : 2,
+                borderBottomWidth: r ? 2 : 0,
+                borderLeftWidth: c ? 0 : 2,
+                borderRightWidth: c ? 2 : 0,
+                borderColor: "#a3e635",
+              }}
+            />
+          ))}
+          <View className="w-14 h-14 bg-white rounded-lg items-center justify-center">
+            <View
+              className="w-10 h-10"
+              style={{ flexDirection: "row", flexWrap: "wrap", gap: 1 }}
+            >
+              {Array.from({ length: 16 }).map((_, i) => (
+                <View
+                  key={i}
+                  style={{
+                    width: "22%",
+                    aspectRatio: 1,
+                    backgroundColor: i % 3 === 0 ? "#000" : "#fff",
+                  }}
+                />
+              ))}
+            </View>
+          </View>
+          <Animated.View
+            style={[
+              scanStyle,
+              {
+                position: "absolute",
+                left: 8,
+                right: 8,
+                height: 1.5,
+                backgroundColor: "#a3e635",
+                opacity: 0.8,
+              },
+            ]}
+          />
+        </View>
+        <Text
+          style={{ fontSize: 7 }}
+          className="text-center mt-2 text-lime-500 font-bold"
+        >
+          Scanning...
+        </Text>
+      </View>
+    </PhoneFrame>
+  );
+}
+
+// ─── Slide 4: PIN lock screen mockup ─────────────────────────────────────────
+
+function Slide4Visual({ isDark }: { isDark: boolean }) {
+  const [filled, setFilled] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setFilled((f) => (f >= 6 ? 0 : f + 1)), 500);
+    return () => clearInterval(id);
+  }, []);
+
+  return (
+    <PhoneFrame isDark={isDark}>
+      <View
+        className={`flex-1 items-center px-3 pt-4 ${isDark ? "bg-slate-900" : "bg-slate-50"}`}
+      >
+        <View
+          className={`w-12 h-12 rounded-full items-center justify-center mb-2 ${isDark ? "bg-violet-500/20" : "bg-violet-100"}`}
+        >
+          <Text style={{ fontSize: 22 }}>🔒</Text>
+        </View>
+        <Text
+          style={{ fontSize: 10 }}
+          className={`font-bold mb-1 ${isDark ? "text-white" : "text-slate-900"}`}
+        >
+          Enter PIN
+        </Text>
+        <Text
+          style={{ fontSize: 7 }}
+          className={`mb-4 ${isDark ? "text-slate-400" : "text-slate-500"}`}
+        >
+          Your money is protected
+        </Text>
+        <View className="flex-row gap-3 mb-4">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <View
+              key={i}
+              className={`w-4 h-4 rounded-full border-2 ${i < filled ? "bg-lime-400 border-lime-400" : isDark ? "border-white/30" : "border-slate-300"}`}
+            />
+          ))}
+        </View>
+        {[
+          [1, 2, 3],
+          [4, 5, 6],
+          [7, 8, 9],
+        ].map((row) => (
+          <View key={row[0]} className="flex-row gap-4 mb-2">
+            {row.map((n) => (
+              <View
+                key={n}
+                className={`w-10 h-10 rounded-full items-center justify-center ${isDark ? "bg-white/10" : "bg-white border border-slate-200"}`}
+              >
+                <Text
+                  style={{ fontSize: 11 }}
+                  className={isDark ? "text-white" : "text-slate-900"}
+                >
+                  {n}
+                </Text>
+              </View>
+            ))}
+          </View>
+        ))}
+      </View>
+    </PhoneFrame>
   );
 }
 
@@ -121,7 +422,7 @@ function Dots({ count, activeIndex }: { count: number; activeIndex: number }) {
   );
 }
 
-// ─── Individual slide ─────────────────────────────────────────────────────────
+// ─── Slide item ───────────────────────────────────────────────────────────────
 
 function SlideItem({
   isDark,
@@ -134,29 +435,27 @@ function SlideItem({
   index: number;
   slideHeight: number;
 }) {
+  const renderVisual = () => {
+    if (index === 0) return <Slide1Visual isDark={isDark} />;
+    if (index === 1) return <Slide2Visual isDark={isDark} />;
+    if (index === 2) return <Slide3Visual isDark={isDark} />;
+    return <Slide4Visual isDark={isDark} />;
+  };
+
   return (
     <View
       style={{ width: SCREEN_WIDTH, height: slideHeight }}
-      className="items-center justify-center px-8 gap-y-8"
+      className="items-center justify-center px-8 gap-y-6"
     >
-      {index === 0 ? (
-        <Slide1Visual />
-      ) : (
-        <View
-          className={`w-36 h-36 rounded-3xl items-center justify-center ${item.accent}`}
-        >
-          <Text style={{ fontSize: 72 }}>{item.icon}</Text>
-        </View>
-      )}
-
-      <View className="items-center gap-y-3">
+      {renderVisual()}
+      <View className="items-center gap-y-2">
         <Text
           className={`text-2xl font-bold text-center leading-tight ${isDark ? "text-white" : "text-slate-800"}`}
         >
           {item.title}
         </Text>
         <Text
-          className={`text-sm text-center leading-relaxed ${isDark ? "text-slate-400" : "text-slate-500"}`}
+          className={`text-base text-center leading-relaxed ${isDark ? "text-slate-400" : "text-slate-500"}`}
           style={{ maxWidth: SCREEN_WIDTH - 64 }}
         >
           {item.subtitle}
@@ -179,36 +478,28 @@ export default function OnboardingCarousel({
   const isDark = colorScheme === "dark";
   const { t } = useLanguage();
 
-  const isLast = activeIndex === 4 - 1; // SLIDES.length
+  const isLast = activeIndex === SLIDE_COUNT - 1;
 
   const SLIDES: Slide[] = [
     {
       id: "1",
-      icon: "💳",
       title: t("onboarding.slide1Title"),
       subtitle: t("onboarding.slide1Subtitle"),
-      accent: "bg-emerald-100",
     },
     {
       id: "2",
-      icon: "🏦",
       title: t("onboarding.slide2Title"),
       subtitle: t("onboarding.slide2Subtitle"),
-      accent: "bg-blue-100",
     },
     {
       id: "3",
-      icon: "🔒",
       title: t("onboarding.slide3Title"),
       subtitle: t("onboarding.slide3Subtitle"),
-      accent: "bg-violet-100",
     },
     {
       id: "4",
-      icon: "📊",
       title: t("onboarding.slide4Title"),
       subtitle: t("onboarding.slide4Subtitle"),
-      accent: "bg-amber-100",
     },
   ];
 
@@ -227,24 +518,32 @@ export default function OnboardingCarousel({
       onFinish();
       return;
     }
-    flatListRef.current?.scrollToIndex({ index: activeIndex + 1, animated: true });
+    flatListRef.current?.scrollToIndex({
+      index: activeIndex + 1,
+      animated: true,
+    });
   }, [isLast, activeIndex, onFinish]);
 
   return (
-    <SafeAreaView className={`flex-1 ${isDark ? "bg-slate-950" : "bg-slate-50"}`}>
-      {/* Top row: skip */}
-      <View className="flex-row justify-end px-6 pt-2 pb-2" style={{ minHeight: 44 }}>
+    <SafeAreaView
+      className={`flex-1 ${isDark ? "bg-slate-950" : "bg-slate-50"}`}
+    >
+      <View
+        className="flex-row justify-end px-6 pt-2 pb-2"
+        style={{ minHeight: 44 }}
+      >
         {!isLast && (
           <Pressable
             onPress={onFinish}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <Text className="text-lime-500 text-base font-bold">{t("common.skip")}</Text>
+            <Text className="text-lime-500 text-base font-bold">
+              {t("common.skip")}
+            </Text>
           </Pressable>
         )}
       </View>
 
-      {/* Slides — flex-1 so they fill remaining space */}
       <View
         className="flex-1"
         onLayout={(e) => setSlideHeight(e.nativeEvent.layout.height)}
@@ -277,10 +576,8 @@ export default function OnboardingCarousel({
         )}
       </View>
 
-      {/* Bottom controls */}
       <View className="px-6 pb-4 pt-4 gap-y-4">
         <Dots count={SLIDES.length} activeIndex={activeIndex} />
-
         <Pressable
           onPress={goNext}
           className={`rounded-2xl py-4 ${
@@ -299,7 +596,6 @@ export default function OnboardingCarousel({
             {isLast ? t("common.getStarted") : t("common.next")}
           </Text>
         </Pressable>
-
         <Text
           className={`text-center text-sm ${isDark ? "text-slate-500" : "text-slate-400"}`}
         >

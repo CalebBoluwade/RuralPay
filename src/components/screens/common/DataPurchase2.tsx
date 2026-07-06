@@ -5,15 +5,15 @@ import * as Contacts from "expo-contacts";
 import { Users, X } from "lucide-react-native";
 import React, { useEffect, useRef, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  Animated,
-  Pressable,
-  ScrollView,
-  Text,
-  TextInput,
-  View,
-  useColorScheme,
+    ActivityIndicator,
+    Alert,
+    Animated,
+    Pressable,
+    ScrollView,
+    Text,
+    TextInput,
+    View,
+    useColorScheme,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import ContactsModal from "../../ui/Modals/ContactsModal";
@@ -235,7 +235,7 @@ const DataModal: React.FC<DataModalProps> = ({ visible, onClose }) => {
           showsVerticalScrollIndicator={false}
         >
           <Text
-            className={`text-sm font-semibold mb-3 ${isDark ? "text-gray-300" : "text-gray-700"}`}
+            className={`text-base font-semibold mb-3 ${isDark ? "text-gray-300" : "text-gray-700"}`}
           >
             Select Network
           </Text>
@@ -267,7 +267,7 @@ const DataModal: React.FC<DataModalProps> = ({ visible, onClose }) => {
           </View>
 
           <Text
-            className={`text-sm font-semibold mb-3 ${isDark ? "text-gray-300" : "text-gray-700"}`}
+            className={`text-base font-semibold mb-3 ${isDark ? "text-gray-300" : "text-gray-700"}`}
           >
             Phone Number
           </Text>
@@ -301,7 +301,7 @@ const DataModal: React.FC<DataModalProps> = ({ visible, onClose }) => {
           </View>
 
           <Text
-            className={`text-sm font-semibold mb-3 ${isDark ? "text-gray-300" : "text-gray-700"}`}
+            className={`text-base font-semibold mb-3 ${isDark ? "text-gray-300" : "text-gray-700"}`}
           >
             Select Data Plan
           </Text>
@@ -328,7 +328,7 @@ const DataModal: React.FC<DataModalProps> = ({ visible, onClose }) => {
                       {plan.size}
                     </Text>
                     <Text
-                      className={`text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}
+                      className={`text-base ${isDark ? "text-gray-400" : "text-gray-600"}`}
                     >
                       Valid for {plan.validity}
                     </Text>

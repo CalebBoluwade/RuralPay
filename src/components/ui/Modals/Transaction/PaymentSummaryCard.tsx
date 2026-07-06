@@ -63,7 +63,7 @@ const PaymentSummaryCard: React.FC<Props> = ({
 
       {/* Bank */}
       <Text
-        className={`text-sm mb-1 ${isDark ? "text-gray-400" : "text-gray-500"}`}
+        className={`text-base mb-1 ${isDark ? "text-gray-400" : "text-gray-500"}`}
       >
         Card Issuing Bank
       </Text>
@@ -88,7 +88,7 @@ const PaymentSummaryCard: React.FC<Props> = ({
 
       {/* Scheme */}
       <Text
-        className={`text-sm mb-1 ${isDark ? "text-gray-400" : "text-gray-500"}`}
+        className={`text-base mb-1 ${isDark ? "text-gray-400" : "text-gray-500"}`}
       >
         Card Issuing Network
       </Text>
@@ -116,7 +116,7 @@ const PaymentSummaryCard: React.FC<Props> = ({
 
       {/* Merchant */}
       <Text
-        className={`text-sm mb-1 ${isDark ? "text-gray-400" : "text-gray-500"}`}
+        className={`text-base mb-1 ${isDark ? "text-gray-400" : "text-gray-500"}`}
       >
         Merchant
       </Text>
@@ -133,7 +133,7 @@ const PaymentSummaryCard: React.FC<Props> = ({
 
       {/* Amount */}
       <Text
-        className={`text-sm mb-1 ${isDark ? "text-gray-400" : "text-gray-500"}`}
+        className={`text-base mb-1 ${isDark ? "text-gray-400" : "text-gray-500"}`}
       >
         Amount
       </Text>

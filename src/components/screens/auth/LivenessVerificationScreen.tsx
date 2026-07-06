@@ -1,22 +1,22 @@
 import {
-  CHALLENGE_LABELS,
-  VerificationResult,
-  useLiveness,
+    CHALLENGE_LABELS,
+    VerificationResult,
+    useLiveness,
 } from "@/src/hooks/useLiveness";
 import { router } from "expo-router";
 import {
-  Fingerprint,
-  RotateCcw,
-  ScanFace,
-  ShieldCheck,
+    Fingerprint,
+    RotateCcw,
+    ScanFace,
+    ShieldCheck,
 } from "lucide-react-native";
 import { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  Pressable,
-  Text,
-  View,
-  useColorScheme,
+    ActivityIndicator,
+    Pressable,
+    Text,
+    View,
+    useColorScheme,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Camera } from "react-native-vision-camera";
@@ -248,7 +248,7 @@ export default function LivenessVerificationScreen({
               Identity Verified
             </Text>
             <Text
-              className={`text-sm text-center ${isDark ? "text-slate-400" : "text-slate-500"}`}
+              className={`text-base text-center ${isDark ? "text-slate-400" : "text-slate-500"}`}
             >
               Your Face and BVN Matched Successfully.
             </Text>
@@ -277,7 +277,7 @@ export default function LivenessVerificationScreen({
               className="mt-2 w-full rounded-2xl py-4 items-center bg-lime-500"
               onPress={handleRetry}
             >
-              <Text className="text-sm font-brand font-bold text-white">
+              <Text className="text-base font-brand font-bold text-white">
                 Try Again
               </Text>
             </Pressable>

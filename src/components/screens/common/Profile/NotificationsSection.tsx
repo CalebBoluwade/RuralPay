@@ -114,7 +114,7 @@ export function NotificationsSection({
                 {title}
               </Text>
               <Text
-                className={`text-sm ${isDark ? "text-slate-400" : "text-slate-600"}`}
+                className={`text-base ${isDark ? "text-slate-400" : "text-slate-600"}`}
               >
                 {description}
               </Text>

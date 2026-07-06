@@ -130,7 +130,9 @@ const USSDPay = () => {
                     <Text className="text-white font-bold text-lg">
                       Send Payment
                     </Text>
-                    <Text className="text-emerald-100 text-sm">Send Money</Text>
+                    <Text className="text-emerald-100 text-base">
+                      Send Money
+                    </Text>
                   </View>
                 </View>
                 <Ionicons name="chevron-forward" size={24} color="white" />
@@ -211,7 +213,7 @@ const USSDPay = () => {
               Payment History
             </Text>
             <Pressable
-              onPress={() => router.push("/USSDHistory")}
+              onPress={() => router.push("/ussd")}
               disabled={isLoading}
               className={`p-6 rounded-2xl mb-4 ${isLoading ? "opacity-50" : ""} ${
                 isDark ? "bg-lime-600" : "bg-lime-700"
@@ -226,7 +228,7 @@ const USSDPay = () => {
                     <Text className="text-white font-bold text-lg">
                       View History
                     </Text>
-                    <Text className="text-blue-100 text-sm">
+                    <Text className="text-blue-100 text-base">
                       Previously Generated Codes
                     </Text>
                   </View>

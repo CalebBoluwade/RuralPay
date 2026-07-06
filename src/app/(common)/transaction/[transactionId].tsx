@@ -9,11 +9,11 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { ThumbsDown, ThumbsUp } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
-  Pressable,
-  ScrollView,
-  Text,
-  View,
-  useColorScheme,
+    Pressable,
+    ScrollView,
+    Text,
+    View,
+    useColorScheme,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -59,7 +59,7 @@ function NotFoundView({
           Transaction Not Found
         </Text>
         <Text
-          className={`text-sm text-center ${isDark ? "text-slate-400" : "text-slate-600"}`}
+          className={`text-base text-center ${isDark ? "text-slate-400" : "text-slate-600"}`}
         >
           The Transaction You&apos;re Looking For Doesn&apos;t Exist
         </Text>
@@ -177,7 +177,7 @@ export default function TransactionDetail() {
                 }`}
               >
                 <Text
-                  className={`text-sm font-bold ${
+                  className={`text-base font-bold ${
                     isDark ? "text-slate-300" : "text-slate-600"
                   }`}
                 >

@@ -67,6 +67,7 @@ struct RuralPayWidgetView: View {
 struct MerchantQRView: View {
     let entry: RuralPayEntry
     let family: WidgetFamily
+    @Environment(\.widgetRenderingMode) private var renderingMode
 
     private var qrImage: Image? {
         // Sample demo image (256x256) used as QR placeholder
@@ -90,10 +91,10 @@ struct MerchantQRView: View {
                     NSLog("[MerchantQR] Failed to create UIImage from decoded data")
                 }
             } else {
-                NSLog("[MerchantQR] Failed to decode base64")
+                NSLog("[MerchantQR] Failed to Decode Base64")
             }
         } else {
-            NSLog("[MerchantQR] No base64 string found or empty")
+            NSLog("[MerchantQR] No Base64 String Found or Empty")
         }
         
         // Fallback: Use hardcoded test QR if primary data fails
@@ -106,10 +107,27 @@ struct MerchantQRView: View {
         return nil
     }
 
-    var body: some View {
-        let isWide = family == .systemMedium || family == .systemLarge
-        let isSmall = family == .systemSmall || family == .accessoryRectangular
+    private var isWide: Bool {
+        family == .systemMedium || family == .systemLarge
+    }
 
+    private var isSmall: Bool {
+        family == .systemSmall || family == .accessoryRectangular
+    }
+
+    private var titleStyle: AnyShapeStyle {
+        renderingMode == .vibrant
+        ? AnyShapeStyle(.white)
+        : AnyShapeStyle(.primary)
+    }
+
+    private var subtitleStyle: AnyShapeStyle {
+        renderingMode == .vibrant
+        ? AnyShapeStyle(.white.opacity(0.85))
+        : AnyShapeStyle(.secondary)
+    }
+
+    var body: some View {
         Group {
             if isWide, let img = qrImage {
                 HStack(spacing: 8) {
@@ -126,47 +144,49 @@ struct MerchantQRView: View {
                         HStack(spacing: 4) {
                             Image("RuralPayLogo")
                                 .resizable()
-                                .renderingMode(.original)
+                                // .renderingMode(renderingMode == .fullColor ? .original : .template)
                                 .scaledToFit()
                                 .frame(width: 18, height: 18)
                                 .clipShape(Circle())
                             Text("RuralPay")
                                 .font(.caption.bold())
-                                .foregroundStyle(.primary)
+                                .foregroundStyle(titleStyle)
                         }
                         if let name = entry.merchantName, !name.isEmpty {
                             Text(name)
                                 .font(.subheadline.bold())
-                                .foregroundStyle(.primary)
-                                .lineLimit(2)
+                                .foregroundStyle(titleStyle)
                                 .multilineTextAlignment(.center)
+                                .lineLimit(2)
                         }
                         Text("Scan to pay")
                             .font(.caption)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(subtitleStyle)
+                            .multilineTextAlignment(.center)
+                            .lineLimit(2)
                     }
                     .frame(maxWidth: .infinity)
                 }
-                .padding(8)
+                .padding(4)
             } else {
                 VStack(spacing: 2) {
                     if !isSmall {
                         HStack(spacing: 3) {
                             Image("RuralPayLogo")
                                 .resizable()
-                                .renderingMode(.original)
+                                .renderingMode(renderingMode == .fullColor ? .original : .template)
                                 .scaledToFit()
                                 .frame(width: 10, height: 10)
                                 .clipShape(Circle())
                             Text("Pay")
                                 .font(.system(size: 9, weight: .semibold))
-                                .foregroundStyle(.secondary)
+                                .foregroundStyle(titleStyle)
                         }
                     }
 
                     if let img = qrImage {
                         ZStack {
-                            Color.white
+                            Color.white // Keep ONLY the QR code backed with white
                             img
                                 .resizable()
                                 .interpolation(.none)
@@ -177,7 +197,7 @@ struct MerchantQRView: View {
                     } else {
                         Image("RuralPayLogo")
                             .resizable()
-                            .renderingMode(.original)
+                            .renderingMode(renderingMode == .fullColor ? .original : .template)
                             .scaledToFit()
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                             .clipShape(Circle())
@@ -194,9 +214,24 @@ struct MerchantQRView: View {
 // Consumer: prominent "Scan QR" CTA
 struct ConsumerScanView: View {
     let family: WidgetFamily
+    @Environment(\.widgetRenderingMode) var renderingMode
 
     private var isAccessory: Bool {
-        family == .accessoryCircular || family == .accessoryRectangular || family == .accessoryInline
+        family == .accessoryCircular
+        || family == .accessoryRectangular
+        || family == .accessoryInline
+    }
+
+    private var titleStyle: AnyShapeStyle {
+        renderingMode == .vibrant
+        ? AnyShapeStyle(.white)
+        : AnyShapeStyle(.primary)
+    }
+
+    private var subtitleStyle: AnyShapeStyle {
+        renderingMode == .vibrant
+        ? AnyShapeStyle(.white.opacity(0.85))
+        : AnyShapeStyle(.secondary)
     }
 
     var body: some View {
@@ -217,7 +252,7 @@ struct ConsumerScanView: View {
                     AccessoryWidgetBackground()
                     Image("RuralPayLogo")
                         .resizable()
-                        .renderingMode(.original)
+                        .renderingMode(renderingMode == .fullColor ? .original : .template)
                         .scaledToFit()
                         .frame(width: 24, height: 24)
                         .clipShape(Circle())
@@ -226,7 +261,7 @@ struct ConsumerScanView: View {
                 HStack(spacing: 6) {
                     Image("RuralPayLogo")
                         .resizable()
-                        .renderingMode(.original)
+                        .renderingMode(renderingMode == .fullColor ? .original : .template)
                         .scaledToFit()
                         .frame(width: 20, height: 20)
                         .clipShape(Circle())
@@ -235,7 +270,7 @@ struct ConsumerScanView: View {
                             .font(.caption.bold())
                         Text("Scan To Pay")
                             .font(.caption2)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(subtitleStyle)
                     }
                 }
             case .accessoryInline:
@@ -244,7 +279,7 @@ struct ConsumerScanView: View {
             default:
                 Image("RuralPayLogo")
                     .resizable()
-                    .renderingMode(.original)
+                    .renderingMode(renderingMode == .fullColor ? .original : .template)
                     .scaledToFit()
                     .frame(width: 20, height: 20)
                     .clipShape(Circle())
@@ -263,7 +298,7 @@ struct ConsumerScanView: View {
                 HStack(spacing: 12) {
                     Image("RuralPayLogo")
                         .resizable()
-                        .renderingMode(.original)
+                        .renderingMode(renderingMode == .fullColor ? .original : .template)
                         .scaledToFit()
                         .frame(width: 56, height: 56)
                         .clipShape(Circle())
@@ -271,13 +306,13 @@ struct ConsumerScanView: View {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("RuralPay")
                             .font(.title3.bold())
-                            .foregroundStyle(.primary)
+                            .foregroundStyle(titleStyle)
                         Text("Scan To Pay")
                             .font(.subheadline)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(subtitleStyle)
                         Text("Tap To Scan")
                             .font(.caption2)
-                            .foregroundStyle(.tertiary)
+                            .foregroundStyle(subtitleStyle)
                     }
                     Spacer()
                 }
@@ -287,7 +322,7 @@ struct ConsumerScanView: View {
                 VStack(spacing: isSmall ? 6 : 10) {
                     Image("RuralPayLogo")
                         .resizable()
-                        .renderingMode(.original)
+                        .renderingMode(renderingMode == .fullColor ? .original : .template)
                         .scaledToFit()
                         .frame(width: isSmall ? 52 : 64, height: isSmall ? 52 : 64)
                         .clipShape(Circle())
@@ -295,10 +330,10 @@ struct ConsumerScanView: View {
                     VStack(spacing: 1) {
                         Text("RuralPay")
                             .font(isSmall ? .caption.bold() : .subheadline.bold())
-                            .foregroundStyle(.primary)
+                            .foregroundStyle(titleStyle)
                         Text("Scan To Pay")
                             .font(isSmall ? .system(size: 9) : .caption)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(subtitleStyle)
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -321,13 +356,6 @@ struct RuralPayWidget: Widget {
         ) { entry in
             RuralPayWidgetView(entry: entry)
                 .containerBackground(for: .widget) {
-                    if entry.role == "merchant" {
-                        // Force white background in all appearances to prevent QR inversion
-                        Color.white
-                            .colorScheme(.light)
-                    } else {
-                        Color(.systemBackground)
-                    }
                 }
         }
         .configurationDisplayName("RuralPay")
@@ -347,10 +375,6 @@ struct RuralPayLockScreenWidget: Widget {
             provider: RuralPayProvider()
         ) { entry in
             RuralPayWidgetView(entry: entry)
-                .containerBackground(for: .widget) {
-                    RoundedRectangle(cornerRadius: 20)
-                        .fill(Color(.systemBackground))
-                }
         }
         .configurationDisplayName("RuralPay Quick Scan")
         .description("One-tap QR Scanner from your Lock Screen.")
@@ -390,5 +414,3 @@ struct RuralPayLockScreenWidget: Widget {
 } timeline: {
     RuralPayEntry(date: .now, role: "consumer", qrBase64: nil, merchantName: nil)
 }
-
-// Note: RuralPayLogo asset should be ≤ 475×432px to avoid WidgetKit archiving crash.

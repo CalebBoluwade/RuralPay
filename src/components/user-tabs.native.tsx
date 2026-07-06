@@ -4,6 +4,7 @@ import {
   FontAwesome6,
   MaterialCommunityIcons,
 } from "@expo/vector-icons";
+
 import { router, VectorIcon } from "expo-router";
 import { NativeTabs } from "expo-router/unstable-native-tabs";
 import { QrCode, ScanLine } from "lucide-react-native";
@@ -113,15 +114,15 @@ export default function AppTabs() {
 
   return (
     <NativeTabs
-      backgroundColor={"#f7fee7"}
-      iconColor={{ default: "#a3a3a3", selected: "#65a30d" }}
-      tintColor={"#65a30d"}
-      indicatorColor={"#fff"}
-      rippleColor={"#ecfccb"}
+    // backgroundColor={"#f7fee7"}
+    // iconColor={{ default: "#a3a3a3", selected: "#65a30d" }}
+    // tintColor={"#65a30d"}
+    // indicatorColor={"#fff"}
+    // rippleColor={"#ecfccb"}
     >
-      <NativeTabs.BottomAccessory>
+      {/* <NativeTabs.BottomAccessory>
         <QRAccessory />
-      </NativeTabs.BottomAccessory>
+      </NativeTabs.BottomAccessory> */}
 
       <NativeTabs.Trigger name="index">
         <NativeTabs.Trigger.Label hidden>Home</NativeTabs.Trigger.Label>

@@ -77,7 +77,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
           {__DEV__ && this.state.error && (
             <View className="mt-8 p-4 bg-red-50 rounded-xl border border-red-200 max-w-sm">
-              <Text className="text-sm font-mono text-red-800">
+              <Text className="text-base font-mono text-red-800">
                 {this.state.error.message}
               </Text>
             </View>

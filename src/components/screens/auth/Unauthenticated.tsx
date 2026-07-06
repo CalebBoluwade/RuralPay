@@ -34,7 +34,7 @@ export default function Unauthenticated() {
           <Text
             className={`text-center text-base ${isDark ? "text-slate-400" : "text-slate-600"}`}
           >
-            You Need To Be Signed In To Access This Section.
+            You Need To Be Signed In To Access The App.
           </Text>
 
           <Button

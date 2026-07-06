@@ -6,6 +6,7 @@ import Button from "@/src/components/ui/Button";
 import OptimizedInput from "@/src/components/ui/Input/OptimizedInput";
 import Loading from "@/src/components/ui/Modals/Loading";
 import SelectLanguageModal from "@/src/components/ui/Modals/SelectLanguageModal";
+import { useSecuritySetupManager } from "@/src/hooks/useSecuritySetupPrompt";
 import { LoginFormData, loginSchema } from "@/src/lib/schema/validations";
 import ToastService from "@/src/lib/services/ToastService";
 import { biometricService } from "@/src/lib/utils/SecureStorage";
@@ -16,9 +17,11 @@ import * as SecureStore from "expo-secure-store";
 import {
   CheckSquare,
   Fingerprint,
+  Lock,
   ScanFace,
   ScanLine,
   Square,
+  X,
 } from "lucide-react-native";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -32,7 +35,6 @@ import {
 } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useNotification } from "../../context/NotificationContext";
 
 export default function LoginScreen({
   appVersion = "1.0.0",
@@ -41,9 +43,6 @@ export default function LoginScreen({
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const { width } = useWindowDimensions();
-
-  const { devicePushToken, expoPushToken, notification } = useNotification();
-  console.log(devicePushToken, expoPushToken, notification);
 
   const {
     login,
@@ -57,11 +56,23 @@ export default function LoginScreen({
   const [biometricType, setBiometricType] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
 
+  // Security setup banner state
+  const { shouldPromptSetup, dismissPrompt, markSecuritySetupComplete } =
+    useSecuritySetupManager();
+  const [showSecurityBanner, setShowSecurityBanner] = useState(false);
+
   useEffect(() => {
     if (!isLoading && !hasRequiredConsents) {
       router.push("/privacy-policy");
     }
   }, [isLoading, hasRequiredConsents]);
+
+  // Show security banner after initial login
+  useEffect(() => {
+    if (shouldPromptSetup && !showSecurityBanner) {
+      setShowSecurityBanner(true);
+    }
+  }, [shouldPromptSetup]);
 
   const {
     control,
@@ -270,14 +281,14 @@ export default function LoginScreen({
                   <Square size={18} color={isDark ? "#64748b" : "#94a3b8"} />
                 )}
                 <Text
-                  className={`text-sm ${isDark ? "text-slate-400" : "text-slate-600"}`}
+                  className={`text-base ${isDark ? "text-slate-400" : "text-slate-600"}`}
                 >
                   Remember me
                 </Text>
               </Pressable>
 
               <Pressable onPress={() => router.push("/forgot-password")}>
-                <Text className="text-lime-500 text-sm font-semibold">
+                <Text className="text-lime-500 text-base font-semibold">
                   {t("auth.forgotPassword")}
                 </Text>
               </Pressable>
@@ -289,6 +300,79 @@ export default function LoginScreen({
               loading={isSubmitting}
               onPress={handleSubmit(onSubmit)}
             />
+
+            {/* Security Setup Banner */}
+            {showSecurityBanner && (
+              <View
+                className={`mt-4 rounded-lg p-4 flex-row items-start ${
+                  isDark
+                    ? "bg-blue-500/20 border border-blue-500/40"
+                    : "bg-blue-50 border border-blue-200"
+                }`}
+              >
+                <Lock
+                  size={20}
+                  color={isDark ? "#3b82f6" : "#0284c7"}
+                  className="mt-1 mr-3"
+                />
+                <View className="flex-1">
+                  <Text
+                    className={`text-base font-bold mb-1 ${
+                      isDark ? "text-blue-300" : "text-blue-900"
+                    }`}
+                  >
+                    🔒 Secure Your Account
+                  </Text>
+                  <Text
+                    className={`text-xs mb-3 ${
+                      isDark ? "text-blue-200/80" : "text-blue-800/80"
+                    }`}
+                  >
+                    Add fingerprint or PIN lock to protect your account.
+                  </Text>
+                  <View className="flex-row gap-2">
+                    <Pressable
+                      className="px-3 py-2 rounded-md bg-blue-500"
+                      onPress={() => {
+                        setShowSecurityBanner(false);
+                        router.push("/user");
+                        markSecuritySetupComplete().catch(() => {});
+                      }}
+                    >
+                      <Text className="text-xs font-bold text-white">
+                        Set Up Later
+                      </Text>
+                    </Pressable>
+                    <Pressable
+                      className={`flex-1 px-3 py-2 rounded-md ${
+                        isDark ? "bg-blue-500/30" : "bg-blue-100"
+                      }`}
+                      onPress={() => {
+                        dismissPrompt();
+                        setShowSecurityBanner(false);
+                      }}
+                    >
+                      <Text
+                        className={`text-xs font-bold text-center ${
+                          isDark ? "text-blue-300" : "text-blue-600"
+                        }`}
+                      >
+                        Dismiss
+                      </Text>
+                    </Pressable>
+                  </View>
+                </View>
+                <Pressable
+                  onPress={() => {
+                    dismissPrompt();
+                    setShowSecurityBanner(false);
+                  }}
+                  className="ml-2"
+                >
+                  <X size={18} color={isDark ? "#3b82f6" : "#0284c7"} />
+                </Pressable>
+              </View>
+            )}
 
             {/* Sign Up Link */}
             <View className="flex-row justify-center items-center mt-2">
@@ -305,6 +389,21 @@ export default function LoginScreen({
                 </Pressable>
               </Link>
             </View>
+
+            {/* New user onboarding re-entry */}
+            <Pressable
+              onPress={async () => {
+                await SecureStore.deleteItemAsync("onboarding_shown");
+                router.replace("/");
+              }}
+              className="mt-1 mb-2"
+            >
+              <Text
+                className={`text-center text-base ${isDark ? "text-slate-500" : "text-slate-400"}`}
+              >
+                {t("auth.newHere")}
+              </Text>
+            </Pressable>
 
             {/* Feedback Link */}
             <View className="flex-row justify-center items-center my-4">
@@ -332,12 +431,12 @@ export default function LoginScreen({
 
                 <View className="flex-row">
                   <Text
-                    className={`text-sm ${isDark ? "text-slate-400" : "text-slate-600"}`}
+                    className={`text-base ${isDark ? "text-slate-400" : "text-slate-600"}`}
                   >
                     Licensed By The{" "}
                   </Text>
                   <Text
-                    className={`text-sm font-semibold ${isDark ? "text-slate-400" : "text-slate-600"}`}
+                    className={`text-base font-semibold ${isDark ? "text-slate-400" : "text-slate-600"}`}
                   >
                     CBN
                   </Text>

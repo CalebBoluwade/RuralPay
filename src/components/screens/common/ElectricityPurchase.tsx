@@ -1,8 +1,8 @@
+import Button from "@/src/components/ui/Button";
+import Card from "@/src/components/ui/Card";
 import AmountInput from "@/src/components/ui/Input/AmountInput";
 import PaymentMethodModal from "@/src/components/ui/Modals/Transaction/PaymentMethodModal";
 import TransactionPin from "@/src/components/ui/Modals/Transaction/TransactionPinModal";
-import Button from "@/src/components/ui/Button";
-import Card from "@/src/components/ui/Card";
 import ScreenHeader from "@/src/components/ui/ScreenHeader";
 import { useClearLoadingOnLock } from "@/src/hooks/useClearLoadingOnLock";
 import { LocationService } from "@/src/lib/services/LocationService";
@@ -38,8 +38,18 @@ function useFadeSlide(delay: number) {
   const translateY = useRef(new Animated.Value(18)).current;
   useEffect(() => {
     Animated.parallel([
-      Animated.timing(anim, { toValue: 1, duration: 420, delay, useNativeDriver: true }),
-      Animated.timing(translateY, { toValue: 0, duration: 420, delay, useNativeDriver: true }),
+      Animated.timing(anim, {
+        toValue: 1,
+        duration: 420,
+        delay,
+        useNativeDriver: true,
+      }),
+      Animated.timing(translateY, {
+        toValue: 0,
+        duration: 420,
+        delay,
+        useNativeDriver: true,
+      }),
     ]).start();
   }, []);
   return { opacity: anim, transform: [{ translateY }] };
@@ -52,7 +62,8 @@ const ElectricityPurchase = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [meterNumber, setMeterNumber] = useState("");
   const [amount, setAmount] = useState("");
-  const [providers, setProviders] = useState<ElectricityProvider[]>(FALLBACK_PROVIDERS);
+  const [providers, setProviders] =
+    useState<ElectricityProvider[]>(FALLBACK_PROVIDERS);
   const [selectedProvider, setSelectedProvider] = useState("");
   const [selectedMeterType, setSelectedMeterType] = useState("PREPAID");
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -66,8 +77,9 @@ const ElectricityPurchase = () => {
   useClearLoadingOnLock(setIsLoading);
 
   useEffect(() => {
-    PaymentService.FetchElectricityProviders()
-      .then((data) => { if (data.length) setProviders(data); });
+    PaymentService.FetchElectricityProviders().then((data) => {
+      if (data.length) setProviders(data);
+    });
   }, []);
 
   const providerAnim = useFadeSlide(0);
@@ -105,7 +117,8 @@ const ElectricityPurchase = () => {
         ...(location && { location }),
       };
       const result = await PaymentService.MakeAirtimePurchase(payload);
-      if (!result.success) setTransactionError(result.errorMessage ?? "Transaction Failed");
+      if (!result.success)
+        setTransactionError(result.errorMessage ?? "Transaction Failed");
       return result.success;
     } catch (e: any) {
       setTransactionError(e?.message ?? "Transaction Failed");
@@ -115,13 +128,20 @@ const ElectricityPurchase = () => {
 
   return (
     <>
-      <SafeAreaView className={isDark ? "flex-1 bg-slate-950" : "flex-1 bg-slate-50"}>
+      <SafeAreaView
+        className={isDark ? "flex-1 bg-slate-950" : "flex-1 bg-slate-50"}
+      >
         <ScreenHeader goBack title="Buy Electricity" />
 
-        <ScrollView className="flex-1 px-5" showsVerticalScrollIndicator={false}>
+        <ScrollView
+          className="flex-1 px-5"
+          showsVerticalScrollIndicator={false}
+        >
           {/* Provider */}
           <Animated.View style={providerAnim} className="mb-6">
-            <Text className={`text-base font-brand font-bold mb-3 ${isDark ? "text-white" : "text-slate-900"}`}>
+            <Text
+              className={`text-base font-brand font-bold mb-3 ${isDark ? "text-white" : "text-slate-900"}`}
+            >
               Select Provider
             </Text>
             <View className="flex-row flex-wrap gap-3">
@@ -137,7 +157,9 @@ const ElectricityPurchase = () => {
                         : "bg-slate-50 border-slate-200"
                   }`}
                 >
-                  <Text className={`font-brand font-semibold text-sm ${isDark ? "text-white" : "text-slate-900"}`}>
+                  <Text
+                    className={`font-brand font-semibold text-base ${isDark ? "text-white" : "text-slate-900"}`}
+                  >
                     {p.name}
                   </Text>
                 </Pressable>
@@ -147,7 +169,9 @@ const ElectricityPurchase = () => {
 
           {/* Meter Type */}
           <Animated.View style={meterAnim} className="mb-6">
-            <Text className={`text-base font-brand font-bold mb-3 ${isDark ? "text-white" : "text-slate-900"}`}>
+            <Text
+              className={`text-base font-brand font-bold mb-3 ${isDark ? "text-white" : "text-slate-900"}`}
+            >
               Meter Type
             </Text>
             <View className="flex-row gap-3">
@@ -163,7 +187,9 @@ const ElectricityPurchase = () => {
                         : "bg-slate-50 border-slate-200"
                   }`}
                 >
-                  <Text className={`font-brand font-semibold text-sm ${isDark ? "text-white" : "text-slate-900"}`}>
+                  <Text
+                    className={`font-brand font-semibold text-base ${isDark ? "text-white" : "text-slate-900"}`}
+                  >
                     {t.label}
                   </Text>
                 </Pressable>
@@ -173,7 +199,9 @@ const ElectricityPurchase = () => {
 
           {/* Meter Number */}
           <Animated.View style={meterAnim} className="mb-6">
-            <Text className={`text-base font-brand font-bold mb-3 ${isDark ? "text-white" : "text-slate-900"}`}>
+            <Text
+              className={`text-base font-brand font-bold mb-3 ${isDark ? "text-white" : "text-slate-900"}`}
+            >
               Meter Number
             </Text>
             <Card className="overflow-hidden">
@@ -184,7 +212,7 @@ const ElectricityPurchase = () => {
                   placeholder="Enter meter number"
                   placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
                   keyboardType="numeric"
-                  className={`flex-1 text-sm font-brand py-2 ${isDark ? "text-white" : "text-slate-900"}`}
+                  className={`flex-1 text-base font-brand py-2 ${isDark ? "text-white" : "text-slate-900"}`}
                 />
               </View>
             </Card>
@@ -192,7 +220,9 @@ const ElectricityPurchase = () => {
 
           {/* Amount */}
           <Animated.View style={amountAnim} className="mb-6">
-            <Text className={`text-base font-brand font-bold mb-3 ${isDark ? "text-white" : "text-slate-900"}`}>
+            <Text
+              className={`text-base font-brand font-bold mb-3 ${isDark ? "text-white" : "text-slate-900"}`}
+            >
               Amount
             </Text>
             <AmountInput onAmountChange={(amt) => setAmount(amt.toString())} />

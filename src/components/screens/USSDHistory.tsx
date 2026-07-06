@@ -50,7 +50,7 @@ const USSDHistory = () => {
               <Text className="text-lg font-bold text-gray-900">
                 {item.transactionId}
               </Text>
-              {/* <Text className="text-sm text-gray-600">{item.merchantId}</Text> */}
+              {/* <Text className="text-base text-gray-600">{item.merchantId}</Text> */}
             </View>
           </View>
           <Text
@@ -63,7 +63,7 @@ const USSDHistory = () => {
         </View>
 
         <View className="flex-row justify-between items-center pt-4 border-t border-gray-200">
-          <Text className="text-sm text-gray-500">
+          <Text className="text-base text-gray-500">
             {new Date(item.createdAt).toLocaleDateString()} at{" "}
             {new Date(item.createdAt).toLocaleTimeString([], {
               hour: "2-digit",

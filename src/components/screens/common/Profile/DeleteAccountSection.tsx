@@ -33,7 +33,7 @@ export function DeleteAccountSection({
         </Text>
       </View>
       <Text
-        className={`text-sm mb-4 leading-6 ${
+        className={`text-base mb-4 leading-6 ${
           isDark ? "text-red-300/80" : "text-red-700"
         }`}
       >

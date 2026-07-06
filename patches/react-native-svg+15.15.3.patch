@@ -1,0 +1,21 @@
+diff --git a/node_modules/react-native-svg/apple/Elements/RNSVGImage.mm b/node_modules/react-native-svg/apple/Elements/RNSVGImage.mm
+index 1234567..abcdefg 100644
+--- a/node_modules/react-native-svg/apple/Elements/RNSVGImage.mm
++++ b/node_modules/react-native-svg/apple/Elements/RNSVGImage.mm
+@@ -122,12 +122,12 @@
+ - (void)_setStateAndResubscribeImageResponseObserver:(RNSVGImageShadowNode::ConcreteState::Shared const &)state
+ {
+   if (_state) {
+     auto &observerCoordinator = _state->getData().getImageRequest().getObserverCoordinator();
+-    observerCoordinator.removeObserver(*_imageResponseObserverProxy);
++    observerCoordinator.removeObserver(_imageResponseObserverProxy);
+   }
+ 
+   _state = state;
+ 
+   if (_state) {
+     auto &observerCoordinator = _state->getData().getImageRequest().getObserverCoordinator();
+-    observerCoordinator.addObserver(*_imageResponseObserverProxy);
++    observerCoordinator.addObserver(_imageResponseObserverProxy);
+   }
+ }

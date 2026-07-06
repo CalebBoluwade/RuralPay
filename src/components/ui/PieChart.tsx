@@ -131,7 +131,7 @@ export default function PieChart({
                   style={{ backgroundColor: item.color }}
                 />
                 <View className="flex-1">
-                  <Text className="text-sm font-semibold text-[#333] mb-0.5">
+                  <Text className="text-base font-semibold text-[#333] mb-0.5">
                     {item.label || `Item ${index + 1}`}
                   </Text>
                   <Text className="text-xs text-[#666]">

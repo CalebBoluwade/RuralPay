@@ -1,11 +1,11 @@
 import { AlertCircle, CreditCard, Store, Wallet } from "lucide-react-native";
 import {
-  Modal,
-  Pressable,
-  ScrollView,
-  Text,
-  TextInput,
-  View,
+    Modal,
+    Pressable,
+    ScrollView,
+    Text,
+    TextInput,
+    View,
 } from "react-native";
 
 interface WalletModalProps {
@@ -68,7 +68,7 @@ export function WalletModal({
               }`}
             >
               <Text
-                className={`text-sm mb-1 ${isDark ? "text-slate-400" : "text-slate-600"}`}
+                className={`text-base mb-1 ${isDark ? "text-slate-400" : "text-slate-600"}`}
               >
                 Account ID
               </Text>
@@ -87,7 +87,7 @@ export function WalletModal({
               }`}
             >
               <Text
-                className={`text-sm mb-1 ${isDark ? "text-slate-400" : "text-slate-600"}`}
+                className={`text-base mb-1 ${isDark ? "text-slate-400" : "text-slate-600"}`}
               >
                 Balance
               </Text>
@@ -164,10 +164,7 @@ export function WalletModal({
               }`}
             >
               <View className="flex-row items-center mb-6">
-                <CreditCard
-                  size={24}
-                  color={isDark ? "#a3e635" : "#65a30d"}
-                />
+                <CreditCard size={24} color={isDark ? "#a3e635" : "#65a30d"} />
                 <Text
                   className={`text-xl font-brand font-bold ml-3 ${isDark ? "text-white" : "text-slate-900"}`}
                 >
@@ -245,10 +242,7 @@ export function WalletModal({
                   isDark ? "bg-lime-400/20" : "bg-lime-100"
                 }`}
               >
-                <AlertCircle
-                  size={32}
-                  color={isDark ? "#a3e635" : "#65a30d"}
-                />
+                <AlertCircle size={32} color={isDark ? "#a3e635" : "#65a30d"} />
               </View>
               <Text
                 className={`text-2xl font-brand font-bold mb-2 ${isDark ? "text-white" : "text-slate-900"}`}

@@ -1,24 +1,27 @@
 import { useAuth } from "@/src/components/context/AuthSessionProvider";
 import ScreenHeader from "@/src/components/ui/ScreenHeader";
-import { complianceService, ComplianceService } from "@/src/lib/services/ComplianceService";
+import {
+    complianceService,
+    ComplianceService,
+} from "@/src/lib/services/ComplianceService";
 import { router } from "expo-router";
 import {
-  Check,
-  CircleUser,
-  CreditCard,
-  Eye,
-  FileText,
-  Handshake,
-  Headset,
-  Shield,
+    Check,
+    CircleUser,
+    CreditCard,
+    Eye,
+    FileText,
+    Handshake,
+    Headset,
+    Shield,
 } from "lucide-react-native";
 import React, { useState } from "react";
 import {
-  Pressable,
-  ScrollView,
-  Text,
-  useColorScheme,
-  View,
+    Pressable,
+    ScrollView,
+    Text,
+    useColorScheme,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -56,17 +59,19 @@ export default function PrivacyPolicyModal() {
       />
 
       <View className="flex-1 px-6 py-5">
-      {/* Re-consent update banner */}
+        {/* Re-consent update banner */}
         {consentOutdated && (
           <View
             className={`mx-6 mb-4 px-4 py-3 rounded-2xl flex-row items-start gap-3 ${
-              isDark ? "bg-amber-500/15 border border-amber-500/30" : "bg-amber-50 border border-amber-200"
+              isDark
+                ? "bg-amber-500/15 border border-amber-500/30"
+                : "bg-amber-50 border border-amber-200"
             }`}
           >
             <Text className="text-lg">📋</Text>
             <View className="flex-1">
               <Text
-                className={`text-sm font-bold mb-0.5 ${
+                className={`text-base font-bold mb-0.5 ${
                   isDark ? "text-amber-300" : "text-amber-800"
                 }`}
               >

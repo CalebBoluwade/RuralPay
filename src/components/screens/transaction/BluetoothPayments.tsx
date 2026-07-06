@@ -9,13 +9,13 @@ import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  FlatList,
-  Modal,
-  Pressable,
-  Text,
-  useColorScheme,
-  View,
+    ActivityIndicator,
+    FlatList,
+    Modal,
+    Pressable,
+    Text,
+    useColorScheme,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -336,7 +336,7 @@ const BluetoothPayments = () => {
                   <Text className="text-white font-bold text-lg">
                     Phone Payment (BLE)
                   </Text>
-                  <Text className="text-lime-100 text-sm">
+                  <Text className="text-lime-100 text-base">
                     Bluetooth Payment
                   </Text>
                 </View>
@@ -551,7 +551,7 @@ const BluetoothPayments = () => {
                           {item.name || "Unknown Device"}
                         </Text>
                         <Text
-                          className={`text-sm ${
+                          className={`text-base ${
                             isDark ? "text-gray-400" : "text-gray-600"
                           }`}
                         >
@@ -560,7 +560,7 @@ const BluetoothPayments = () => {
                       </View>
                       <View className="items-end">
                         <Text
-                          className={`text-sm font-medium ${
+                          className={`text-base font-medium ${
                             item.rssi > -70
                               ? "text-green-500"
                               : item.rssi > -85

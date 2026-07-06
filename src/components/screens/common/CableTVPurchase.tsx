@@ -187,7 +187,7 @@ const CableTVPurchase = () => {
                   }`}
                 >
                   <Text
-                    className={`font-brand font-bold text-sm ${isDark ? "text-white" : "text-slate-900"}`}
+                    className={`font-brand font-bold text-base ${isDark ? "text-white" : "text-slate-900"}`}
                   >
                     {p.name}
                   </Text>
@@ -219,14 +219,14 @@ const CableTVPurchase = () => {
                   >
                     <View className="flex-1">
                       <Text
-                        className={`text-sm font-brand font-bold ${isDark ? "text-white" : "text-slate-900"}`}
+                        className={`text-base font-brand font-bold ${isDark ? "text-white" : "text-slate-900"}`}
                       >
                         {plan.label}
                       </Text>
                     </View>
                     <View className="items-end gap-1">
                       <Text
-                        className={`text-sm font-bold ${isDark ? "text-white" : "text-slate-900"}`}
+                        className={`text-base font-bold ${isDark ? "text-white" : "text-slate-900"}`}
                       >
                         ₦{plan.price.toLocaleString()}
                       </Text>
@@ -255,7 +255,7 @@ const CableTVPurchase = () => {
                   placeholder="Enter smart card number"
                   placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
                   keyboardType="numeric"
-                  className={`flex-1 text-sm font-brand py-2 ${isDark ? "text-white" : "text-slate-900"}`}
+                  className={`flex-1 text-base font-brand py-2 ${isDark ? "text-white" : "text-slate-900"}`}
                 />
               </View>
             </Card>

@@ -148,21 +148,34 @@ function withAndroidWidget(config) {
           }
         }
 
-        // Inject package registrations — handle both template variants
+        // Inject package registrations — handle all template variants
         if (!contents.includes("WidgetStoragePackage()")) {
-          // New-arch: apply {} block
+          // Variant A: new-arch apply {} block
           const applyBefore = "          // add(MyReactNativePackage())\n        }";
           const applyAfter  = "          // add(MyReactNativePackage())\n          add(WidgetStoragePackage())\n          add(PaymentActivityPackage())\n        }";
-          // Old-arch: flat val packages + return
+          // Variant B: old-arch flat return (no comment between)
           const flatBefore = "          val packages = PackageList(this).packages\n          return packages";
           const flatAfter  = "          val packages = PackageList(this).packages\n          packages.add(WidgetStoragePackage())\n          packages.add(PaymentActivityPackage())\n          return packages";
+          // Variant C: actual SDK 52 template — 12-space indent with comment block
+          const commentBefore = "            val packages = PackageList(this).packages\n            // Packages that cannot be autolinked yet can be added manually here, for example:\n            // packages.add(MyReactNativePackage())\n            return packages";
+          const commentAfter  = "            val packages = PackageList(this).packages\n            // Packages that cannot be autolinked yet can be added manually here, for example:\n            // packages.add(MyReactNativePackage())\n            packages.add(WidgetStoragePackage())\n            packages.add(PaymentActivityPackage())\n            return packages";
 
           if (contents.includes(applyBefore)) {
             contents = contents.replace(applyBefore, applyAfter);
+          } else if (contents.includes(commentBefore)) {
+            contents = contents.replace(commentBefore, commentAfter);
           } else if (contents.includes(flatBefore)) {
             contents = contents.replace(flatBefore, flatAfter);
           } else {
-            throw new Error("[withAndroidWidget] Could not find package injection point in MainApplication.kt — please check the template structure");
+            // Regex fallback: inject before any `return packages` inside getPackages()
+            const injected = contents.replace(
+              /(val packages = PackageList\(this\)\.packages[\s\S]*?)(\n\s*return packages)/,
+              `$1\n            packages.add(WidgetStoragePackage())\n            packages.add(PaymentActivityPackage())$2`
+            );
+            if (injected === contents) {
+              throw new Error("[withAndroidWidget] Could not find package injection point in MainApplication.kt — please check the template structure");
+            }
+            contents = injected;
           }
         }
 

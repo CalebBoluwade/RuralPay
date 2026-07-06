@@ -48,6 +48,8 @@ export const maskCardNumber = (cardNumber?: string) => {
 };
 
 export const LoginAPIResponseMessage = (responseCode: number) => {
+  console.log("Login API Response Code: ", responseCode);
+
   switch (responseCode) {
     case 401:
       return "Invalid Credentials";

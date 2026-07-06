@@ -1,10 +1,11 @@
 import { SessionExpiryModal } from "@/src/components/ui/Modals/SessionExpiryModal";
 import { authService } from "@/src/lib/services/AuthService";
 import { complianceService } from "@/src/lib/services/ComplianceService";
-import WidgetStorageService from "@/src/lib/services/WidgetStorageService";
 import QRCodeService from "@/src/lib/services/QRCodeService";
+import WidgetStorageService from "@/src/lib/services/WidgetStorageService";
 import { biometricService } from "@/src/lib/utils/SecureStorage";
 import { router } from "expo-router";
+import * as SecureStore from "expo-secure-store";
 import { jwtDecode } from "jwt-decode";
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { DeviceEventEmitter } from "react-native";
@@ -18,6 +19,8 @@ interface AuthContextType {
   unlock: () => void;
   isLoading: boolean;
   isAuthenticated: boolean;
+  isFirstLogin: boolean;
+  clearFirstLogin: () => void;
   nativeAuthLogin: boolean;
   nativeAuthTransactions: boolean;
   visibleBalance: boolean;
@@ -54,6 +57,9 @@ export function AuthSessionProvider({
   const [isLocked, setIsLocked] = useState(false);
   const [showSessionExpiredModal, setShowSessionExpiredModal] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [isFirstLogin, setIsFirstLogin] = useState(false);
+
+  const clearFirstLogin = () => setIsFirstLogin(false);
 
   const lock = () => setIsLocked(true);
   const unlock = () => setIsLocked(false);
@@ -166,9 +172,26 @@ export function AuthSessionProvider({
     setRefreshToken(authResponse.details.refreshToken);
     setUser(authResponse.details.user);
 
+    // Track login count for progressive security setup
+    try {
+      const countStr = await SecureStore.getItemAsync("login_count");
+      const loginCount = parseInt(countStr || "0", 10);
+      await SecureStore.setItemAsync("login_count", String(loginCount + 1));
+    } catch (e) {
+      if (__DEV__) console.warn("[AuthSession] Failed to track login count", e);
+    }
+
     await biometricService.storeBiometricCredentials(identifier, password);
     setHasBiometricCredentials(true);
     setNativeAuthLogin(true);
+
+    // Mark onboarding as complete after successful login
+    try {
+      await SecureStore.setItemAsync("onboarding_shown", "true");
+    } catch (e) {
+      if (__DEV__)
+        console.warn("[AuthSession] Failed to mark onboarding complete", e);
+    }
 
     // Sync role to widget shared storage
     const role = authResponse.details.user.role ?? "consumer";
@@ -212,9 +235,26 @@ export function AuthSessionProvider({
       credentials.password,
     );
 
+    // Track login count for progressive security setup
+    try {
+      const countStr = await SecureStore.getItemAsync("login_count");
+      const loginCount = parseInt(countStr || "0", 10);
+      await SecureStore.setItemAsync("login_count", String(loginCount + 1));
+    } catch (e) {
+      if (__DEV__) console.warn("[AuthSession] Failed to track login count", e);
+    }
+
     setToken(authResponse.details.token);
     setRefreshToken(authResponse.details.refreshToken);
     setUser(authResponse.details.user);
+
+    // Mark onboarding as complete after successful biometric login
+    try {
+      await SecureStore.setItemAsync("onboarding_shown", "true");
+    } catch (e) {
+      if (__DEV__)
+        console.warn("[AuthSession] Failed to mark onboarding complete", e);
+    }
 
     const role = authResponse.details.user.role ?? "consumer";
     try {
@@ -224,12 +264,17 @@ export function AuthSessionProvider({
         WidgetStorageService.set("merchant_name", bizName);
       }
     } catch (e) {
-      if (__DEV__) console.error("[AuthSession] biometricLogin: Failed to write user_role", e);
+      if (__DEV__)
+        console.error(
+          "[AuthSession] biometricLogin: Failed to write user_role",
+          e,
+        );
     }
 
     if (role === "merchant") {
       QRCodeService.GeneratePaymentQR().catch((e) => {
-        if (__DEV__) console.warn("[AuthSession] biometricLogin: Pre-fetch QR failed", e);
+        if (__DEV__)
+          console.warn("[AuthSession] biometricLogin: Pre-fetch QR failed", e);
       });
       return router.replace("/merchant");
     } else if (role === "consumer") {
@@ -301,6 +346,8 @@ export function AuthSessionProvider({
         user,
         isLoading,
         isAuthenticated: !!user,
+        isFirstLogin,
+        clearFirstLogin,
         nativeAuthLogin,
         nativeAuthTransactions,
         visibleBalance,

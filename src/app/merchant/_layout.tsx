@@ -110,6 +110,13 @@ export default function MerchantLayout() {
           }}
         />
       </Tabs.Protected>
+
+      <Tabs.Screen
+        name="Unauthenticated"
+        options={{
+          title: "Unauthenticated",
+        }}
+      />
     </Tabs>
   );
 }

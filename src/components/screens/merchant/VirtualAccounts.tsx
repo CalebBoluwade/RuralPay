@@ -75,7 +75,7 @@ export default function VirtualAccounts({
             {vaData && (
               <View className="bg-white rounded-2xl p-6 shadow-sm">
                 <View className="mb-5">
-                  <Text className="text-sm text-gray-500 mb-1">
+                  <Text className="text-base text-gray-500 mb-1">
                     Account Number
                   </Text>
                   <Text className="text-xl font-semibold text-gray-900">
@@ -84,7 +84,7 @@ export default function VirtualAccounts({
                 </View>
 
                 <View className="mb-5">
-                  <Text className="text-sm text-gray-500 mb-1">
+                  <Text className="text-base text-gray-500 mb-1">
                     Account Name
                   </Text>
                   <Text className="text-xl font-semibold text-gray-900">
@@ -93,14 +93,18 @@ export default function VirtualAccounts({
                 </View>
 
                 <View className="mb-5">
-                  <Text className="text-sm text-gray-500 mb-1">Bank Name</Text>
+                  <Text className="text-base text-gray-500 mb-1">
+                    Bank Name
+                  </Text>
                   <Text className="text-xl font-semibold text-gray-900">
                     {vaData.bankName}
                   </Text>
                 </View>
 
                 <View className="mt-5 pt-5 border-t border-gray-200 items-center">
-                  <Text className="text-sm text-gray-500 mb-2">Expires in</Text>
+                  <Text className="text-base text-gray-500 mb-2">
+                    Expires in
+                  </Text>
                   <Text
                     className={`text-5xl font-bold mt-2 ${timeLeft < 60 ? "text-red-500" : "text-green-500"}`}
                   >

@@ -245,7 +245,7 @@ export default function LinkBankAccount() {
                 </Text>
               </View>
               <Text
-                className={`text-sm mt-2 ${
+                className={`text-base mt-2 ${
                   isDark ? "text-lime-300" : "text-lime-700"
                 }`}
               >
@@ -312,7 +312,7 @@ export default function LinkBankAccount() {
               onPress={() => setShowBankModal(true)}
             >
               <Text
-                className={`text-sm font-semibold mb-2 ${
+                className={`text-base font-semibold mb-2 ${
                   isDark ? "text-gray-300" : "text-gray-700"
                 }`}
               >
@@ -345,7 +345,7 @@ export default function LinkBankAccount() {
 
             <View className="mb-4">
               <Text
-                className={`text-sm font-semibold mb-2 ${
+                className={`text-base font-semibold mb-2 ${
                   isDark ? "text-gray-300" : "text-gray-700"
                 }`}
               >
@@ -379,7 +379,7 @@ export default function LinkBankAccount() {
                   color={isDark ? "#a78bfa" : "#7c3aed"}
                 />
                 <Text
-                  className={`ml-3 text-sm ${
+                  className={`ml-3 text-base ${
                     isDark ? "text-gray-300" : "text-gray-700"
                   }`}
                 >
@@ -391,7 +391,7 @@ export default function LinkBankAccount() {
             {accountName && !verifying && (
               <View className="mb-4">
                 <Text
-                  className={`text-sm font-semibold mb-2 ${
+                  className={`text-base font-semibold mb-2 ${
                     isDark ? "text-gray-300" : "text-gray-700"
                   }`}
                 >

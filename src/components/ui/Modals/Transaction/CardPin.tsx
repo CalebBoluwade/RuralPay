@@ -335,7 +335,7 @@ const CardPIN: React.FC<CardPinProps> = ({
           <View className="h-[1px] bg-gray-200/20 my-4" />
 
           <Text
-            className={`text-sm mb-2 ${
+            className={`text-base mb-2 ${
               isDark ? "text-gray-400" : "text-gray-500"
             }`}
           >
@@ -362,7 +362,7 @@ const CardPIN: React.FC<CardPinProps> = ({
           <View className="h-[1px] bg-gray-200/20 my-4" />
 
           <Text
-            className={`text-sm mb-2 ${
+            className={`text-base mb-2 ${
               isDark ? "text-gray-400" : "text-gray-500"
             }`}
           >
@@ -391,7 +391,7 @@ const CardPIN: React.FC<CardPinProps> = ({
           <View className="h-[1px] bg-gray-200/20 my-4" />
 
           <Text
-            className={`text-sm mb-2 ${
+            className={`text-base mb-2 ${
               isDark ? "text-gray-400" : "text-gray-500"
             }`}
           >
@@ -408,7 +408,7 @@ const CardPIN: React.FC<CardPinProps> = ({
           <View className="h-[1px] bg-gray-200/20 my-4" />
 
           <Text
-            className={`text-sm mb-2 ${
+            className={`text-base mb-2 ${
               isDark ? "text-gray-400" : "text-gray-500"
             }`}
           >

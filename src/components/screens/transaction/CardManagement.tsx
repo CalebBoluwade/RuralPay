@@ -5,13 +5,13 @@ import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  Pressable,
-  ScrollView,
-  Text,
-  View,
-  useColorScheme,
+    ActivityIndicator,
+    Alert,
+    Pressable,
+    ScrollView,
+    Text,
+    View,
+    useColorScheme,
 } from "react-native";
 
 export default function CardManagement() {
@@ -293,7 +293,7 @@ export default function CardManagement() {
                     onPress={() => handleBlockCard(card.id)}
                   >
                     <Text
-                      className={`text-center text-sm font-bold ${
+                      className={`text-center text-base font-bold ${
                         isDark ? "text-red-300" : "text-red-700"
                       }`}
                     >
@@ -310,7 +310,7 @@ export default function CardManagement() {
                     onPress={() => handleActivateCard(card.id)}
                   >
                     <Text
-                      className={`text-center text-sm font-bold ${
+                      className={`text-center text-base font-bold ${
                         isDark ? "text-lime-300" : "text-lime-700"
                       }`}
                     >

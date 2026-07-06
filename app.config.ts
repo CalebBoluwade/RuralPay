@@ -1,4 +1,4 @@
-import "dotenv/config";
+// import "dotenv/config";
 import { ConfigContext, ExpoConfig } from "expo/config";
 import { version } from "./package.json";
 
@@ -9,7 +9,7 @@ const OWNER = "calebjnr";
 // App production config
 const APP_NAME = "RuralPay";
 const BUNDLE_IDENTIFIER = "com.zegiftedtechnologies.ruralpay";
-const APP_DOMAIN = "applinks:app.ruralpay.com";
+const APP_DOMAIN = "applinks:ruralpay.zegiftedtechnologies.com";
 const PACKAGE_NAME = "com.zegiftedtechnologies.ruralpay";
 const ICON = "./assets/images/RuralPay.png";
 const ADAPTIVE_ICON = "./assets/images/RuralPay.png";
@@ -27,7 +27,15 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     packageName,
     scheme,
     googleServicesFile,
-  } = getDynamicAppConfig(appEnv as "development" | "preview" | "production");
+  } = {
+    name: APP_NAME,
+    bundleIdentifier: BUNDLE_IDENTIFIER,
+    packageName: PACKAGE_NAME,
+    icon: ICON,
+    adaptiveIcon: ADAPTIVE_ICON,
+    scheme: SCHEME,
+    googleServicesFile: "./google-services.json",
+  };
 
   return {
     ...config,
@@ -268,44 +276,6 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       reactCompiler: true,
     },
     owner: OWNER,
-  };
-};
-
-export const getDynamicAppConfig = (
-  environment: "development" | "preview" | "production",
-) => {
-  if (environment === "production") {
-    return {
-      name: APP_NAME,
-      bundleIdentifier: BUNDLE_IDENTIFIER,
-      packageName: PACKAGE_NAME,
-      icon: ICON,
-      adaptiveIcon: ADAPTIVE_ICON,
-      scheme: SCHEME,
-      googleServicesFile: "./google-services.json",
-    };
-  }
-
-  if (environment === "preview") {
-    return {
-      name: APP_NAME,
-      bundleIdentifier: `${BUNDLE_IDENTIFIER}.staging`,
-      packageName: PACKAGE_NAME,
-      icon: ICON,
-      adaptiveIcon: ADAPTIVE_ICON,
-      scheme: SCHEME,
-      googleServicesFile: "./google-services.json",
-    };
-  }
-
-  return {
-    name: APP_NAME,
-    bundleIdentifier: `${BUNDLE_IDENTIFIER}.dev`,
-    packageName: PACKAGE_NAME,
-    icon: ICON,
-    adaptiveIcon: ADAPTIVE_ICON,
-    scheme: SCHEME,
-    googleServicesFile: "./google-services.json",
   };
 };
 

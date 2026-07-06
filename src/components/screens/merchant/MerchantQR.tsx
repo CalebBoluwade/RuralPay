@@ -7,16 +7,16 @@ import * as Sharing from "expo-sharing";
 import { QrCode, Store, X } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  Image,
-  Modal,
-  Pressable,
-  Share as RNShare,
-  ScrollView,
-  Text,
-  useColorScheme,
-  View,
+    ActivityIndicator,
+    Alert,
+    Image,
+    Modal,
+    Pressable,
+    Share as RNShare,
+    ScrollView,
+    Text,
+    useColorScheme,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -204,7 +204,7 @@ const MerchantQRDisplay = ({
               </View>
               <View>
                 <Text
-                  className={`text-sm ${isDark ? "text-slate-400" : "text-slate-500"}`}
+                  className={`text-base ${isDark ? "text-slate-400" : "text-slate-500"}`}
                 >
                   Business Name
                 </Text>
@@ -238,7 +238,7 @@ const MerchantQRDisplay = ({
                 <View className="w-96 h-96 items-center justify-center">
                   <ActivityIndicator size="large" color="#a3e635" />
                   <Text
-                    className={`text-sm mt-2 ${isDark ? "text-slate-400" : "text-slate-500"}`}
+                    className={`text-base mt-2 ${isDark ? "text-slate-400" : "text-slate-500"}`}
                   >
                     Generating QR code...
                   </Text>
@@ -252,8 +252,13 @@ const MerchantQRDisplay = ({
               ) : (
                 <View className="w-96 h-96 p-3 items-center justify-center gap-3">
                   <Text className="text-slate-400">Failed to Load QR Code</Text>
-                  <Pressable onPress={GetPaymentQR} className="px-4 py-2 bg-lime-500/20 rounded-xl">
-                    <Text className="text-lime-600 font-semibold text-sm">Retry</Text>
+                  <Pressable
+                    onPress={GetPaymentQR}
+                    className="px-4 py-2 bg-lime-500/20 rounded-xl"
+                  >
+                    <Text className="text-lime-600 font-semibold text-base">
+                      Retry
+                    </Text>
                   </Pressable>
                 </View>
               )}

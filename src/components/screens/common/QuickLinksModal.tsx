@@ -11,13 +11,7 @@ import { CameraView, useCameraPermissions } from "expo-camera";
 import { router } from "expo-router";
 import { Activity, MessageSquareHeart, X } from "lucide-react-native";
 import React, { useEffect, useRef, useState } from "react";
-import {
-  Modal,
-  Pressable,
-  Text,
-  useColorScheme,
-  View
-} from "react-native";
+import { Modal, Pressable, Text, useColorScheme, View } from "react-native";
 
 // ─── Inline QR Scanner Modal ────────────────────────────────────────────────
 
@@ -210,11 +204,13 @@ function QuickScanModal({
 
           {error ? (
             <View className="mt-4 p-3 bg-red-100 rounded-xl">
-              <Text className="text-red-600 text-center text-sm">{error}</Text>
+              <Text className="text-red-600 text-center text-base">
+                {error}
+              </Text>
             </View>
           ) : (
             <Text
-              className={`text-center mt-4 text-sm ${isDark ? "text-gray-400" : "text-gray-500"}`}
+              className={`text-center mt-4 text-base ${isDark ? "text-gray-400" : "text-gray-500"}`}
             >
               Point your camera at a RuralPay QR code
             </Text>
@@ -325,7 +321,7 @@ export default function QuickLinksModal() {
               color={isDark ? color.dark : color.light}
             />
             <Text
-              className={`text-sm mt-3 font-semibold text-center ${isDark ? "text-gray-200" : "text-gray-700"}`}
+              className={`text-base mt-3 font-semibold text-center ${isDark ? "text-gray-200" : "text-gray-700"}`}
             >
               {t(labelKey)}
             </Text>
@@ -344,7 +340,7 @@ export default function QuickLinksModal() {
             color={isDark ? "#60a5fa" : "#2563eb"}
           />
           <Text
-            className={`text-sm mt-3 font-semibold text-center ${isDark ? "text-gray-200" : "text-gray-700"}`}
+            className={`text-base mt-3 font-semibold text-center ${isDark ? "text-gray-200" : "text-gray-700"}`}
           >
             {t("payments.qr")}
           </Text>
@@ -361,7 +357,7 @@ export default function QuickLinksModal() {
         >
           <Activity size={32} color={isDark ? "#34d399" : "#059669"} />
           <Text
-            className={`text-sm mt-3 font-semibold text-center ${isDark ? "text-gray-200" : "text-gray-700"}`}
+            className={`text-base mt-3 font-semibold text-center ${isDark ? "text-gray-200" : "text-gray-700"}`}
           >
             Bank Uptime
           </Text>
@@ -381,7 +377,7 @@ export default function QuickLinksModal() {
             color={isDark ? "#a3e635" : "#65a30d"}
           />
           <Text
-            className={`text-sm mt-3 font-semibold text-center ${isDark ? "text-gray-200" : "text-gray-700"}`}
+            className={`text-base mt-3 font-semibold text-center ${isDark ? "text-gray-200" : "text-gray-700"}`}
           >
             Feedback
           </Text>

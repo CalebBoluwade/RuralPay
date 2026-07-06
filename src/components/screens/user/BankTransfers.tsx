@@ -23,13 +23,13 @@ import * as SecureStore from "expo-secure-store";
 import React, { useEffect, useRef, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  Switch,
-  Text,
-  View,
-  useColorScheme,
+    ActivityIndicator,
+    Pressable,
+    ScrollView,
+    Switch,
+    Text,
+    View,
+    useColorScheme,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -352,7 +352,7 @@ const BankTransfers = () => {
           </Text>
           <Pressable onPress={() => setShowBeneficiaryModal(true)}>
             <Text
-              className={`text-sm font-semibold ${isDark ? "text-lime-400" : "text-lime-700"}`}
+              className={`text-base font-semibold ${isDark ? "text-lime-400" : "text-lime-700"}`}
             >
               {t("bankTransfer.beneficiaries")}
             </Text>
@@ -400,7 +400,7 @@ const BankTransfers = () => {
             }`}
           >
             <Text
-              className={`text-sm ${isDark ? "text-gray-400" : "text-black"}`}
+              className={`text-base ${isDark ? "text-gray-400" : "text-black"}`}
             >
               {t("bankTransfer.accountNameLabel")}
             </Text>
@@ -447,7 +447,7 @@ const BankTransfers = () => {
           lightClass="bg-gray-100 border border-gray-200"
         >
           <Text
-            className={`text-sm font-semibold ${isDark ? "text-white" : "text-gray-600"}`}
+            className={`text-base font-semibold ${isDark ? "text-white" : "text-gray-600"}`}
           >
             {t("bankTransfer.saveAsBeneficiary")}
           </Text>

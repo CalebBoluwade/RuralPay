@@ -5,7 +5,7 @@ import { AppState, AppStateStatus } from "react-native";
 import { useAuth } from "./AuthSessionProvider";
 
 const LOCK_TIMEOUT_KEY = "lockTimeout";
-const DEFAULT_LOCK_TIMEOUT = 60 * 5 * 1000; // 1 Minute
+const DEFAULT_LOCK_TIMEOUT = 60 * 5 * 1000; // 5 minutes
 
 export const UserInactivityProvider = ({ children }: { children: any }) => {
   const { user } = useAuth();
@@ -114,13 +114,13 @@ export const UserInactivityProvider = ({ children }: { children: any }) => {
       };
     },
     [
-      // user,
-      // resetInactivityTimer,
-      // navigateToLock,
-      // handleBackground,
-      // handleActive,
-      // handleInactive,
-      // handleInactiveToActive,
+      user,
+      resetInactivityTimer,
+      navigateToLock,
+      handleBackground,
+      handleActive,
+      handleInactive,
+      handleInactiveToActive,
     ],
   );
 

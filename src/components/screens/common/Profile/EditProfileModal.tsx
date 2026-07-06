@@ -1,5 +1,11 @@
-import { Modal, Pressable, Text, TextInput, View, useColorScheme } from "react-native";
 import { Pencil } from "lucide-react-native";
+import {
+    Modal,
+    Pressable,
+    Text,
+    TextInput,
+    View
+} from "react-native";
 
 interface EditProfileModalProps {
   visible: boolean;
@@ -61,7 +67,7 @@ export function EditProfileModal({
 
           <View className="mb-4">
             <Text
-              className={`text-sm font-semibold mb-2 ${isDark ? "text-slate-300" : "text-slate-700"}`}
+              className={`text-base font-semibold mb-2 ${isDark ? "text-slate-300" : "text-slate-700"}`}
             >
               First Name
             </Text>
@@ -81,7 +87,7 @@ export function EditProfileModal({
 
           <View className="mb-6">
             <Text
-              className={`text-sm font-semibold mb-2 ${isDark ? "text-slate-300" : "text-slate-700"}`}
+              className={`text-base font-semibold mb-2 ${isDark ? "text-slate-300" : "text-slate-700"}`}
             >
               Last Name
             </Text>

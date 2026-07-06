@@ -49,7 +49,7 @@ const AmountInput = ({ onAmountChange, error }: AmountInputProps) => {
         }`}
       >
         {/* <Text
-          className={`text-sm font-medium pb-2 ${
+          className={`text-base font-medium pb-2 ${
             isDark ? "text-gray-400" : "text-gray-600"
           }`}
         >

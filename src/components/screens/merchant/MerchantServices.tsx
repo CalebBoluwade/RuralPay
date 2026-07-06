@@ -1,14 +1,13 @@
-import Button from "@/src/components/ui/Button";
 import Card from "@/src/components/ui/Card";
 import ScreenHeader from "@/src/components/ui/ScreenHeader";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import {
-    Pressable,
-    ScrollView,
-    Text,
-    View,
-    useColorScheme,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+  useColorScheme,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -111,7 +110,7 @@ export default function MerchantServices() {
             <View className="items-center">
               <Text className="text-2xl font-bold text-blue-400">247</Text>
               <Text
-                className={`text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}
+                className={`text-base ${isDark ? "text-gray-400" : "text-gray-600"}`}
               >
                 Active Cards
               </Text>
@@ -119,7 +118,7 @@ export default function MerchantServices() {
             <View className="items-center">
               <Text className="text-2xl font-bold text-green-400">$12.4K</Text>
               <Text
-                className={`text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}
+                className={`text-base ${isDark ? "text-gray-400" : "text-gray-600"}`}
               >
                 Today&apos;s Volume
               </Text>
@@ -127,7 +126,7 @@ export default function MerchantServices() {
             <View className="items-center">
               <Text className="text-2xl font-bold text-lime-400">89</Text>
               <Text
-                className={`text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}
+                className={`text-base ${isDark ? "text-gray-400" : "text-gray-600"}`}
               >
                 Transactions
               </Text>

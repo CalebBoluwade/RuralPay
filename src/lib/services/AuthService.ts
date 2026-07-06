@@ -19,7 +19,7 @@ class AuthService {
     } catch (error) {
       if (__DEV__) {
         console.warn(
-          "[AuthService] Failed to register for push notifications. Continuing without push token.",
+          "[AuthService] Failed to register for Push Notifications. Continuing without push token.",
           error,
         );
       }
@@ -51,6 +51,12 @@ class AuthService {
 
       return response;
     } catch (error: any) {
+      if (__DEV__) console.error("Login error:", error);
+
+      if (error.message.includes("Key")) {
+        ToastService.error("Failed For Security Reasons. Contact Support.");
+      }
+
       await ErrorHandler.handle(
         error,
         {
@@ -77,7 +83,7 @@ class AuthService {
     } catch (error) {
       if (__DEV__) {
         console.warn(
-          "[AuthService] Failed to register for push notifications. Continuing without push token.",
+          "[AuthService] Failed to register for Push Notifications. Continuing without push token.",
           error,
         );
       }

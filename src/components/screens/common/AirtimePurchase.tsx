@@ -1,4 +1,6 @@
 import { useAuth } from "@/src/components/context/AuthSessionProvider";
+import Button from "@/src/components/ui/Button";
+import Card from "@/src/components/ui/Card";
 import AmountInput from "@/src/components/ui/Input/AmountInput";
 import ContactsModal from "@/src/components/ui/Modals/ContactsModal";
 import PaymentMethodModal from "@/src/components/ui/Modals/Transaction/PaymentMethodModal";
@@ -9,8 +11,6 @@ import {
   MTNLogo,
   NineMobileLogo,
 } from "@/src/components/ui/NetworkLogos";
-import Button from "@/src/components/ui/Button";
-import Card from "@/src/components/ui/Card";
 import ScreenHeader from "@/src/components/ui/ScreenHeader";
 import { useClearLoadingOnLock } from "@/src/hooks/useClearLoadingOnLock";
 import AppLogger, { LogLevel } from "@/src/lib/services/AppLogger";
@@ -219,7 +219,7 @@ const AirtimePurchase = () => {
                 >
                   <network.Logo size={36} />
                   <Text
-                    className={`font-brand font-semibold text-sm ${isDark ? "text-white" : "text-slate-900"}`}
+                    className={`font-brand font-semibold text-base ${isDark ? "text-white" : "text-slate-900"}`}
                   >
                     {network.name}
                   </Text>
@@ -272,7 +272,7 @@ const AirtimePurchase = () => {
                   placeholder="08012345678"
                   placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
                   keyboardType="phone-pad"
-                  className={`flex-1 text-sm font-brand py-2 ${isDark ? "text-white" : "text-slate-900"}`}
+                  className={`flex-1 text-base font-brand py-2 ${isDark ? "text-white" : "text-slate-900"}`}
                 />
                 <Pressable
                   className={`w-10 h-10 rounded-xl items-center justify-center ${isDark ? "bg-lime-500/20" : "bg-lime-50"}`}

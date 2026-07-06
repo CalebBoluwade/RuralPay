@@ -8,11 +8,11 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
-  ActivityIndicator,
-  Pressable,
-  Text,
-  useColorScheme,
-  View,
+    ActivityIndicator,
+    Pressable,
+    Text,
+    useColorScheme,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -162,7 +162,7 @@ const BluetoothReceive = () => {
           }`}
         >
           <Text
-            className={`text-sm ${isDark ? "text-blue-300" : "text-blue-700"}`}
+            className={`text-base ${isDark ? "text-blue-300" : "text-blue-700"}`}
           >
             💡 Your device will advertise as a payment terminal. Customers can
             scan and connect to complete the payment.
@@ -217,7 +217,7 @@ const BluetoothReceive = () => {
             Waiting for customer to connect...
           </Text>
           <Text
-            className={`text-sm mt-2 font-medium text-center ${
+            className={`text-base mt-2 font-medium text-center ${
               isDark ? "text-gray-500" : "text-gray-400"
             }`}
           >

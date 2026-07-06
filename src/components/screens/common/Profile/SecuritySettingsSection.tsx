@@ -1,6 +1,6 @@
+import { useLanguage } from "@/src/components/context/LanguageContext";
 import { ChevronRight, Key, ShieldCheck } from "lucide-react-native";
 import { Pressable, Switch, Text, View } from "react-native";
-import { useLanguage } from "@/src/components/context/LanguageContext";
 
 interface SecuritySettingsSectionProps {
   isDark: boolean;
@@ -29,7 +29,7 @@ export function SecuritySettingsSection({
     title: string,
     description: string,
     value: boolean,
-    onChange: (value: boolean) => void
+    onChange: (value: boolean) => void,
   ) => (
     <View
       className={`p-4 rounded-2xl mb-4 ${
@@ -46,7 +46,7 @@ export function SecuritySettingsSection({
             {title}
           </Text>
           <Text
-            className={`text-sm ${isDark ? "text-slate-400" : "text-slate-600"}`}
+            className={`text-base ${isDark ? "text-slate-400" : "text-slate-600"}`}
           >
             {description}
           </Text>
@@ -92,21 +92,21 @@ export function SecuritySettingsSection({
           t("profile.biometricLogin"),
           "Use fingerprint or face ID for secure login",
           nativeAuthLogin,
-          onBiometricLoginToggle
+          onBiometricLoginToggle,
         )}
 
         {renderSecurityToggle(
           t("profile.transactionSecurity"),
           "Require biometric authentication for payments",
           nativeAuthTransactions,
-          onTransactionSecurityToggle
+          onTransactionSecurityToggle,
         )}
 
         {renderSecurityToggle(
           t("profile.visibleBalance"),
           "View or Hide Account Balance",
           visibleBalance,
-          onVisibleBalanceToggle
+          onVisibleBalanceToggle,
         )}
       </View>
 
@@ -127,10 +127,7 @@ export function SecuritySettingsSection({
               Change Security PIN
             </Text>
           </View>
-          <ChevronRight
-            size={20}
-            color={isDark ? "#84cc16" : "#65a30d"}
-          />
+          <ChevronRight size={20} color={isDark ? "#84cc16" : "#65a30d"} />
         </View>
       </Pressable>
     </View>

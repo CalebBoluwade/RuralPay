@@ -25,13 +25,15 @@ if ! contains "$APP_PLATFORM" "${VALID_PLATFORMS[@]}"; then
   exit 1
 fi
 
-# ── Export to environment ─────────────────────────────────────────────────────
+# ── Export to environment ────────────────────────────────────────────────────
+set -a && source .env."$APP_ENV" && set +a
 export APP_ENV="$APP_ENV"
 export EXPO_PUBLIC_ENVIRONMENT="$APP_ENV"
 export APP_PLATFORM="$APP_PLATFORM"
 
 echo "🔧 APP_ENV=$APP_ENV"
 echo "🔧 EXPO_PUBLIC_ENVIRONMENT=$EXPO_PUBLIC_ENVIRONMENT"
+echo "🔧 EXPO_PUBLIC_API_URL=$EXPO_PUBLIC_API_URL"
 echo "📱 APP_PLATFORM=$APP_PLATFORM"
 
 # ── Auto-load all found environment files ────────────────────────────────────
@@ -154,7 +156,7 @@ elif [[ "$APP_PLATFORM" == "ios" ]]; then
   done
 
   # bunx expo prebuild --clean --platform ios
-  bunx expo run:ios --device --no-build-cache
+  bunx expo run:ios --device --no-build-cache --scheme RuralPay
 fi
 
 echo "✅ Build complete."

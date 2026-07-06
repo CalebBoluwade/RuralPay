@@ -519,7 +519,7 @@ const CardTapNFCPayments: React.FC<CardTapNFCPaymentsProps> = ({
               className={`rounded-2xl p-4 mb-6 ${isDark ? "bg-red-500/20 border border-red-500/50" : "bg-red-50 border border-red-200"}`}
             >
               <Text
-                className={`text-sm font-brand font-bold ${isDark ? "text-red-400" : "text-red-700"}`}
+                className={`text-base font-brand font-bold ${isDark ? "text-red-400" : "text-red-700"}`}
               >
                 NFC is not available on this device. Please check if NFC is
                 enabled in your phone settings.
@@ -540,7 +540,7 @@ const CardTapNFCPayments: React.FC<CardTapNFCPaymentsProps> = ({
                 Processing payment...
               </Text>
               <Text
-                className={`text-sm mt-1 ${isDark ? "text-slate-400" : "text-slate-500"}`}
+                className={`text-base mt-1 ${isDark ? "text-slate-400" : "text-slate-500"}`}
               >
                 Please Keep Your Card Close To The Device
               </Text>

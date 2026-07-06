@@ -3,22 +3,22 @@ import TicketsModal from "@/src/components/ui/Modals/TicketsModal";
 import ScreenHeader from "@/src/components/ui/ScreenHeader";
 import { router } from "expo-router";
 import {
-  ChevronRight,
-  GraduationCap,
-  Smartphone,
-  Ticket,
-  Trophy,
-  Tv,
-  Wifi,
-  Zap,
+    ChevronRight,
+    GraduationCap,
+    Smartphone,
+    Ticket,
+    Trophy,
+    Tv,
+    Wifi,
+    Zap,
 } from "lucide-react-native";
 import React, { useState } from "react";
 import {
-  Pressable,
-  ScrollView,
-  Text,
-  View,
-  useColorScheme,
+    Pressable,
+    ScrollView,
+    Text,
+    View,
+    useColorScheme,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -117,7 +117,9 @@ const ValueAddedServices = () => {
             {OTHER_SERVICES.map((service, index) => (
               <Pressable
                 key={service.id}
-                onPress={() => !service.comingSoon && handleServicePress(service.id)}
+                onPress={() =>
+                  !service.comingSoon && handleServicePress(service.id)
+                }
                 disabled={service.comingSoon}
                 className={`flex-row items-center px-4 py-5 gap-4 ${
                   index < OTHER_SERVICES.length - 1
@@ -134,7 +136,7 @@ const ValueAddedServices = () => {
                 </View>
                 <View className="flex-1">
                   <Text
-                    className={`text-sm font-bold ${isDark ? "text-white" : "text-slate-900"}`}
+                    className={`text-base font-bold ${isDark ? "text-white" : "text-slate-900"}`}
                   >
                     {service.name}
                   </Text>

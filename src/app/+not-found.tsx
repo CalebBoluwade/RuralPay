@@ -21,7 +21,7 @@ const NotFound = () => {
           Transaction Not Found
         </Text>
         <Text
-          className={`text-sm text-center ${isDark ? "text-slate-400" : "text-slate-600"}`}
+          className={`text-base text-center ${isDark ? "text-slate-400" : "text-slate-600"}`}
         >
           The Transaction You&apos;re Looking For Doesn&apos;t Exist
         </Text>

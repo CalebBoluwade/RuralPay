@@ -34,7 +34,9 @@ class EncryptionService {
     try {
       const cached = await this.GetUserKey();
       if (cached) return cached;
-    } catch {}
+    } catch (error) {
+      if (__DEV__) console.warn("Failed to retrieve cached user key:", error);
+    }
 
     try {
       const response =
@@ -53,7 +55,7 @@ class EncryptionService {
       return response.details;
     } catch (error) {
       if (__DEV__) console.error("Failed to retrieve user key:", error);
-      throw new Error("Could Not Retrieve Encryption Key");
+      throw new Error("Could Not Retrieve Encryption Keys");
     }
   }
 

@@ -1,10 +1,10 @@
 import { useLanguage } from "@/src/components/context/LanguageContext";
-import OptimizedInput from "@/src/components/ui/Input/OptimizedInput";
 import Button from "@/src/components/ui/Button";
 import Card from "@/src/components/ui/Card";
+import OptimizedInput from "@/src/components/ui/Input/OptimizedInput";
+import Loading from "@/src/components/ui/Modals/Loading";
 import ScreenHeader from "@/src/components/ui/ScreenHeader";
 import { UserFeedBack, UserFeedBackSchema } from "@/src/lib/schema/validations";
-import Loading from "@/src/components/ui/Modals/Loading";
 import FeedbackService from "@/src/lib/services/FeedbackService";
 import ToastService from "@/src/lib/services/ToastService";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -113,7 +113,11 @@ const FeedbackForm = () => {
           contentContainerClassName="px-4 pb-10"
         >
           {/* Hero */}
-          <Card darkClass="bg-white/5 border border-white/10" lightClass="bg-white border border-gray-100" className="rounded-3xl p-5 mb-3">
+          <Card
+            darkClass="bg-white/5 border border-white/10"
+            lightClass="bg-white border border-gray-100"
+            className="rounded-3xl p-5 mb-3"
+          >
             <View className="flex-row gap-3 items-center">
               <Text className="text-3xl mb-2">🙌</Text>
               <Text
@@ -124,7 +128,7 @@ const FeedbackForm = () => {
             </View>
 
             <Text
-              className={`text-sm leading-5 ${isDark ? "text-slate-400" : "text-slate-500"}`}
+              className={`text-base leading-5 ${isDark ? "text-slate-400" : "text-slate-500"}`}
             >
               Every Piece of feedback goes directly to our team. Help us build
               the product you deserve.
@@ -132,7 +136,11 @@ const FeedbackForm = () => {
           </Card>
 
           {/* Star Rating */}
-          <Card darkClass="bg-white/5 border border-white/10" lightClass="bg-white border border-gray-100" className="rounded-3xl p-5 mb-3 items-center">
+          <Card
+            darkClass="bg-white/5 border border-white/10"
+            lightClass="bg-white border border-gray-100"
+            className="rounded-3xl p-5 mb-3 items-center"
+          >
             <Text
               className={`text-lg font-semibold font-brand mb-1 ${isDark ? "text-white" : "text-slate-900"}`}
             >
@@ -164,7 +172,11 @@ const FeedbackForm = () => {
           </Card>
 
           {/* Feedback Fields */}
-          <Card darkClass="bg-white/5 border border-white/10" lightClass="bg-white border border-gray-100" className="rounded-3xl p-5 mb-6">
+          <Card
+            darkClass="bg-white/5 border border-white/10"
+            lightClass="bg-white border border-gray-100"
+            className="rounded-3xl p-5 mb-6"
+          >
             {SECTIONS.map(({ name, emoji, label, placeholder }) => (
               <OptimizedInput
                 control={control}

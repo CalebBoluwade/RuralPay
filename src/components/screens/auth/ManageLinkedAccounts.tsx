@@ -169,7 +169,7 @@ export default function ManageLinkedAccounts() {
                     {account.accountName}
                   </Text>
                   <Text
-                    className={`text-sm mt-1 ${
+                    className={`text-base mt-1 ${
                       isDark ? "text-gray-400" : "text-gray-600"
                     }`}
                   >
@@ -189,7 +189,7 @@ export default function ManageLinkedAccounts() {
                     onPress={() => handleSetPrimary(account.id)}
                   >
                     <Text
-                      className={`text-center text-sm font-bold ${
+                      className={`text-center text-base font-bold ${
                         isDark ? "text-lime-300" : "text-lime-700"
                       }`}
                     >
@@ -208,7 +208,7 @@ export default function ManageLinkedAccounts() {
                   onPress={() => handleRemoveAccount(account.id)}
                 >
                   <Text
-                    className={`text-center text-sm font-bold ${
+                    className={`text-center text-base font-bold ${
                       isDark ? "text-red-300" : "text-red-700"
                     }`}
                   >

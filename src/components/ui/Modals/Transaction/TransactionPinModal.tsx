@@ -452,7 +452,7 @@ const TransactionPin: React.FC<TransactionPINProps> = ({
                   {option.title}
                 </Text>
                 <Text
-                  className={`text-sm mt-1 ${isDark ? "text-gray-400" : "text-gray-600"}`}
+                  className={`text-base mt-1 ${isDark ? "text-gray-400" : "text-gray-600"}`}
                 >
                   {option.sub}
                 </Text>

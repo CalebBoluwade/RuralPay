@@ -3,7 +3,7 @@ import SwiftUI
 import WidgetKit
 
 struct widgetControl: ControlWidget {
-    static let kind: String = "com.developer.example.widget"
+    static let kind: String = "com.zegiftedtechnologies.ruralpay"
 
     var body: some ControlWidgetConfiguration {
         AppIntentControlConfiguration(

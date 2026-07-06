@@ -99,12 +99,14 @@ export default function RootLayout() {
           <ToastProvider>
             <AuthSessionProvider>
               <LanguageProvider>
+                {/* <UserInactivityProvider> */}
                 <ComplianceGuard>
                   {/* <Slot /> */}
                   <RootNavigator />
 
                   <StatusBar style="auto" />
                 </ComplianceGuard>
+                {/* </UserInactivityProvider> */}
               </LanguageProvider>
             </AuthSessionProvider>
           </ToastProvider>

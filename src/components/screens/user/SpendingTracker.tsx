@@ -175,7 +175,7 @@ const SpendingTracker = () => {
                       </View>
                       <View className="flex-1">
                         <Text
-                          className={`text-sm font-brand font-bold ${isDark ? "text-white" : "text-slate-900"}`}
+                          className={`text-base font-brand font-bold ${isDark ? "text-white" : "text-slate-900"}`}
                           numberOfLines={1}
                         >
                           {category}
@@ -188,7 +188,7 @@ const SpendingTracker = () => {
                       </View>
                       <View className="items-end">
                         <Text
-                          className={`text-sm font-bold ${isDark ? "text-white" : "text-slate-900"}`}
+                          className={`text-base font-bold ${isDark ? "text-white" : "text-slate-900"}`}
                         >
                           ₦{amount.toLocaleString()}
                         </Text>
@@ -226,7 +226,7 @@ const SpendingTracker = () => {
               No Spending Yet!
             </Text>
             <Text
-              className={`text-sm text-center px-8 ${isDark ? "text-slate-400" : "text-slate-500"}`}
+              className={`text-base text-center px-8 ${isDark ? "text-slate-400" : "text-slate-500"}`}
             >
               Your wallet is safe... for now! 😄
             </Text>

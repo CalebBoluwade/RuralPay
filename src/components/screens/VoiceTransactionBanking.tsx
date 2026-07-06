@@ -3,20 +3,20 @@ import AccountService from "@/src/lib/services/AccountService";
 import PaymentService from "@/src/lib/services/PaymentService";
 import ToastService from "@/src/lib/services/ToastService";
 import {
-  FontAwesome5,
-  Ionicons,
-  MaterialCommunityIcons,
+    FontAwesome5,
+    Ionicons,
+    MaterialCommunityIcons,
 } from "@expo/vector-icons";
 import { AudioModule, RecordingPresets, useAudioRecorder } from "expo-audio";
 import { router } from "expo-router";
 import * as Speech from "expo-speech";
 import React, { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  Pressable,
-  Text,
-  View,
-  useColorScheme,
+    ActivityIndicator,
+    Pressable,
+    Text,
+    View,
+    useColorScheme,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -64,12 +64,18 @@ const VoiceTransactionBanking = () => {
   }, []);
 
   useEffect(() => {
-    Speech.speak(
-      `Voice Banking Ready. You Have ${accountEnquiry?.accounts.length || 2} Accounts With ${accountEnquiry?.accounts.reduce((sum, acc) => sum + (acc.availableBalance || 0), 0) || 50000} Naira In Total. Select An Account To Begin.`,
-      {
-        language: "en",
-      },
+    if (!accountEnquiry) return;
+    const totalBalance = accountEnquiry.accounts.reduce(
+      (sum, acc) => sum + (acc.availableBalance || 0),
+      0,
     );
+    Speech.speak(
+      `Voice Banking Ready. You Have ${accountEnquiry.accounts.length} Accounts With ${totalBalance} Naira In Total. Select An Account To Begin.`,
+      { language: "en" },
+    );
+    return () => {
+      Speech.stop();
+    };
   }, [accountEnquiry]);
 
   const handleVoiceCommand = (type: "balance" | "transfer" | "payment") => {
@@ -272,7 +278,7 @@ const VoiceTransactionBanking = () => {
                   <Text className="text-white font-bold text-lg">
                     Check Balance
                   </Text>
-                  <Text className="text-blue-100 text-sm">
+                  <Text className="text-blue-100 text-base">
                     Voice balance inquiry
                   </Text>
                 </View>
@@ -298,7 +304,7 @@ const VoiceTransactionBanking = () => {
                   <Text className="text-white font-bold text-lg">
                     Voice Transfer
                   </Text>
-                  <Text className="text-green-100 text-sm">
+                  <Text className="text-green-100 text-base">
                     Send money by voice
                   </Text>
                 </View>
@@ -324,7 +330,7 @@ const VoiceTransactionBanking = () => {
                   <Text className="text-white font-bold text-lg">
                     Voice Payment
                   </Text>
-                  <Text className="text-lime-100 text-sm">
+                  <Text className="text-lime-100 text-base">
                     Pay bills by voice
                   </Text>
                 </View>
@@ -391,7 +397,7 @@ const VoiceTransactionBanking = () => {
             }`}
           >
             <Text
-              className={`text-sm uppercase tracking-wide mb-2 ${isDark ? "text-gray-400" : "text-gray-600"}`}
+              className={`text-base uppercase tracking-wide mb-2 ${isDark ? "text-gray-400" : "text-gray-600"}`}
             >
               Command Detected
             </Text>
@@ -434,7 +440,7 @@ const VoiceTransactionBanking = () => {
             Processing Command...
           </Text>
           <Text
-            className={`text-sm mt-2 ${isDark ? "text-gray-400" : "text-gray-600"}`}
+            className={`text-base mt-2 ${isDark ? "text-gray-400" : "text-gray-600"}`}
           >
             Please wait while we analyze your voice
           </Text>

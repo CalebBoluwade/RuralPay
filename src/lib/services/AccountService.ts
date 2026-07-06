@@ -9,9 +9,10 @@ class AccountService {
     return response;
   }
 
-  async getAccountData(): Promise<AccountData> {
-    const response = await axiosInstance.get("/account");
-    return response.de;
+  async getAccountData(): Promise<APIResponse<AccountData>> {
+    const response =
+      await axiosInstance.get<APIResponse<AccountData>>("/account");
+    return response;
   }
 
   async GetVirtualAccount(): Promise<{

@@ -23,6 +23,10 @@ interface ScreenHeaderProps {
   goBack?: boolean;
   onBack?: () => void;
   menuItems?: MenuItem[];
+
+  useLargerTitle?: boolean; // New prop to control title size
+
+  showLanguageSelector?: boolean; // New prop to control language selector visibility
 }
 
 const ScreenHeader: React.FC<ScreenHeaderProps> = ({
@@ -31,6 +35,8 @@ const ScreenHeader: React.FC<ScreenHeaderProps> = ({
   goBack = true,
   onBack,
   menuItems,
+  useLargerTitle = false,
+  showLanguageSelector = true,
 }) => {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
@@ -68,6 +74,7 @@ const ScreenHeader: React.FC<ScreenHeaderProps> = ({
                 ? "bg-white/10 border border-white/20"
                 : "bg-white/60 border border-gray-200/50"
             }`}
+            style={{ transform: [{ rotate: "180deg" }] }}
             onPress={() => (onBack ? onBack() : nav.back())}
           >
             <ArrowLeft size={18} color={isDark ? "white" : "black"} />
@@ -76,7 +83,7 @@ const ScreenHeader: React.FC<ScreenHeaderProps> = ({
 
         <View className="flex-1">
           <Text
-            className={`${subtitle ? "text-lg" : "text-xl"} font-brand font-bold mb-1 ${
+            className={`${subtitle ? "text-lg" : useLargerTitle ? "text-3xl" : "text-xl"} font-brand font-bold mb-1 ${
               isDark ? "text-white" : "text-gray-900"
             }`}
           >
@@ -120,7 +127,7 @@ const ScreenHeader: React.FC<ScreenHeaderProps> = ({
         ) : null}
 
         {/* Language Selection */}
-        <SelectLanguageModal />
+        {showLanguageSelector && <SelectLanguageModal />}
 
         {menuItems && menuItems.length > 0 && (
           <Pressable
