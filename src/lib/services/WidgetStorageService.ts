@@ -1,5 +1,6 @@
 import { ExtensionStorage } from "@bacons/apple-targets";
 import { NativeModules, Platform } from "react-native";
+import AppLogger from "./AppLogger";
 
 const APPLE_APP_GROUP = "group.com.zegiftedtechnologies.ruralpay";
 
@@ -25,8 +26,11 @@ const WidgetStorageService = {
           console.log("[WidgetStorage] Reloading widgets after iOS write");
           NativeModules.WidgetStorage.reloadWidgets();
         }
-      } catch (e) {
-        console.error(`[WidgetStorage] iOS write FAILED key="${key}"`, e);
+      } catch (error) {
+        AppLogger.logError(error as Error, {
+          action: `[WidgetStorage] iOS write FAILED key="${key}"`,
+          metadata: {},
+        });
       }
     } else {
       if (!NativeModules.WidgetStorage) {

@@ -136,7 +136,8 @@ axiosInstance.interceptors.response.use(
     }
 
     // Only log API errors, not network connectivity issues or expected auth failures
-    const isAuthEndpointError = originalRequest?.url?.startsWith("/auth/") ||
+    const isAuthEndpointError =
+      originalRequest?.url?.startsWith("/auth/") ||
       originalRequest?.url?.startsWith("/encryption/");
     if (
       error.response?.status &&
@@ -160,7 +161,8 @@ axiosInstance.interceptors.response.use(
 
     // Handle 401 Unauthorized — emit event for AuthSessionProvider instead of immediate redirect
     // Skip auth endpoints: a 401 on /auth/* means wrong credentials, not session expiry
-    const isAuthEndpoint = originalRequest?.url?.startsWith("/auth/") ||
+    const isAuthEndpoint =
+      originalRequest?.url?.startsWith("/auth/") ||
       originalRequest?.url?.startsWith("/encryption/");
     if (
       error.response?.status === 401 &&
@@ -249,11 +251,17 @@ axiosInstance.interceptors.response.use(
 );
 
 function toError(error: unknown): Error {
-  if (error instanceof Error) return error;
+  if (error instanceof Error && !(error as any).response) return error;
 
   const axiosError = error as any;
+  const responseData = axiosError?.response?.data;
+
   const message =
-    axiosError?.response?.data?.errorMessage ||
+    responseData?.message ||
+    responseData?.errorMessage ||
+    (responseData?.ResponseCode
+      ? `[${responseData.ResponseCode}] Request failed`
+      : null) ||
     axiosError?.message ||
     "An unexpected error occurred";
 

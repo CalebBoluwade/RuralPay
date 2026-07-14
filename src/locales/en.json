@@ -128,7 +128,7 @@
   "bankTransfer": {
     "title": "Bank Transfers",
     "selectBank": "Select Bank",
-    "chooseBank": "Choose A Bank",
+    "chooseBank": "Choose Destination Bank",
     "accountNumber": "Account Number",
     "enterAccountNumber": "Enter 10-Digit Account Number",
     "beneficiaries": "Beneficiaries",
@@ -142,7 +142,7 @@
   },
   "merchant": {
     "analytics": "Merchant Analytics",
-    "salesAnalytics": "Sales Analytics",
+    "merchantSalesAnalytics": "Merchant Sales Analytics",
     "totalVolume": "Total Volume",
     "totalProfit": "Total Profit",
     "totalTransactions": "Total Transactions",
@@ -173,7 +173,7 @@
     "feeNote": "One-time payment • Secure • Instant",
     "proceedToVerification": "Proceed to Verification",
     "selectBank": "Select Bank",
-    "chooseBank": "Choose A Bank",
+    "chooseBank": "Choose Destination Bank",
     "accountNumber": "Account Number",
     "enterAccountNumber": "Enter 10-Digit Account Number",
     "resolvingName": "Resolving Account Name...",

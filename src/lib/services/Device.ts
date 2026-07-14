@@ -28,15 +28,15 @@ export class DeviceService {
     }
 
     if (finalStatus !== "granted") {
-      ToastService.error("Permissions not granted for push notification!");
-      throw new Error("Permissions not granted for push notifications");
+      ToastService.error("Permissions Not Granted For Push Notifications!");
+      throw new Error("Permissions Not Granted For Push Notifications");
     }
 
     const projectId =
       Constants.expoConfig?.extra?.eas?.projectId ??
       Constants.easConfig?.projectId;
 
-    if (!projectId) throw new Error("EAS projectId is missing from app config");
+    if (!projectId) throw new Error("EAS ProjectId is missing from app config");
 
     const token = (await Notifications.getExpoPushTokenAsync({ projectId }))
       .data;
@@ -47,11 +47,18 @@ export class DeviceService {
   }
 
   static async getDeviceInfo() {
+    const deviceType = await Device.getDeviceTypeAsync();
+
     const deviceInfo = {
       model: Device.modelName,
-      os: Device.osName,
+      deviceYearClass: Device.deviceYearClass,
+      deviceName: Device.deviceName,
+      os: Platform.OS,
       osVersion: Device.osVersion,
       isPhysicalDevice: Device.isDevice,
+      manufacturer: Device.manufacturer,
+      productName: Device.productName,
+      deviceType: Device.DeviceType[deviceType],
     };
 
     return deviceInfo;

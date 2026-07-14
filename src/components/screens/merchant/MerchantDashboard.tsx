@@ -16,7 +16,6 @@ import {
   CreditCard,
   QrCode,
   Receipt,
-  TrendingUp,
   Wifi,
   Zap,
 } from "lucide-react-native";
@@ -103,7 +102,6 @@ export default function MerchantDashboard() {
 
   const headerAnim = useFadeSlide(0);
   const statsAnim = useFadeSlide(80);
-  const actionsAnim = useFadeSlide(160);
   const menuAnim = useFadeSlide(240);
   const txAnim = useFadeSlide(320);
 
@@ -114,6 +112,8 @@ export default function MerchantDashboard() {
         MerchantService.GetMerchantAnalytics(),
       ]);
       setRecentTransactions(paginatedTransactions?.transactions ?? []);
+
+      console.log(merchantStats);
       setStats(merchantStats);
       // Seed widget with fresh QR in the background — fire and forget
       QRCodeService.GeneratePaymentQR().catch(() => {});
@@ -155,23 +155,16 @@ export default function MerchantDashboard() {
     {
       id: "nfc",
       label: "Tap to Accept Card",
-      subtitle: "Customer taps their card on your phone to pay",
+      subtitle: "Customer Taps Their Card On Your Device To Pay",
       icon: CreditCard,
       onPress: () => setShowMerchantPayModal(true),
     },
     {
       id: "qr",
       label: "Show My QR Code",
-      subtitle: "Customer scans this to pay you instantly",
+      subtitle: "Customer Scans This Image To Pay You Instantly",
       icon: QrCode,
       onPress: () => setShowMerchantQRModal(true),
-    },
-    {
-      id: "services",
-      label: "Services",
-      subtitle: "Card management & More",
-      icon: TrendingUp,
-      onPress: () => router.push("merchant/services" as any),
     },
   ];
 
@@ -214,7 +207,7 @@ export default function MerchantDashboard() {
         ].map((stat) => (
           <View
             key={stat.label}
-            className={`flex-1 p-4 rounded-2xl ${cardClass}`}
+            className={`flex-1 p-6 rounded-2xl ${cardClass}`}
           >
             <Text
               className={`text-xs font-semibold mb-2 ${isDark ? "text-slate-400" : "text-slate-500"}`}
@@ -236,38 +229,10 @@ export default function MerchantDashboard() {
         ))}
       </Animated.View>
 
-      {/* Quick Actions */}
-      <Animated.View style={actionsAnim} className="mb-6">
-        <View className="flex-row items-start gap-3">
-          {QUICK_ACTIONS.map((action) => (
-            <Pressable
-              key={action.id}
-              className="flex-1 items-center"
-              onPress={() => router.push(action.route as any)}
-            >
-              <View
-                className={`w-16 h-16 rounded-2xl items-center justify-center mb-2 ${
-                  isDark
-                    ? "bg-white/10 border border-white/20"
-                    : "bg-white border border-slate-200 shadow-sm"
-                }`}
-              >
-                <action.icon size={28} color={accentColor} />
-              </View>
-              <Text
-                className={`text-xs font-semibold ${isDark ? "text-slate-300" : "text-slate-600"}`}
-              >
-                {action.label}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-      </Animated.View>
-
       {/* Menu Items */}
       <Animated.View style={menuAnim} className="mb-6">
         <Text
-          className={`text-base font-bold mb-3 ${isDark ? "text-white" : "text-slate-900"}`}
+          className={`text-xl font-bold mb-3 ${isDark ? "text-white" : "text-slate-900"}`}
         >
           Actions
         </Text>

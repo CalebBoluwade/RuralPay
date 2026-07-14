@@ -9,14 +9,16 @@ import { useFonts } from "expo-font";
 import { isLiquidGlassAvailable } from "expo-glass-effect";
 import * as Notifications from "expo-notifications";
 import { router, SplashScreen, Stack } from "expo-router";
+import * as SecureStore from "expo-secure-store";
 import { StatusBar } from "expo-status-bar";
-import { useEffect } from "react";
-import { Linking, useColorScheme } from "react-native";
+import { useEffect, useState } from "react";
+import { DeviceEventEmitter, useColorScheme } from "react-native";
 import "react-native-reanimated";
-import { AuthSessionProvider } from "../components/context/AuthSessionProvider";
+import { AuthSessionProvider, useAuth } from "../components/context/AuthSessionProvider";
 import { LanguageProvider } from "../components/context/LanguageContext";
 import { NotificationProvider } from "../components/context/NotificationContext";
 import { ToastProvider } from "../components/context/ToastProvider";
+import LockScreen from "../components/screens/auth/LockScreen";
 import ComplianceGuard from "../components/ui/ComplianceGuard";
 import { pinningService } from "../lib/services/PinningService";
 
@@ -65,25 +67,6 @@ export default function RootLayout() {
     return () => subscription.remove();
   }, []);
 
-  // Widget deep-link handler
-  useEffect(() => {
-    const handleURL = ({ url }: { url: string }) => {
-      if (url === "ruralpay://scan" || url === "ruralpay-dev://scan") {
-        router.push("/qr-scan" as any);
-      } else if (
-        url === "ruralpay://merchant/qr" ||
-        url === "ruralpay-dev://merchant/qr"
-      ) {
-        router.push("/merchant");
-      }
-    };
-    const sub = Linking.addEventListener("url", handleURL);
-    Linking.getInitialURL().then((url) => {
-      if (url) handleURL({ url });
-    });
-    return () => sub.remove();
-  }, []);
-
   useEffect(() => {
     if (loaded || error) SplashScreen.hideAsync();
   }, [loaded, error]);
@@ -103,7 +86,7 @@ export default function RootLayout() {
                 <ComplianceGuard>
                   {/* <Slot /> */}
                   <RootNavigator />
-
+                  <PendingCheckoutHandler />
                   <StatusBar style="auto" />
                 </ComplianceGuard>
                 {/* </UserInactivityProvider> */}
@@ -116,6 +99,51 @@ export default function RootLayout() {
   );
 }
 
+function PendingCheckoutHandler() {
+  const { isAuthenticated, isLoading } = useAuth();
+  const [pendingToken, setPendingToken] = useState<string | null>(null);
+  const [showLock, setShowLock] = useState(false);
+
+  const resumePendingCheckout = async () => {
+    try {
+      const token = await SecureStore.getItemAsync("pending_checkout_token");
+      if (token) setPendingToken(token);
+    } catch {}
+  };
+
+  // Check on mount once auth state is resolved
+  useEffect(() => {
+    if (!isLoading) resumePendingCheckout();
+  }, [isLoading]);
+
+  useEffect(() => {
+    const subLogin = DeviceEventEmitter.addListener("USER_LOGGED_IN", resumePendingCheckout);
+    const subPin = DeviceEventEmitter.addListener("PIN_SUCCESS", () => {
+      setShowLock(false);
+      resumePendingCheckout();
+    });
+    return () => {
+      subLogin.remove();
+      subPin.remove();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!pendingToken) return;
+    if (!isAuthenticated) {
+      setShowLock(true);
+    } else {
+      SecureStore.deleteItemAsync("pending_checkout_token").catch(() => {});
+      router.push({ pathname: "/(common)/checkout", params: { token: pendingToken } } as any);
+      setPendingToken(null);
+    }
+  }, [pendingToken, isAuthenticated]);
+
+  if (showLock) return <LockScreen />;
+
+  return null;
+}
+
 function RootNavigator() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
@@ -123,8 +151,6 @@ function RootNavigator() {
 
   return (
     <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="qr-scan" options={{ headerShown: false }} />
-
       <Stack.Screen
         name="screen-menu"
         options={{

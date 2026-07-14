@@ -126,7 +126,7 @@ const BalanceCard: React.FC<BalanceCardProps> = ({
                 isDark ? "text-lime-400" : "text-lime-700"
               }`}
             >
-              Link a bank account to see your balance
+              Link A Bank Account To See Your Balance
             </Text>
             <Text
               className={`text-xs mt-1 ${

@@ -11,7 +11,7 @@ import ToastService from "@/src/lib/services/ToastService";
 import WidgetStorageService from "@/src/lib/services/WidgetStorageService";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { router, useLocalSearchParams } from "expo-router";
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Text, View, useColorScheme } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -20,10 +20,6 @@ const QRPayments = () => {
   const isDark = colorScheme === "dark";
 
   const { token } = useLocalSearchParams<{ token?: string }>();
-
-  WidgetStorageService.set("pending_qr_payment_token", token || "");
-
-  if (__DEV__) console.log(token);
 
   const [scanned, setScanned] = useState(false);
   const processingScan = useRef(false);
@@ -45,6 +41,13 @@ const QRPayments = () => {
     accountNumber?: string;
     accountName?: string;
   } | null>(null);
+
+  // Auto-process token from deep link
+  useEffect(() => {
+    if (!token) return;
+    WidgetStorageService.set("pending_qr_payment_token", token);
+    handleBarCodeScanned({ data: token });
+  }, [token]);
 
   const ProcessPayment = async (
     selected2FA: TwoFAType,

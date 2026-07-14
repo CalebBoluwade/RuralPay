@@ -46,9 +46,9 @@ const TransactionSuccess: React.FC<TransactionSuccessProps> = ({
         <Text
           className={`text-base text-center px-4 ${isDark ? "text-gray-400" : "text-gray-600"}`}
         >
-          Your Transaction Of{" "}
-          {formatAmount(transactionResult.amount, "NGN", true, false)} Was
-          Completed Successfully.
+          {transactionResult?.responseMessage ||
+            (transactionResult as any)?.message ||
+            `Your Transaction Of ${formatAmount(transactionResult.amount, "NGN", true, false)} Was Completed Successfully.`}
         </Text>
       </View>
 
@@ -64,7 +64,7 @@ const TransactionSuccess: React.FC<TransactionSuccessProps> = ({
           <Text
             className={`text-base font-semibold ${isDark ? "text-white" : "text-gray-900"}`}
           >
-            {transactionResult?.reference}
+            {transactionResult?.reference || transactionResult?.transactionId}
           </Text>
         </View>
         <View className="flex-row justify-between items-center mb-4">

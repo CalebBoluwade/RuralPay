@@ -87,7 +87,7 @@ const Button: React.FC<ButtonProps> = ({
       {...rest}
     >
       {loading ? (
-        <ActivityIndicator color={isDark ? "#a78bfa" : "#7c3aed"} />
+        <ActivityIndicator color={isDark ? "#a3e635" : "#65a30d"} />
       ) : (
         <Text className={`text-base text-center font-brand ${textClass}`}>
           {label}

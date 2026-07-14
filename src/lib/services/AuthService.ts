@@ -29,7 +29,7 @@ class AuthService {
     try {
       const deviceInfo = await DeviceService.getDeviceInfo();
 
-      if (__DEV__) console.log(deviceInfo, pushToken);
+      if (__DEV__) console.log("UserDeviceInfo", deviceInfo, pushToken);
 
       const userKeyConfig = await EncryptionService.RetrieveUserKey();
 

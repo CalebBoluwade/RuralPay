@@ -87,19 +87,10 @@ export default function TransactionDetail() {
   const { user } = useAuth();
 
   useEffect(() => {
-    try {
-      PaymentService.FetchTransactionById(transactionId as string).then(
-        (transaction) => {
-          setTransaction(transaction);
-          setLoading(false);
-        },
-      );
-    } catch {
-      ToastService.error("Error Fetching Transaction");
-      setLoading(false);
-    } finally {
-      setLoading(false);
-    }
+    PaymentService.FetchTransactionById(transactionId as string)
+      .then((transaction) => setTransaction(transaction))
+      .catch(() => ToastService.error("Error Fetching Transaction"))
+      .finally(() => setLoading(false));
   }, [transactionId]);
 
   if (loading) return <LoadingView isDark={isDark} />;

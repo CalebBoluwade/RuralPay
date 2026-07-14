@@ -1,5 +1,5 @@
 import AppLogger, { LogLevel } from "@/src/lib/services/AppLogger";
-import { router } from "expo-router";
+// import * as Updates from "expo-updates";
 import { AlertCircle } from "lucide-react-native";
 import React, { Component, ReactNode } from "react";
 import { Pressable, Text, View } from "react-native";
@@ -37,10 +37,15 @@ export class ErrorBoundary extends Component<Props, State> {
     );
   }
 
-  handleRestart = () => {
-    authService.logout();
+  handleRestart = async () => {
+    try {
+      await authService.logout();
+    } catch {}
     this.setState({ hasError: false, error: undefined });
-    router.replace("/");
+    // Don't use router here — ErrorBoundary is above NavigationContainer
+    if (!__DEV__) {
+      // await Updates.reloadAsync();
+    }
   };
 
   render() {

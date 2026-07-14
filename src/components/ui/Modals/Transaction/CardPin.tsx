@@ -17,7 +17,7 @@ import ScanToPay from "@/assets/images/ScanToPay.svg";
 import MasterCard from "@/assets/images/mastercard.svg";
 import VisaCard from "@/assets/images/visa.svg";
 
-import PaymentSummaryCard from "./PaymentSummaryCard";
+import CardPaymentSummaryCard from "./CardPaymentSummaryCard";
 import TransactionFailure from "./TransactionFailure";
 import TransactionSuccess from "./TransactionSuccess";
 
@@ -26,6 +26,7 @@ interface CardPinProps {
   showPinModal: boolean;
   isLoading: boolean;
   merchantBusinessName: string;
+  merchantCommisionRate: number;
   amount: number;
   setIsLoading: React.Dispatch<React.SetStateAction<boolean>>;
   onPinEntered: (pin: string) => void;
@@ -42,6 +43,7 @@ const CardPIN: React.FC<CardPinProps> = ({
   onPinEntered,
   onCancel,
   merchantBusinessName,
+  merchantCommisionRate,
   amount,
   isLoading,
   setIsLoading,
@@ -58,6 +60,12 @@ const CardPIN: React.FC<CardPinProps> = ({
 
   const [currentStep, setCurrentStep] = React.useState<AuthStep>("PIN");
 
+  const PIN_DISABLED = process.env.EXPO_PUBLIC_PIN_ENTRY_DISABLED === "true";
+  const PIN_MIN_AMOUNT = process.env.EXPO_PUBLIC_PIN_MIN_AMOUNT
+    ? Number.parseInt(process.env.EXPO_PUBLIC_PIN_MIN_AMOUNT, 10)
+    : 0;
+  const skipPin = PIN_DISABLED || amount < PIN_MIN_AMOUNT;
+
   const codeLength = new Array(4).fill(0);
 
   const OnNumberPressDown = (num: number) => {
@@ -68,15 +76,11 @@ const CardPIN: React.FC<CardPinProps> = ({
   };
 
   const fetchBin = async () => {
+    const cardBIN = cardTransaction?.BIN || "";
+    if (!cardBIN || BINData) return;
     setIsLoading(true);
     try {
-      const cardBIN = cardTransaction?.BIN || "";
-      if (!cardBIN) {
-        if (__DEV__) console.log("Card BIN not available");
-        return;
-      }
       const data = await PaymentService.GetCardBIN(cardBIN.slice(0, 6));
-
       setBINData(data);
     } catch (error) {
       if (__DEV__) console.log("Failed to Fetch BIN", error);
@@ -100,12 +104,20 @@ const CardPIN: React.FC<CardPinProps> = ({
   };
 
   useEffect(() => {
-    fetchBin();
-  }, []);
+    if (!BINData && cardTransaction?.BIN) {
+      fetchBin();
+    }
+  }, [cardTransaction?.BIN]);
 
   useEffect(() => {
-    // If transaction result is available and has a receipt reference, show success
-    if (transactionResult?.amount && currentStep === "Confirm") {
+    if (skipPin && currentStep === "PIN") {
+      setCurrentStep("Confirm");
+    }
+  }, [skipPin]);
+
+  useEffect(() => {
+    // If transaction result is available, show success
+    if (transactionResult?.transactionId && currentStep === "Confirm") {
       setCurrentStep("Success");
     }
     // If there's an error, show failure
@@ -119,8 +131,10 @@ const CardPIN: React.FC<CardPinProps> = ({
       await ReceiptService.DownloadTransactionReceipt({
         ...transactionResult,
         reference: transactionResult.reference,
-        amount: transactionResult.amount.toString(),
+        amount: (transactionResult.amount || amount).toString(),
         toAccount: transactionResult.toAccount,
+        merchantName: merchantBusinessName,
+        cardLast4: cardTransaction?.cardInfo?.last4,
       });
     }
   };
@@ -264,7 +278,7 @@ const CardPIN: React.FC<CardPinProps> = ({
 
   const RenderConfirmPaymentDetails = () => {
     // Check if data is available
-    if (!cardTransaction?.success || !BINData || isLoading) {
+    if (!cardTransaction?.success || (!BINData && isLoading)) {
       return (
         <View
           className={`flex-1 px-3 justify-center items-center ${isDark ? "bg-[#0a0a0f]" : "bg-[#f5f5fa]"}`}
@@ -282,18 +296,19 @@ const CardPIN: React.FC<CardPinProps> = ({
 
     return (
       <View
-        className={`justify-center items-center ${isDark ? "bg-[#0a0a0f]" : "bg-[#f5f5fa]"}`}
+        className={`justify-center items-center --${isDark ? "bg-[#0a0a0f]" : "bg-[#f5f5fa]"}`}
       >
         <View className="items-center mb-6">
-          <ScanToPay width={width - 48} height={(width - 48) * 0.8} />
+          <ScanToPay width={width - 120} height={(width - 120) * 0.8} />
         </View>
 
-        <PaymentSummaryCard
+        <CardPaymentSummaryCard
           isDark={isDark}
           isLoading={isLoading}
           BINData={BINData}
           cardTransaction={cardTransaction}
           merchantBusinessName={merchantBusinessName}
+          merchantCommisionRate={merchantCommisionRate}
           amount={amount}
           onCancel={onCancel!}
           HandleCardTapPayment={HandleCardTapPayment}
@@ -451,7 +466,10 @@ const CardPIN: React.FC<CardPinProps> = ({
 
   const RenderSuccess = () => (
     <TransactionSuccess
-      transactionResult={transactionResult!}
+      transactionResult={{
+        ...transactionResult!,
+        amount: transactionResult?.amount || amount,
+      }}
       handleDownloadReceipt={handleDownloadReceipt}
       onClose={() => {
         onCancel?.();
@@ -492,7 +510,7 @@ const CardPIN: React.FC<CardPinProps> = ({
       case "Failure":
         return RenderFailure();
       default:
-        return RenderPinView();
+        return skipPin ? RenderConfirmPaymentDetails() : RenderPinView();
     }
   };
 

@@ -7,12 +7,12 @@ class QRCodeService {
     return response.details;
   }
 
-  async GeneratePaymentQR(): Promise<string> {
-    if (__DEV__) console.log("[QRCodeService] GeneratePaymentQR called");
-    const response =
-      await axiosInstance.post<APIResponse<{ qrImage: string }>>(
-        "/merchant/qr",
-      );
+  async GeneratePaymentQR(qrSize?: number): Promise<string> {
+    if (__DEV__) console.log("[QRCodeService] GeneratePaymentQR Called");
+    const response = await axiosInstance.post<APIResponse<{ qrImage: string }>>(
+      "/merchant/qr",
+      qrSize ? { size: qrSize } : {},
+    );
     const qr = response.details.qrImage;
     if (__DEV__)
       console.log(`[QRCodeService] QR received, length=${qr?.length ?? 0}`);

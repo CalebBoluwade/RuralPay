@@ -26,6 +26,11 @@
 #     echo "✅ react-native-svg iOS patch applied"
 # fi
 
+# Apply patch-package patches
+echo "Applying patch-package patches..."
+bunx patch-package
+echo "✅ patch-package patches applied"
+
 # Apply react-native-ble-advertiser patch
 echo "Applying react-native-ble-advertiser patch..."
 

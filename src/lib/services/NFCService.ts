@@ -355,10 +355,12 @@ class NFCService {
     merchantId,
     amount,
     cardPIN,
+    txType,
   }: {
     merchantId: string;
     amount: number;
     cardPIN: string;
+    txType?: "DEBIT" | "CREDIT";
   }): Promise<CardDetailsResult> {
     try {
       const compromised = await integrityService.isDeviceCompromised();
@@ -421,7 +423,7 @@ class NFCService {
         amount,
         paymentMode: "CARD",
         cardInfo: cardInfo,
-        txType: "DEBIT",
+        txType: txType ?? "CREDIT",
         // cardInfo: {
         //   currency: "0566", // Naira
         //   pan: cardInfo.cardData.pan,
@@ -802,130 +804,225 @@ class NFCService {
       await this.stopNFC();
 
       // Request NFC technology with timeout
+      const nfcTimeout =
+        Number(process.env.EXPO_PUBLIC_NFC_READ_TIMEOUT) || 30000;
       await Promise.race([
         NfcManager.requestTechnology(NfcTech.IsoDep),
         new Promise<never>((_, reject) =>
           setTimeout(
-            () => reject(new Error("NFC timeout - no card detected")),
-            8000,
+            () => reject(new Error("NFC Read Timeout - No Card Detected")),
+            nfcTimeout,
           ),
         ),
       ]);
 
       ToastService.info("Card Detected, Reading...");
 
-      // Step 1: Try direct AID selection first (fast)
-      let applications: { aid: number[]; label: string }[] = [];
+      // Step 1: Select payment application via proper EMV contactless flow
+      // PPSE first (required by some Mastercard contactless cards to initialize state)
+      let selectedApp: { aid: number[]; label: string } | null = null;
+      let selectAppResponse: number[] | null = null;
 
-      const CARD_AIDS = this.getCardAIDs();
-
-      for (const { name, aid } of CARD_AIDS) {
-        try {
-          // Small delay to give card time to respond
-          await new Promise((resolve) => setTimeout(resolve, 50));
-
-          const aidBytes = aid.slice(5); // Remove SELECT command prefix
-          const selectResponse = await this.selectApplication(aidBytes);
-
-          const sw1 = selectResponse?.at(-2);
-          const sw2 = selectResponse?.at(-1);
-
-          if (sw1 === 0x90 && sw2 === 0x00) {
-            applications.push({ aid: aidBytes, label: name });
-            if (__DEV__) ToastService.info(`Found ${name} Processor`);
-            break; // Use first successful AID
-          }
-        } catch (error: any) {
+      try {
+        const ppseResponse = await this.sendAPDU(APDU_COMMANDS.SELECT_PPSE);
+        const ppseSw1 = ppseResponse[ppseResponse.length - 2];
+        if (ppseSw1 === 0x90) {
+          const applications = this.parsePPSE(ppseResponse);
           if (__DEV__)
-            console.log(`${name} AID failed:`, error?.message || error);
-          // Continue trying other AIDs
+            console.log(
+              "PPSE found apps:",
+              applications.map((a) => a.label),
+            );
+          if (applications.length > 0) {
+            selectedApp = applications[0];
+            selectAppResponse = await this.selectApplication(selectedApp.aid);
+            const sw1 = selectAppResponse?.at(-2);
+            if (sw1 !== 0x90) {
+              selectedApp = null;
+              selectAppResponse = null;
+            }
+          }
+        }
+      } catch (ppseError) {
+        if (__DEV__) console.log("PPSE failed:", ppseError);
+      }
+
+      // Fallback: Try direct AID selection if PPSE didn't work
+      if (!selectedApp) {
+        const CARD_AIDS = this.getCardAIDs();
+        for (const { name, aid } of CARD_AIDS) {
+          try {
+            await new Promise((resolve) => setTimeout(resolve, 50));
+            const aidBytes = aid.slice(5);
+            const selectResponse = await this.selectApplication(aidBytes);
+            const sw1 = selectResponse?.at(-2);
+            const sw2 = selectResponse?.at(-1);
+            if (sw1 === 0x90 && sw2 === 0x00) {
+              selectedApp = { aid: aidBytes, label: name };
+              selectAppResponse = selectResponse;
+              if (__DEV__) ToastService.info(`Found ${name} Processor`);
+              break;
+            }
+          } catch (error: any) {
+            if (__DEV__)
+              console.log(`${name} AID failed:`, error?.message || error);
+          }
         }
       }
 
-      // Step 1B: If no AID worked, try PPSE as fallback
-      if (!applications || applications.length === 0) {
-        if (__DEV__) console.log("No AIDs detected, trying PPSE...");
-        try {
-          const ppseResponse = await this.sendAPDU(APDU_COMMANDS.SELECT_PPSE);
-          applications = this.parsePPSE(ppseResponse);
-        } catch (ppseError) {
-          if (__DEV__) console.log("PPSE also failed:", ppseError);
-        }
-      }
-
-      if (!applications || applications.length === 0) {
+      if (!selectedApp || !selectAppResponse) {
         throw new Error("No Payment Provider Found on Card");
       }
-
-      // Step 3: Select application — reuse the response from discovery to avoid double-select
-      const selectedApp = applications[0];
-      // We already successfully selected this AID during discovery.
-      // Re-selecting resets card state on some cards and causes GPO 6985.
-      // Instead, re-select once and capture the FCI for PDOL extraction.
-      const selectAppResponse = await this.selectApplication(selectedApp.aid);
 
       // Extract PDOL from FCI if present (tag 9F38 inside A5 inside 6F)
       let pdolHex: string | undefined;
       try {
-        const fciTlv = this.parseTLV(selectAppResponse.slice(0, -2));
-        const a5Hex = fciTlv["6F"]
-          ? this.parseTLV(this.hexStringToBytes(fciTlv["6F"]))["A5"]
-          : undefined;
+        const fciBody = selectAppResponse.slice(0, -2);
+        if (__DEV__) console.log("FCI body:", fciBody);
+        const fciTlv = this.parseTLV(fciBody);
+        if (__DEV__) console.log("FCI TLV keys:", Object.keys(fciTlv));
+
+        // Try nested 6F -> A5 -> 9F38
+        let a5Hex: string | undefined;
+        if (fciTlv["6F"]) {
+          const innerTlv = this.parseTLV(this.hexStringToBytes(fciTlv["6F"]));
+          if (__DEV__) console.log("Inner 6F TLV keys:", Object.keys(innerTlv));
+          a5Hex = innerTlv["A5"];
+        } else {
+          a5Hex = fciTlv["A5"];
+        }
+
         if (a5Hex) {
-          pdolHex = this.parseTLV(this.hexStringToBytes(a5Hex))["9F38"];
+          const a5Tlv = this.parseTLV(this.hexStringToBytes(a5Hex));
+          if (__DEV__) console.log("A5 TLV keys:", Object.keys(a5Tlv));
+          pdolHex = a5Tlv["9F38"];
+          // Some cards nest PDOL inside BF0C (FCI Issuer Discretionary Data)
+          if (!pdolHex && a5Tlv["BF0C"]) {
+            const bf0cTlv = this.parseTLV(this.hexStringToBytes(a5Tlv["BF0C"]));
+            pdolHex = bf0cTlv["9F38"];
+          }
+        }
+
+        // Fallback: PDOL directly in FCI body
+        if (!pdolHex) {
+          pdolHex = fciTlv["9F38"];
         }
         if (__DEV__) console.log("PDOL:", pdolHex ?? "none");
       } catch (e) {
         if (__DEV__) console.log("PDOL extraction failed:", e);
       }
 
-      // Step 4: Get Processing Options — build GPO with correct PDOL data
+      // Step 4: Get Processing Options — try multiple GPO strategies
       let processingOptions: { afl?: string; aip?: string } = {};
-      let cardData: number[][] = [selectAppResponse];
+      let cardData: number[][] = [selectAppResponse!];
 
-      try {
-        // Build PDOL response data if card provided a PDOL
-        const pdolData = pdolHex ? this.buildPDOLData(pdolHex) : [];
-        const pdolLen = pdolData.length;
-        // GPO: CLA=80 INS=A8 P1=00 P2=00 Lc=len+2 83=tag len=pdolLen data Le=00
-        const gpoCommand = [
-          0x80,
-          0xa8,
-          0x00,
-          0x00,
-          pdolLen + 2,
-          0x83,
-          pdolLen,
-          ...pdolData,
-          0x00,
-        ];
-        const gpoResponse = await this.sendAPDU(gpoCommand);
-        if (__DEV__) console.log("GPO response:", gpoResponse);
-        processingOptions = this.parseGPO(gpoResponse);
-        if (__DEV__) console.log("GPO parsed:", processingOptions);
+      const gpoAttempts: { label: string; data: number[] }[] = [];
 
-        if (processingOptions.afl) {
-          const aflData = await this.readApplicationData(processingOptions);
-          if (aflData.length > 0) cardData = aflData;
-        } else {
-          if (__DEV__) console.log("No AFL, attempting brute-force SFI read");
-          const bruteRecords = await this.bruteForceReadRecords();
-          if (bruteRecords.length > 0) cardData = bruteRecords;
-        }
-      } catch (gpoError) {
-        if (__DEV__) console.log("GPO failed:", gpoError);
+      // If PDOL exists, build from it
+      if (pdolHex) {
+        const pdolData = this.buildPDOLData(pdolHex);
+        gpoAttempts.push({ label: "PDOL", data: pdolData });
+      }
+
+      // Mastercard contactless: TTQ + Amount + AmountOther + Country + Currency + Date + TxType + UN
+      // 9F66(4) + 9F02(6) + 9F03(6) + 9F1A(2) + 5F2A(2) + 9A(3) + 9C(1) + 9F37(4) = 28 bytes
+      const now = new Date();
+      const dateHex = now
+        .toISOString()
+        .slice(2, 10)
+        .replace(/-/g, "")
+        .slice(0, 6);
+      const [rb0, rb1, rb2, rb3] = Crypto.getRandomBytes(4);
+      const unHex = (((rb0 << 24) | (rb1 << 16) | (rb2 << 8) | rb3) >>> 0)
+        .toString(16)
+        .padStart(8, "0");
+      const mcData = this.hexToBytes(
+        "B6204000" + // TTQ: contactless MSD + qVSDC supported
+          "000000000100" + // Amount (1.00 minor units)
+          "000000000000" + // Amount Other
+          "0566" + // Terminal Country (Nigeria)
+          "0566" + // Currency (Naira)
+          dateHex + // Date YYMMDD
+          "00" + // Tx Type (purchase)
+          unHex, // Unpredictable Number
+      );
+      gpoAttempts.push({ label: "MC-full", data: mcData });
+
+      // Empty PDOL
+      gpoAttempts.push({ label: "empty", data: [] });
+
+      let gpoSuccess = false;
+      for (const attempt of gpoAttempts) {
+        if (gpoSuccess) break;
         try {
+          // Re-select AID before retry (card may be in bad state after failed GPO)
+          if (gpoAttempts.indexOf(attempt) > 0) {
+            await this.selectApplication(selectedApp!.aid);
+          }
+
+          const pdolLen = attempt.data.length;
+          const gpoCommand = [
+            0x80,
+            0xa8,
+            0x00,
+            0x00,
+            pdolLen + 2,
+            0x83,
+            pdolLen,
+            ...attempt.data,
+            0x00,
+          ];
+          const gpoResponse = await this.sendAPDU(gpoCommand);
+          const gpoSw1 = gpoResponse[gpoResponse.length - 2];
+          const gpoSw2 = gpoResponse[gpoResponse.length - 1];
+
+          if (__DEV__)
+            console.log(
+              `GPO [${attempt.label}]: SW=${gpoSw1.toString(16)}${gpoSw2.toString(16)}`,
+            );
+
+          if (gpoSw1 === 0x90 && gpoSw2 === 0x00) {
+            processingOptions = this.parseGPO(gpoResponse);
+            if (__DEV__) console.log("GPO parsed:", processingOptions);
+            gpoSuccess = true;
+
+            if (processingOptions.afl) {
+              const aflData = await this.readApplicationData(processingOptions);
+              if (aflData.length > 0) cardData = aflData;
+            }
+          }
+        } catch (e) {
+          if (__DEV__) console.log(`GPO [${attempt.label}] error:`, e);
+        }
+      }
+
+      // If all GPO attempts failed or no AFL, brute-force read records
+      if (
+        !gpoSuccess ||
+        (cardData.length === 1 && cardData[0] === selectAppResponse)
+      ) {
+        if (__DEV__) console.log("Attempting brute-force SFI read");
+        try {
+          // Re-select to reset card state for READ RECORD
+          await this.selectApplication(selectedApp!.aid);
           const bruteRecords = await this.bruteForceReadRecords();
           if (bruteRecords.length > 0) cardData = bruteRecords;
         } catch (bruteError) {
-          if (__DEV__)
-            console.log("Brute-force SFI read also failed:", bruteError);
+          if (__DEV__) console.log("Brute-force SFI read failed:", bruteError);
         }
       }
 
       // Step 6: Parse card information
       const cardInfo = this.parseCardData(cardData);
       cardInfo.schemeLabel = selectedApp.label;
+
+      // Validate essential fields before marking success
+      if (!cardInfo.PAN || !cardInfo.BIN) {
+        cardInfo.success = false;
+        cardInfo.errorMessage =
+          "Could not read card data. Please try again and hold card steady.";
+        return cardInfo;
+      }
 
       // Step 7: Generate AC (cryptogram) if CDOL1 is available from parsed records
       // parseTLV on the raw stream to find CDOL1 (tag 8C)
@@ -1049,11 +1146,11 @@ class NFCService {
     return records;
   }
 
-  // Fallback: try common SFI (1-3) and record (1-3) combinations when GPO/AFL unavailable
+  // Fallback: try common SFI (1-10) and record (1-5) combinations when GPO/AFL unavailable
   private async bruteForceReadRecords(): Promise<number[][]> {
     const records: number[][] = [];
-    for (let sfi = 1; sfi <= 3; sfi++) {
-      for (let rec = 1; rec <= 3; rec++) {
+    for (let sfi = 1; sfi <= 10; sfi++) {
+      for (let rec = 1; rec <= 5; rec++) {
         try {
           const cmd = [0x00, 0xb2, rec, (sfi << 3) | 0x04, 0x00];
           const data = await this.sendAPDU(cmd);

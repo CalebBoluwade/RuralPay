@@ -7,18 +7,20 @@ interface Props {
   BINData: any;
   cardTransaction: any;
   merchantBusinessName: string;
+  merchantCommisionRate: number;
   amount: number;
   onCancel: () => void;
   HandleCardTapPayment: () => void;
   renderCardSchemeLogo: () => React.ReactNode;
 }
 
-const PaymentSummaryCard: React.FC<Props> = ({
+const CardPaymentSummaryCard: React.FC<Props> = ({
   isDark,
   isLoading,
   BINData,
   cardTransaction,
   merchantBusinessName,
+  merchantCommisionRate,
   amount,
   onCancel,
   HandleCardTapPayment,
@@ -59,7 +61,7 @@ const PaymentSummaryCard: React.FC<Props> = ({
           : ""}
       </Text>
 
-      <View className="h-[1px] bg-gray-200/20 my-4" />
+      <View className="h-[1px] bg-gray-200/20 my-2" />
 
       {/* Bank */}
       <Text
@@ -80,11 +82,11 @@ const PaymentSummaryCard: React.FC<Props> = ({
             isDark ? "text-white" : "text-gray-900"
           }`}
         >
-          {BINData?.issuerBank || "Unknown Bank"}
+          {BINData?.issuerBank ?? "Bank Not Confirmed"}
         </Text>
       )}
 
-      <View className="h-[1px] bg-gray-200/20 my-4" />
+      <View className="h-[1px] bg-gray-200/20 my-2" />
 
       {/* Scheme */}
       <Text
@@ -112,7 +114,7 @@ const PaymentSummaryCard: React.FC<Props> = ({
         </View>
       )}
 
-      <View className="h-[1px] bg-gray-200/20 my-4" />
+      <View className="h-[1px] bg-gray-200/20 my-2" />
 
       {/* Merchant */}
       <Text
@@ -129,7 +131,23 @@ const PaymentSummaryCard: React.FC<Props> = ({
         {merchantBusinessName}
       </Text>
 
-      <View className="h-[1px] bg-gray-200/20 my-4" />
+      <View className="h-[1px] bg-gray-200/20 my-2" />
+
+      <Text
+        className={`text-base mb-1 ${isDark ? "text-gray-400" : "text-gray-500"}`}
+      >
+        Merchant Commission
+      </Text>
+      <Text
+        numberOfLines={1}
+        className={`text-xl font-bold ${
+          isDark ? "text-white" : "text-gray-900"
+        }`}
+      >
+        {merchantCommisionRate}%
+      </Text>
+
+      <View className="h-[1px] bg-gray-200/20 my-2" />
 
       {/* Amount */}
       <Text
@@ -141,7 +159,7 @@ const PaymentSummaryCard: React.FC<Props> = ({
         ₦{amount ? amount.toFixed(2) : "0.00"}
       </Text>
 
-      <View className="h-[1px] bg-gray-200/20 my-4" />
+      <View className="h-[1px] bg-gray-200/20 my-2" />
 
       {/* Actions */}
       <View className="flex-row items-center gap-3">
@@ -175,4 +193,4 @@ const PaymentSummaryCard: React.FC<Props> = ({
   );
 };
 
-export default PaymentSummaryCard;
+export default CardPaymentSummaryCard;

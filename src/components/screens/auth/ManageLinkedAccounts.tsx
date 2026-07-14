@@ -24,7 +24,7 @@ export default function ManageLinkedAccounts() {
     try {
       const balance = await AccountService.AccountBalanceEnquiry();
       setLinkedAccounts(
-        (balance.accounts ?? [{} as BalanceEnquiry]).slice(0, 3),
+        (balance.accounts ?? []).slice(0, 3),
       );
       setLoading(false);
     } catch (error) {
@@ -120,9 +120,9 @@ export default function ManageLinkedAccounts() {
             </Text>
           </View>
         ) : (
-          linkedAccounts.map((account) => (
+          linkedAccounts.map((account, index) => (
             <View
-              key={account.id}
+              key={account.id ?? index}
               className={`px-6 py-5 rounded-2xl backdrop-blur-xl mb-3 ${
                 account.isPrimary
                   ? isDark

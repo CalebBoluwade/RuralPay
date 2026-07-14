@@ -36,6 +36,22 @@ export default function CommonScreensLayout() {
       </Stack.Protected>
 
       <Stack.Screen
+        name="checkout"
+        options={{
+          presentation: "formSheet",
+          sheetGrabberVisible: true,
+          sheetAllowedDetents: [0.95],
+          contentStyle: {
+            backgroundColor: isLiquidGlassAvailable()
+              ? "transparent"
+              : colorTheme,
+          },
+        }}
+      />
+
+      <Stack.Screen name="qr-scan" options={{ headerShown: false }} />
+
+      <Stack.Screen
         name="feedback"
         options={{
           presentation: "formSheet",

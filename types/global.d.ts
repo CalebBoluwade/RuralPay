@@ -116,6 +116,12 @@ global {
     totalAmount: number;
   }
 
+  interface PaymentModeStat {
+    paymentMode: string;
+    transactionCount: number;
+    totalAmount: number;
+  }
+
   interface MerchantDetails {
     todayCompletedCount: number;
     todayCompletedVolume: number;
@@ -124,6 +130,7 @@ global {
     totalProfit: number;
     totalCompletedCount: number;
     byStatus: StatusStat[];
+    byPaymentMode: PaymentModeStat[];
   }
 
   type MerchantAnaltics = APIResponse<MerchantDetails>;
@@ -264,6 +271,11 @@ global {
     status: string;
     txType: TransactionType;
     paymentMode: PaymentMode;
+    stan?: string;
+    rrn?: string;
+    responseCode?: string;
+    message?: string;
+    responseMessage?: string;
   }
 
   interface PaginatedTransactions {

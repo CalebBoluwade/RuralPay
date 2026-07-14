@@ -210,8 +210,10 @@ export function AuthSessionProvider({
       QRCodeService.GeneratePaymentQR().catch((e) => {
         if (__DEV__) console.warn("[AuthSession] Pre-fetch QR failed", e);
       });
+      DeviceEventEmitter.emit("USER_LOGGED_IN");
       return router.replace("/merchant");
     } else if (role === "consumer") {
+      DeviceEventEmitter.emit("USER_LOGGED_IN");
       return router.replace("/user");
     }
   };
@@ -276,8 +278,10 @@ export function AuthSessionProvider({
         if (__DEV__)
           console.warn("[AuthSession] biometricLogin: Pre-fetch QR failed", e);
       });
+      DeviceEventEmitter.emit("USER_LOGGED_IN");
       return router.replace("/merchant");
     } else if (role === "consumer") {
+      DeviceEventEmitter.emit("USER_LOGGED_IN");
       return router.replace("/user");
     }
   };

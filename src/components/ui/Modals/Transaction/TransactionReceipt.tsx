@@ -230,7 +230,13 @@ const TransactionReceipt: React.FC<TransactionReceiptProps> = ({
         )}
 
         {transaction.fromAccount && (
-          <View className="flex-row justify-between items-center py-3">
+          <View
+            className={`flex-row justify-between items-center py-3 ${
+              transaction.paymentMode === "CARD"
+                ? `border-b ${isDark ? "border-white/10" : "border-gray-200"}`
+                : ""
+            }`}
+          >
             <Text
               className={`text-lg font-medium ${isDark ? "text-gray-400" : "text-gray-600"}`}
             >
@@ -244,6 +250,75 @@ const TransactionReceipt: React.FC<TransactionReceiptProps> = ({
                 : transaction.fromAccount}
             </Text>
           </View>
+        )}
+
+        {transaction.paymentMode === "CARD" && (
+          <>
+            {transaction.stan && (
+              <View
+                className={`flex-row justify-between items-center py-3 border-b ${isDark ? "border-white/10" : "border-gray-200"}`}
+              >
+                <Text
+                  className={`text-lg font-medium ${isDark ? "text-gray-400" : "text-gray-600"}`}
+                >
+                  STAN
+                </Text>
+                <Text
+                  className={`text-lg font-semibold ${isDark ? "text-white" : "text-gray-900"}`}
+                >
+                  {transaction.stan}
+                </Text>
+              </View>
+            )}
+            {transaction.rrn && (
+              <View
+                className={`flex-row justify-between items-center py-3 border-b ${isDark ? "border-white/10" : "border-gray-200"}`}
+              >
+                <Text
+                  className={`text-lg font-medium ${isDark ? "text-gray-400" : "text-gray-600"}`}
+                >
+                  RRN
+                </Text>
+                <Text
+                  className={`text-lg font-semibold ${isDark ? "text-white" : "text-gray-900"}`}
+                >
+                  {transaction.rrn}
+                </Text>
+              </View>
+            )}
+            {transaction.responseCode && (
+              <View
+                className={`flex-row justify-between items-center py-3 border-b ${isDark ? "border-white/10" : "border-gray-200"}`}
+              >
+                <Text
+                  className={`text-lg font-medium ${isDark ? "text-gray-400" : "text-gray-600"}`}
+                >
+                  Response Code
+                </Text>
+                <Text
+                  className={`text-lg font-semibold ${isDark ? "text-white" : "text-gray-900"}`}
+                >
+                  {transaction.responseCode}
+                </Text>
+              </View>
+            )}
+            {(transaction.responseMessage || transaction.message) && (
+              <View
+                className={`flex-row justify-between items-center py-3 border-b ${isDark ? "border-white/10" : "border-gray-200"}`}
+              >
+                <Text
+                  className={`text-lg font-medium ${isDark ? "text-gray-400" : "text-gray-600"}`}
+                >
+                  Response Message
+                </Text>
+                <Text
+                  className={`text-lg font-semibold text-right flex-1 ml-4 ${isDark ? "text-white" : "text-gray-900"}`}
+                >
+                  {transaction.responseMessage || transaction.message}
+                </Text>
+              </View>
+            )}
+          </>
         )}
       </View>
     </View>

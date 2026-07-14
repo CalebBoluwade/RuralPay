@@ -116,7 +116,7 @@ const CardTapNFCPayments: React.FC<CardTapNFCPaymentsProps> = ({
       const cardResult = await NFCService.ReadNFCCardOnly();
 
       if (!cardResult.success || !cardResult.cardInfo) {
-        setError(cardResult.message || "Failed to read card");
+        setError(cardResult.message || "Failed to Read Card");
         return;
       }
 
@@ -129,7 +129,9 @@ const CardTapNFCPayments: React.FC<CardTapNFCPaymentsProps> = ({
       setStep("PIN_CONFIRMATION");
     } catch (error) {
       setError(
-        error instanceof Error ? error.message : "An unknown error occurred",
+        error instanceof Error
+          ? error.message
+          : "Unknown Error Occurred While Reading Card",
       );
       if (__DEV__) console.log(error);
     } finally {
@@ -178,12 +180,12 @@ const CardTapNFCPayments: React.FC<CardTapNFCPaymentsProps> = ({
     cardInfo?: CardInfo;
   } => {
     if (!merchant || !cardPin) {
-      ToastService.warning("Please enter PIN to continue");
+      ToastService.warning("Please Enter PIN to Continue");
       return { valid: false };
     }
 
     if (!rawCardInfo) {
-      ToastService.warning("Card data not available");
+      ToastService.warning("Card Data Not Available");
       return { valid: false };
     }
 
@@ -222,8 +224,8 @@ const CardTapNFCPayments: React.FC<CardTapNFCPaymentsProps> = ({
       );
 
     if (!isConnected) {
-      ToastService.warning("No internet connection. Saving payment locally.");
-      setError("No internet connection");
+      ToastService.warning("No Internet Connection. Saving payment locally.");
+      setError("No Internet Connection");
       return null;
     }
 
@@ -260,7 +262,7 @@ const CardTapNFCPayments: React.FC<CardTapNFCPaymentsProps> = ({
       return;
     }
 
-    if (__DEV__) console.log("[PAYMENT] Starting payment processing...");
+    if (__DEV__) console.log("[PAYMENT] Starting Payment Processing...");
 
     const cardResultWithPIN = await NFCService.ProcessCardWithPIN({
       merchantId: validation.merchant.id,
@@ -455,6 +457,7 @@ const CardTapNFCPayments: React.FC<CardTapNFCPaymentsProps> = ({
       paymentMessage="Enter Your 4-Digit Card PIN to Authorize This Transaction"
       showPinModal={true}
       merchantBusinessName={merchant?.businessName || ""}
+      merchantCommisionRate={merchant?.commisionRate || 0}
       amount={Number.parseFloat(amount)}
       isLoading={loading}
       setIsLoading={setLoading}
@@ -503,13 +506,17 @@ const CardTapNFCPayments: React.FC<CardTapNFCPaymentsProps> = ({
             <Text
               className={`text-2xl font-brand font-bold mb-2 ${isDark ? "text-white" : "text-slate-900"}`}
             >
-              Ready to Scan Payment Card
+              {NFCReady
+                ? "Ready to Scan Payment Card"
+                : error === "NFC Not Available"
+                  ? "NFC Not Available"
+                  : error}
             </Text>
             <Text
               className={`text-base text-center ${isDark ? "text-slate-400" : "text-slate-500"}`}
             >
-              Press Continue Position your NFC Card against the back of the
-              device
+              Press Continue. Position your NFC Card against the back of the
+              Device
             </Text>
           </View>
 

@@ -9,9 +9,17 @@ function useShimmer() {
   useEffect(() => {
     Animated.loop(
       Animated.sequence([
-        Animated.timing(anim, { toValue: 1, duration: 800, useNativeDriver: true }),
-        Animated.timing(anim, { toValue: 0.3, duration: 800, useNativeDriver: true }),
-      ])
+        Animated.timing(anim, {
+          toValue: 1,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+        Animated.timing(anim, {
+          toValue: 0.3,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+      ]),
     ).start();
   }, []);
   return anim;
@@ -82,14 +90,29 @@ export function DashboardSkeleton({ isDark }: { isDark: boolean }) {
               : ""
           }`}
         >
-          <SkeletonBox opacity={opacity} className={`w-12 h-12 rounded-xl ${bg}`} />
+          <SkeletonBox
+            opacity={opacity}
+            className={`w-12 h-12 rounded-xl ${bg}`}
+          />
           <View className="flex-1 gap-2">
-            <SkeletonBox opacity={opacity} className={`h-3.5 w-32 rounded-full ${bg}`} />
-            <SkeletonBox opacity={opacity} className={`h-2.5 w-20 rounded-full ${bg}`} />
+            <SkeletonBox
+              opacity={opacity}
+              className={`h-3.5 w-32 rounded-full ${bg}`}
+            />
+            <SkeletonBox
+              opacity={opacity}
+              className={`h-2.5 w-20 rounded-full ${bg}`}
+            />
           </View>
           <View className="items-end gap-2">
-            <SkeletonBox opacity={opacity} className={`h-3.5 w-16 rounded-full ${bg}`} />
-            <SkeletonBox opacity={opacity} className={`h-5 w-20 rounded-full ${bg}`} />
+            <SkeletonBox
+              opacity={opacity}
+              className={`h-3.5 w-16 rounded-full ${bg}`}
+            />
+            <SkeletonBox
+              opacity={opacity}
+              className={`h-5 w-20 rounded-full ${bg}`}
+            />
           </View>
         </View>
       ))}
@@ -110,27 +133,38 @@ export function MerchantDashboardSkeleton({ isDark }: { isDark: boolean }) {
             key={i}
             className={`flex-1 p-4 rounded-2xl ${isDark ? "bg-white/10 border border-white/20" : "bg-white border border-slate-200"}`}
           >
-            <SkeletonBox opacity={opacity} className={`h-2.5 w-24 rounded-full mb-3 ${bg}`} />
-            <SkeletonBox opacity={opacity} className={`h-7 w-28 rounded-lg ${bg}`} />
+            <SkeletonBox
+              opacity={opacity}
+              className={`h-2.5 w-24 rounded-full mb-3 ${bg}`}
+            />
+            <SkeletonBox
+              opacity={opacity}
+              className={`h-7 w-28 rounded-lg ${bg}`}
+            />
           </View>
         ))}
       </View>
 
       {/* Quick actions skeleton */}
-      <View className="flex-row gap-3 mb-6">
+      {/* <View className="flex-row gap-3 mb-6">
         {[0, 1].map((i) => (
           <View key={i} className="flex-1 items-center gap-2">
             <SkeletonBox opacity={opacity} className={`w-16 h-16 rounded-2xl ${bg}`} />
             <SkeletonBox opacity={opacity} className={`h-2.5 w-10 rounded-full ${bg}`} />
           </View>
         ))}
-      </View>
+      </View> */}
 
       {/* Actions section label */}
-      <SkeletonBox opacity={opacity} className={`h-4 w-20 rounded-full mb-3 ${bg}`} />
+      <SkeletonBox
+        opacity={opacity}
+        className={`h-4 w-20 rounded-full mb-3 ${bg}`}
+      />
 
       {/* Menu item skeletons */}
-      <View className={`rounded-2xl overflow-hidden mb-6 ${isDark ? "bg-white/10 border border-white/20" : "bg-white border border-slate-200"}`}>
+      <View
+        className={`rounded-2xl overflow-hidden mb-6 ${isDark ? "bg-white/10 border border-white/20" : "bg-white border border-slate-200"}`}
+      >
         {[0, 1, 2, 3].map((i) => (
           <View
             key={i}
@@ -142,17 +176,29 @@ export function MerchantDashboardSkeleton({ isDark }: { isDark: boolean }) {
                 : ""
             }`}
           >
-            <SkeletonBox opacity={opacity} className={`w-12 h-12 rounded-xl ${bg}`} />
+            <SkeletonBox
+              opacity={opacity}
+              className={`w-12 h-12 rounded-xl ${bg}`}
+            />
             <View className="flex-1 gap-2">
-              <SkeletonBox opacity={opacity} className={`h-3.5 w-32 rounded-full ${bg}`} />
-              <SkeletonBox opacity={opacity} className={`h-2.5 w-44 rounded-full ${bg}`} />
+              <SkeletonBox
+                opacity={opacity}
+                className={`h-3.5 w-32 rounded-full ${bg}`}
+              />
+              <SkeletonBox
+                opacity={opacity}
+                className={`h-2.5 w-44 rounded-full ${bg}`}
+              />
             </View>
           </View>
         ))}
       </View>
 
       {/* Section label */}
-      <SkeletonBox opacity={opacity} className={`h-4 w-40 rounded-full mb-4 ${bg}`} />
+      <SkeletonBox
+        opacity={opacity}
+        className={`h-4 w-40 rounded-full mb-4 ${bg}`}
+      />
 
       {/* Transaction row skeletons */}
       {[0, 1, 2].map((i) => (
@@ -166,14 +212,29 @@ export function MerchantDashboardSkeleton({ isDark }: { isDark: boolean }) {
               : ""
           }`}
         >
-          <SkeletonBox opacity={opacity} className={`w-12 h-12 rounded-xl ${bg}`} />
+          <SkeletonBox
+            opacity={opacity}
+            className={`w-12 h-12 rounded-xl ${bg}`}
+          />
           <View className="flex-1 gap-2">
-            <SkeletonBox opacity={opacity} className={`h-3.5 w-32 rounded-full ${bg}`} />
-            <SkeletonBox opacity={opacity} className={`h-2.5 w-20 rounded-full ${bg}`} />
+            <SkeletonBox
+              opacity={opacity}
+              className={`h-3.5 w-32 rounded-full ${bg}`}
+            />
+            <SkeletonBox
+              opacity={opacity}
+              className={`h-2.5 w-20 rounded-full ${bg}`}
+            />
           </View>
           <View className="items-end gap-2">
-            <SkeletonBox opacity={opacity} className={`h-3.5 w-16 rounded-full ${bg}`} />
-            <SkeletonBox opacity={opacity} className={`h-5 w-20 rounded-full ${bg}`} />
+            <SkeletonBox
+              opacity={opacity}
+              className={`h-3.5 w-16 rounded-full ${bg}`}
+            />
+            <SkeletonBox
+              opacity={opacity}
+              className={`h-5 w-20 rounded-full ${bg}`}
+            />
           </View>
         </View>
       ))}

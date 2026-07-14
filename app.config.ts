@@ -10,6 +10,7 @@ const OWNER = "calebjnr";
 const APP_NAME = "RuralPay";
 const BUNDLE_IDENTIFIER = "com.zegiftedtechnologies.ruralpay";
 const APP_DOMAIN = "applinks:ruralpay.zegiftedtechnologies.com";
+const ANDROID_HOST = "ruralpay.zegiftedtechnologies.com";
 const PACKAGE_NAME = "com.zegiftedtechnologies.ruralpay";
 const ICON = "./assets/images/RuralPay.png";
 const ADAPTIVE_ICON = "./assets/images/RuralPay.png";
@@ -113,8 +114,22 @@ export default ({ config }: ConfigContext): ExpoConfig => {
           data: [
             {
               scheme: "https",
-              host: APP_DOMAIN,
-              pathPrefix: "/(transaction)",
+              host: ANDROID_HOST,
+              pathPrefix: "/qrpay",
+            },
+            {
+              scheme: "https",
+              host: ANDROID_HOST,
+              pathPrefix: "/checkout",
+            },
+          ],
+          category: ["BROWSABLE", "DEFAULT"],
+        },
+        {
+          action: "VIEW",
+          data: [
+            {
+              scheme: "ruralpay",
             },
           ],
           category: ["BROWSABLE", "DEFAULT"],

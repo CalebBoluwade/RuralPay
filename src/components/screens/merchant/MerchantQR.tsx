@@ -1,22 +1,21 @@
 import { useAuth } from "@/src/components/context/AuthSessionProvider";
 import Button from "@/src/components/ui/Button";
 import Card from "@/src/components/ui/Card";
+import AppLogger from "@/src/lib/services/AppLogger";
 import QRCodeService from "@/src/lib/services/QRCodeService";
-import * as Print from "expo-print";
-import * as Sharing from "expo-sharing";
+import { ReceiptService } from "@/src/lib/services/ReceiptService";
 import { QrCode, Store, X } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    Image,
-    Modal,
-    Pressable,
-    Share as RNShare,
-    ScrollView,
-    Text,
-    useColorScheme,
-    View,
+  ActivityIndicator,
+  Image,
+  Modal,
+  Pressable,
+  Share as RNShare,
+  ScrollView,
+  Text,
+  useColorScheme,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -37,17 +36,20 @@ const MerchantQRDisplay = ({
   const GetPaymentQR = async () => {
     setIsLoading(true);
     try {
-      const QRresult = await QRCodeService.GeneratePaymentQR();
+      const QRresult = await QRCodeService.GeneratePaymentQR(512);
       setQRData(QRresult);
     } catch (error) {
-      if (__DEV__) console.error("Failed to generate QR code:", error);
+      AppLogger.logError(error as Error, {
+        action: "Failed to Generate QR Code",
+        screen: MerchantQRDisplay.name,
+      });
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    if (showMerchantQRModal) GetPaymentQR();
+    if (showMerchantQRModal && !qrData) GetPaymentQR();
   }, [showMerchantQRModal]);
 
   const handleShare = async () => {
@@ -56,114 +58,17 @@ const MerchantQRDisplay = ({
         message: `Pay ${user!.merchant?.businessName || "Us"} Easily! Scan our QR Code or Use Merchant ID: ${user!.merchant?.id}`,
       });
     } catch (error) {
-      if (__DEV__) console.error(error);
+      AppLogger.logError(error as Error, {
+        action: "Failed to Share QR Code",
+        screen: MerchantQRDisplay.name,
+      });
     }
   };
 
   const handlePrint = async () => {
     if (!qrData || !user?.merchant) return;
-
-    const html = `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no" />
-  <style>
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      margin: 0;
-      background-color: #f1f5f9;
-    }
-    .card {
-      background: white;
-      padding: 40px;
-      border-radius: 20px;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-      text-align: center;
-      max-width: 400px;
-      width: 90%;
-      border: 1px solid #e2e8f0;
-    }
-    .logo {
-      font-size: 24px;
-      font-weight: bold;
-      color: #65a30d;
-      margin-bottom: 10px;
-    }
-    .merchant-name {
-      font-size: 32px;
-      font-weight: 800;
-      color: #0f172a;
-      margin-bottom: 8px;
-    }
-    .subtitle {
-      color: #64748b;
-      font-size: 18px;
-      margin-bottom: 30px;
-    }
-    .qr-container {
-      background: #ffffff;
-      padding: 20px;
-      border-radius: 16px;
-      border: 2px dashed #e2e8f0;
-      display: inline-block;
-      margin-bottom: 30px;
-    }
-    .qr-image {
-      width: 300px;
-      height: 300px;
-      display: block;
-    }
-    .footer {
-      margin-top: 20px;
-      padding-top: 20px;
-      border-top: 1px solid #e2e8f0;
-      color: #94a3b8;
-      font-size: 14px;
-    }
-    .brand {
-      font-weight: 700;
-      color: #0f172a;
-    }
-  </style>
-</head>
-<body>
-  <div class="card">
-    <div class="logo">RuralPay</div>
-    <div class="merchant-name">${user.merchant.businessName}</div>
-    <div class="subtitle">Scan to Pay</div>
-    
-    <div class="qr-container">
-      <img src="data:image/png;base64,${qrData}" class="qr-image" />
-    </div>
-    
-    <div class="footer">
-      Powered by <span class="brand">RuralPay</span>
-    </div>
-  </div>
-</body>
-</html>
-    `;
-
-    try {
-      const { uri } = await Print.printToFileAsync({ html });
-      await Sharing.shareAsync(uri, {
-        UTI: ".pdf",
-        mimeType: "application/pdf",
-      });
-    } catch (error) {
-      Alert.alert("Error", "Failed to generate PDF");
-      if (__DEV__) console.error(error);
-    }
+    await ReceiptService.PrintMerchantQR(qrData, user.merchant);
   };
-
-  const cardClass = isDark
-    ? "bg-white/10 border border-white/20"
-    : "bg-white border border-slate-200 shadow-sm";
 
   return (
     <Modal
@@ -216,29 +121,29 @@ const MerchantQRDisplay = ({
               </View>
             </View>
             <Text
-              className={`text-base ${isDark ? "text-lime-400" : "text-lime-600"}`}
+              className={`text-lg ${isDark ? "text-lime-400" : "text-lime-600"}`}
             >
-              Customers can scan this QR code to pay you instantly
+              Customers Can Scan This QR Code To Pay You Instantly
             </Text>
           </Card>
 
           {/* QR Code */}
-          <Card className="p-6 mb-6 items-center">
+          <Card className="p-4 items-center">
             <View className="flex-row items-center gap-2 mb-4">
               <QrCode size={20} color={isDark ? "#a3e635" : "#65a30d"} />
               <Text
-                className={`text-lg  font-brand font-bold ${isDark ? "text-white" : "text-slate-900"}`}
+                className={`text-2xl font-brand font-bold ${isDark ? "text-white" : "text-slate-900"}`}
               >
                 Scan to Pay
               </Text>
             </View>
 
-            <View className="bg-white p-4 rounded-2xl mb-4">
+            <View className="--bg-white px-4 rounded-2xl mb-4">
               {isLoading ? (
                 <View className="w-96 h-96 items-center justify-center">
                   <ActivityIndicator size="large" color="#a3e635" />
                   <Text
-                    className={`text-base mt-2 ${isDark ? "text-slate-400" : "text-slate-500"}`}
+                    className={`text-lg mt-2 ${isDark ? "text-slate-400" : "text-slate-500"}`}
                   >
                     Generating QR code...
                   </Text>
@@ -265,7 +170,7 @@ const MerchantQRDisplay = ({
             </View>
 
             <Text
-              className={`text-base text-center ${isDark ? "text-slate-400" : "text-slate-500"}`}
+              className={`text-lg text-center ${isDark ? "text-slate-400" : "text-slate-500"}`}
             >
               Let your customer&apos;s camera scan this QR code to receive
               payment
@@ -273,14 +178,18 @@ const MerchantQRDisplay = ({
           </Card>
 
           {/* Actions */}
-          <View className="flex-row gap-3 mb-8">
+          <View className="flex-col gap-3 mb-8">
             <Button
               variant="secondary"
               label="Share"
               onPress={handleShare}
               className="flex-1 flex-row gap-2"
             />
-            <Button label="Save PDF" onPress={handlePrint} className="flex-1" />
+            <Button
+              label="Save As PDF"
+              onPress={handlePrint}
+              className="flex-1"
+            />
           </View>
         </ScrollView>
       </SafeAreaView>

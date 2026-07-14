@@ -41,7 +41,10 @@ const ScreenHeader: React.FC<ScreenHeaderProps> = ({
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const nav = useRouter();
-  const canGoBack = router.canGoBack();
+  let canGoBack = false;
+  try {
+    canGoBack = router.canGoBack();
+  } catch {}
   const {
     isAuthenticated,
     logout,
@@ -65,7 +68,7 @@ const ScreenHeader: React.FC<ScreenHeaderProps> = ({
   }, [handleLogout]);
 
   return (
-    <View className="px-6 mt-2 mb-3">
+    <View className="px-2 mt-4 mb-3">
       <View className="flex-row items-center justify-between">
         {goBack && canGoBack && (
           <Pressable

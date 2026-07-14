@@ -131,8 +131,8 @@ const PinSetupModal: React.FC<PinSetupModalProps> = ({
               </Text>
               <Text className="text-base text-gray-500 mt-1">
                 {isConfirming
-                  ? "Enter your PIN again to confirm"
-                  : "Enter a 6-digit PIN to secure your account"}
+                  ? "Enter Your PIN Again To Confirm"
+                  : "Enter a 6-digit PIN To Secure Your Account"}
               </Text>
             </View>
             <Pressable
