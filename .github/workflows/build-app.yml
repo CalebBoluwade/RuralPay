@@ -5,8 +5,7 @@ on:
   repository_dispatch:
     types: [build-whitelabel]
 
-env:
-  MERCHANT_SLUG: ${{ github.event.client_payload.merchant_slug }}
+
 
 jobs:
   test:
@@ -61,20 +60,21 @@ jobs:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
 
-      - name: Validate merchant slug
+      - name: Validate Tenant Slug
         run: |
-          if [ -z "$MERCHANT_SLUG" ]; then
-            echo "::error::merchant_slug is required in client_payload"
+          if [ -z "${{ github.event.client_payload.tenantSlug }}" ]; then
+            echo "::error::tenantSlug is required in client_payload"
             exit 1
           fi
 
-      - name: Fetch Merchant Assets
+      - name: Fetch Tenant Assets
         run: |
+          TENANT_SLUG="${{ github.event.client_payload.tenantSlug }}"
           curl --fail --silent --show-error \
             -H "Authorization: Bearer ${{ secrets.INTERNAL_API_TOKEN }}" \
-            "${{ secrets.RURALPAY_BACKEND_API }}/static/assets/$MERCHANT_SLUG" \
+            "${{ secrets.RURALPAY_BACKEND_API }}/admin/tenant/$TENANT_SLUG/assets" \
             -o assets.zip
-          unzip -o assets.zip -d "./assets/$MERCHANT_SLUG"
+          unzip -o assets.zip -d "./assets/$TENANT_SLUG"
 
       - name: Build & Submit
         run: eas build --platform all --profile production --non-interactive --auto-submit
