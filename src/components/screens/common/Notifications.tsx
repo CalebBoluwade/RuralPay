@@ -17,10 +17,14 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useNotification } from "../../context/NotificationContext";
 
 export default function Notifications() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
+
+  const { notification } = useNotification();
+  console.log(notification);
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
@@ -78,92 +82,89 @@ export default function Notifications() {
           </Text>
         </View>
 
-          <FlatList
-            data={notifications}
-            showsVerticalScrollIndicator={false}
-            refreshControl={
-              <RefreshControl
-                refreshing={loading}
-                onRefresh={handleRefresh}
-              />
-            }
-            renderItem={({ item }) => {
-              const NotificationIcon = getNotificationIcon(item.type);
+        <FlatList
+          data={notifications}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={loading} onRefresh={handleRefresh} />
+          }
+          renderItem={({ item }) => {
+            const NotificationIcon = getNotificationIcon(item.type);
 
-              return (
-                <Pressable
-                  key={item.id}
-                  className={`flex-row items-start gap-4 p-4 rounded-2xl mb-3 border ${
+            return (
+              <Pressable
+                key={item.id}
+                className={`flex-row items-start gap-4 p-4 rounded-2xl mb-3 border ${
+                  item.read
+                    ? isDark
+                      ? "bg-slate-900 border-slate-800"
+                      : "bg-white border-slate-200"
+                    : isDark
+                      ? "bg-slate-800 border-slate-700"
+                      : "bg-lime-50 border-lime-200"
+                }`}
+              >
+                <View
+                  className={`rounded-xl p-2 ${
                     item.read
                       ? isDark
-                        ? "bg-slate-900 border-slate-800"
-                        : "bg-white border-slate-200"
-                      : isDark
-                        ? "bg-slate-800 border-slate-700"
-                        : "bg-lime-50 border-lime-200"
+                        ? "bg-slate-700"
+                        : "bg-slate-100"
+                      : "bg-lime-400"
                   }`}
                 >
-                  <View
-                    className={`rounded-xl p-2 ${
-                      item.read
-                        ? isDark
-                          ? "bg-slate-700"
-                          : "bg-slate-100"
-                        : "bg-lime-400"
-                    }`}
-                  >
-                    <NotificationIcon
-                      size={22}
-                      color={
-                        item.read ? (isDark ? "#94a3b8" : "#64748b") : "#000"
-                      }
-                    />
-                  </View>
-                  <View className="flex-1">
-                    <View className="flex-row justify-between items-center mb-1">
-                      <Text
-                        className={`font-semibold text-base ${isDark ? "text-white" : "text-slate-900"}`}
-                      >
-                        {item.title}
-                      </Text>
-                      <Text
-                        className={`text-xs ${isDark ? "text-slate-400" : "text-slate-500"}`}
-                      >
-                        {item.time}
-                      </Text>
-                    </View>
+                  <NotificationIcon
+                    size={22}
+                    color={
+                      item.read ? (isDark ? "#94a3b8" : "#64748b") : "#000"
+                    }
+                  />
+                </View>
+                <View className="flex-1">
+                  <View className="flex-row justify-between items-center mb-1">
                     <Text
-                      className={`text-sm ${isDark ? "text-slate-400" : "text-slate-600"}`}
+                      className={`font-semibold text-base ${isDark ? "text-white" : "text-slate-900"}`}
                     >
-                      {item.message}
+                      {item.title}
+                    </Text>
+                    <Text
+                      className={`text-xs ${isDark ? "text-slate-400" : "text-slate-500"}`}
+                    >
+                      {item.time}
                     </Text>
                   </View>
-                  {!item.read && (
-                    <View className="w-2 h-2 rounded-full bg-lime-400 mt-1" />
-                  )}
-                </Pressable>
-              );
-            }}
-            ListEmptyComponent={
-              <View className="flex-1 items-center justify-center py-24 gap-4">
-                <View
-                  className={`rounded-full p-5 ${isDark ? "bg-slate-800" : "bg-slate-100"}`}
-                >
-                  <Bell size={32} color={isDark ? "#475569" : "#94a3b8"} />
+                  <Text
+                    className={`text-base ${isDark ? "text-slate-400" : "text-slate-600"}`}
+                  >
+                    {item.message}
+                  </Text>
                 </View>
-                <Text
-                  className={`text-lg font-semibold ${isDark ? "text-slate-300" : "text-slate-700"}`}
-                >
-                  No Notifications Yet
-                </Text>
-                <Text
-                  className={`text-sm text-center ${isDark ? "text-slate-500" : "text-slate-400"}`}
-                >
-                  You&apos;re all caught up! Check back later for updates.
-                </Text>
+                {!item.read && (
+                  <View className="w-2 h-2 rounded-full bg-lime-400 mt-1" />
+                )}
+              </Pressable>
+            );
+          }}
+          ListEmptyComponent={
+            <View className="flex-1 items-center justify-center py-24 gap-4">
+              <View
+                className={`rounded-full p-5 ${isDark ? "bg-slate-800" : "bg-slate-100"}`}
+              >
+                <Bell size={32} color={isDark ? "#475569" : "#94a3b8"} />
               </View>
-            }
-          />
+              <Text
+                className={`text-lg font-semibold ${isDark ? "text-slate-300" : "text-slate-700"}`}
+              >
+                No Notifications Yet
+              </Text>
+              <Text
+                className={`text-base text-center ${isDark ? "text-slate-500" : "text-slate-400"}`}
+              >
+                You&apos;re all caught up! Check back later for updates.
+              </Text>
+            </View>
+          }
+        />
       </View>
     </SafeAreaView>
   );

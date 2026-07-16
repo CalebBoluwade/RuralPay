@@ -8,22 +8,23 @@ import { router } from "expo-router";
 import { Fingerprint, ScanFace, ScanLine } from "lucide-react-native";
 import React, { useEffect, useRef } from "react";
 import {
-  DeviceEventEmitter,
-  Pressable,
-  Text,
-  useColorScheme,
-  View,
+    DeviceEventEmitter,
+    Pressable,
+    Text,
+    useColorScheme,
+    View,
 } from "react-native";
 import Animated, {
-  FadeIn,
-  FadeInDown,
-  useAnimatedStyle,
-  useSharedValue,
-  withRepeat,
-  withSequence,
-  withTiming,
+    FadeIn,
+    FadeInDown,
+    useAnimatedStyle,
+    useSharedValue,
+    withRepeat,
+    withSequence,
+    withTiming,
 } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useAuth } from "../../context/AuthSessionProvider";
 
 const LockScreen = () => {
   const colorScheme = useColorScheme();
@@ -37,6 +38,8 @@ const LockScreen = () => {
   const [lockSeconds, setLockSeconds] = React.useState<number>(0);
   const isLocked = lockSeconds > 0;
   const codeLength = new Array(6).fill(0);
+
+  const { refreshToken } = useAuth();
 
   const offset = useSharedValue(0);
   const style = useAnimatedStyle(() => {
@@ -206,15 +209,18 @@ const LockScreen = () => {
     try {
       setIsLoading(true);
 
-      const user = await authService.refreshToken();
+      const user = await authService.refreshToken(refreshToken!);
 
       if (!isMounted.current) return;
+
+      if (__DEV__) console.log("Refresh token response, user:", user);
 
       if (user) {
         router.canGoBack() ? router.back() : null;
         DeviceEventEmitter.emit("PIN_SUCCESS");
       } else {
-        router.replace("/auth/login");
+        authService.logout();
+        // router.replace("/auth/login")
       }
     } catch (error) {
       if (!isMounted.current) return;
@@ -282,7 +288,7 @@ const LockScreen = () => {
           // entering={FadeInDown.delay(200).duration(600)}
           >
             <Text
-              className={`text-sm mb-6 ${isDark ? "text-gray-200" : "text-gray-500"}`}
+              className={`text-base mb-6 ${isDark ? "text-gray-200" : "text-gray-500"}`}
             >
               {isLocked
                 ? `Too Many Attempts. Try Again In ${lockSeconds}s`

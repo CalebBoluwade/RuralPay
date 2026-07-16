@@ -1,19 +1,19 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import {
-  Control,
-  Controller,
-  FieldError,
-  FieldValues,
-  Path,
+    Control,
+    Controller,
+    FieldError,
+    FieldValues,
+    Path,
 } from "react-hook-form";
 import {
-  KeyboardTypeOptions,
-  Pressable,
-  Text,
-  TextInput,
-  View,
-  useColorScheme,
+    KeyboardTypeOptions,
+    Pressable,
+    Text,
+    TextInput,
+    View,
+    useColorScheme,
 } from "react-native";
 
 interface OptimizedInputProps<T extends FieldValues> {
@@ -101,6 +101,7 @@ const OptimizedInput = <T extends FieldValues>({
                   }
                   maxLength={maxLength}
                   editable={editable && !onPress}
+                  // autoFocus
                   pointerEvents={onPress ? "none" : "auto"}
                   autoCapitalize={autoCapitalize}
                   allowFontScaling
@@ -122,7 +123,7 @@ const OptimizedInput = <T extends FieldValues>({
             </Pressable>
 
             {(error?.message || validationError?.message) && (
-              <Text className="text-red-500 text-sm mt-1">
+              <Text className="text-red-500 text-base mt-1">
                 {error?.message || validationError?.message}
               </Text>
             )}

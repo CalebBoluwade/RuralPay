@@ -1,4 +1,45 @@
 // import * as SQLite from "expo-sqlite";
+import { connect, Database, getDbPath } from "@tursodatabase/sync-react-native";
+
+// Get a platform-specific writable path
+const dbPath = getDbPath("local.db");
+
+const db = new Database({ path: dbPath });
+const db2 = await connect({
+  path: "replica.db",
+  url: "libsql://mydb-myorg.turso.io",
+  authToken: "your-auth-token",
+});
+await db.connect();
+
+// Execute raw SQL
+await db.exec(`
+  CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY, 
+    name TEXT
+  )
+`);
+
+// Run prepared statements with bindings
+await db.run("INSERT INTO users (name) VALUES (?)", ["Alice"]);
+
+// Query data
+const users = await db.all("SELECT * FROM users");
+console.log(users);
+
+await db.close();
+
+// ---------------------------------------
+
+// Pull remote → local
+await db2.pull();
+
+// Query/write locally (works offline)
+const insert = db2.prepare("INSERT INTO tasks (title) VALUES (?)");
+await insert.run(["Buy groceries"]);
+
+// Push local → remote when online
+await db2.push();
 
 // class DatabaseService {
 //   private static instance: DatabaseService;

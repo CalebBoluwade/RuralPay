@@ -5,12 +5,12 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-    Alert,
-    Pressable,
-    ScrollView,
-    Text,
-    View,
-    useColorScheme,
+  Alert,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+  useColorScheme,
 } from "react-native";
 import { SvgUri } from "react-native-svg";
 
@@ -24,7 +24,7 @@ export default function ManageLinkedAccounts() {
     try {
       const balance = await AccountService.AccountBalanceEnquiry();
       setLinkedAccounts(
-        (balance.accounts ?? [{} as BalanceEnquiry]).slice(0, 3),
+        (balance.accounts ?? []).slice(0, 3),
       );
       setLoading(false);
     } catch (error) {
@@ -82,7 +82,7 @@ export default function ManageLinkedAccounts() {
               ? "bg-lime-500/20 border-2 border-lime-500"
               : "bg-lime-50 border-2 border-lime-500"
           }`}
-          onPress={() => router.push("/(common)/LinkBankAccount")}
+          onPress={() => router.push("/link-account")}
         >
           <View className="flex-row items-center justify-center gap-3">
             <Ionicons name="add-circle" size={28} color={"#84cc16"} />
@@ -120,9 +120,9 @@ export default function ManageLinkedAccounts() {
             </Text>
           </View>
         ) : (
-          linkedAccounts.map((account) => (
+          linkedAccounts.map((account, index) => (
             <View
-              key={account.id}
+              key={account.id ?? index}
               className={`px-6 py-5 rounded-2xl backdrop-blur-xl mb-3 ${
                 account.isPrimary
                   ? isDark
@@ -169,7 +169,7 @@ export default function ManageLinkedAccounts() {
                     {account.accountName}
                   </Text>
                   <Text
-                    className={`text-sm mt-1 ${
+                    className={`text-base mt-1 ${
                       isDark ? "text-gray-400" : "text-gray-600"
                     }`}
                   >
@@ -189,7 +189,7 @@ export default function ManageLinkedAccounts() {
                     onPress={() => handleSetPrimary(account.id)}
                   >
                     <Text
-                      className={`text-center text-sm font-bold ${
+                      className={`text-center text-base font-bold ${
                         isDark ? "text-lime-300" : "text-lime-700"
                       }`}
                     >
@@ -208,7 +208,7 @@ export default function ManageLinkedAccounts() {
                   onPress={() => handleRemoveAccount(account.id)}
                 >
                   <Text
-                    className={`text-center text-sm font-bold ${
+                    className={`text-center text-base font-bold ${
                       isDark ? "text-red-300" : "text-red-700"
                     }`}
                   >

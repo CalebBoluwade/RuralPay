@@ -1,23 +1,24 @@
+import Card from "@/src/components/ui/Card";
 import TicketsModal from "@/src/components/ui/Modals/TicketsModal";
 import ScreenHeader from "@/src/components/ui/ScreenHeader";
 import { router } from "expo-router";
 import {
-  ChevronRight,
-  GraduationCap,
-  Smartphone,
-  Ticket,
-  Trophy,
-  Tv,
-  Wifi,
-  Zap,
+    ChevronRight,
+    GraduationCap,
+    Smartphone,
+    Ticket,
+    Trophy,
+    Tv,
+    Wifi,
+    Zap,
 } from "lucide-react-native";
 import React, { useState } from "react";
 import {
-  Pressable,
-  ScrollView,
-  Text,
-  View,
-  useColorScheme,
+    Pressable,
+    ScrollView,
+    Text,
+    View,
+    useColorScheme,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -34,18 +35,21 @@ const OTHER_SERVICES = [
     name: "Betting & Lottery",
     description: "Fund betting accounts",
     icon: Trophy,
+    comingSoon: true,
   },
   {
     id: "education",
     name: "Education",
     description: "WAEC, JAMB, NECO pins",
     icon: GraduationCap,
+    comingSoon: true,
   },
   {
     id: "tickets",
     name: "Event Tickets",
     description: "Concerts, shows & events",
     icon: Ticket,
+    comingSoon: false,
   },
 ];
 
@@ -54,15 +58,13 @@ const ValueAddedServices = () => {
   const isDark = colorScheme === "dark";
   const [ticketsModalVisible, setTicketsModalVisible] = useState(false);
 
-  const cardClass = isDark
-    ? "bg-white/10 border border-white/20"
-    : "bg-white border border-slate-200 shadow-sm";
-
   const accentColor = isDark ? "#a3e635" : "#65a30d";
 
   const handleQuickAction = (id: string) => {
     if (id === "airtime") router.push("/airtime");
-    else if (id === "data") router.push("/dataPurchase");
+    else if (id === "data") router.push("/data");
+    else if (id === "electricity") router.push("/electricity");
+    else if (id === "cable") router.push("/cable");
   };
 
   const handleServicePress = (id: string) => {
@@ -77,7 +79,7 @@ const ValueAddedServices = () => {
         <ScreenHeader
           title="Value Added Services"
           subtitle="Airtime, Data & more"
-          onBack={() => router.back()}
+          goBack={false}
         />
 
         <View className="px-5 mt-4">
@@ -89,15 +91,13 @@ const ValueAddedServices = () => {
                 className="flex-1 items-center"
                 onPress={() => handleQuickAction(action.id)}
               >
-                <View
-                  className={`w-16 h-16 rounded-2xl items-center justify-center mb-2 ${cardClass}`}
-                >
+                <Card className="w-16 h-16 items-center justify-center mb-2">
                   <action.icon
                     size={25}
                     strokeWidth={1.5}
                     color={accentColor}
                   />
-                </View>
+                </Card>
                 <Text
                   className={`text-xs font-semibold ${isDark ? "text-slate-300" : "text-slate-600"}`}
                 >
@@ -113,18 +113,21 @@ const ValueAddedServices = () => {
           >
             More Services
           </Text>
-          <View className={`rounded-2xl overflow-hidden ${cardClass}`}>
+          <Card className="overflow-hidden">
             {OTHER_SERVICES.map((service, index) => (
               <Pressable
                 key={service.id}
-                onPress={() => handleServicePress(service.id)}
+                onPress={() =>
+                  !service.comingSoon && handleServicePress(service.id)
+                }
+                disabled={service.comingSoon}
                 className={`flex-row items-center px-4 py-5 gap-4 ${
                   index < OTHER_SERVICES.length - 1
                     ? isDark
                       ? "border-b border-white/10"
                       : "border-b border-slate-100"
                     : ""
-                }`}
+                } ${service.comingSoon ? "opacity-60" : ""}`}
               >
                 <View
                   className={`w-12 h-12 rounded-xl items-center justify-center ${isDark ? "bg-lime-500/20" : "bg-lime-50"}`}
@@ -133,7 +136,7 @@ const ValueAddedServices = () => {
                 </View>
                 <View className="flex-1">
                   <Text
-                    className={`text-sm font-bold ${isDark ? "text-white" : "text-slate-900"}`}
+                    className={`text-base font-bold ${isDark ? "text-white" : "text-slate-900"}`}
                   >
                     {service.name}
                   </Text>
@@ -143,13 +146,21 @@ const ValueAddedServices = () => {
                     {service.description}
                   </Text>
                 </View>
-                <ChevronRight
-                  size={18}
-                  color={isDark ? "#64748b" : "#94a3b8"}
-                />
+                {service.comingSoon ? (
+                  <View className="px-2 py-1 rounded-full bg-amber-500/20 border border-amber-500/40">
+                    <Text className="text-xs font-bold text-amber-500">
+                      Coming Soon
+                    </Text>
+                  </View>
+                ) : (
+                  <ChevronRight
+                    size={18}
+                    color={isDark ? "#64748b" : "#94a3b8"}
+                  />
+                )}
               </Pressable>
             ))}
-          </View>
+          </Card>
         </View>
 
         <View className="h-24" />

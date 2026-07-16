@@ -1,4 +1,5 @@
 global {
+  type CardScheme = "VISA" | "MASTERCARD" | "VERVE";
   // --- Types ---
   type AuthStep =
     | "PIN"
@@ -22,11 +23,16 @@ global {
 
   type KYCStatus = "VERIFIED" | "PENDING" | "FAILED" | "UNVERIFIED";
 
+  type TwoFAType = "OTP" | "BYPASS" | "FACIAL_RECOGNITION";
+
   type PaymentMode =
     | "CARD"
     | "QR"
     | "BANK_TRANSFER"
-    | "AIRTIME_DATA"
+    | "AIRTIME"
+    | "DATA"
+    | "ELECTRICITY"
+    | "CABLE_TV"
     | "USSD"
     | "VOICE"
     | "BLE";
@@ -43,6 +49,30 @@ global {
   };
 
   type VASType = "airtime" | "tickets" | "data" | "general";
+
+  interface DataPlan {
+    id: string;
+    size: string;
+    validity: string;
+    price: number;
+  }
+
+  interface ElectricityProvider {
+    id: string;
+    name: string;
+  }
+
+  interface CablePlan {
+    id: string;
+    label: string;
+    price: number;
+  }
+
+  interface CableProvider {
+    id: string;
+    name: string;
+    plans: CablePlan[];
+  }
 
   interface Voucher {
     id: string;
@@ -86,6 +116,12 @@ global {
     totalAmount: number;
   }
 
+  interface PaymentModeStat {
+    paymentMode: string;
+    transactionCount: number;
+    totalAmount: number;
+  }
+
   interface MerchantDetails {
     todayCompletedCount: number;
     todayCompletedVolume: number;
@@ -94,6 +130,7 @@ global {
     totalProfit: number;
     totalCompletedCount: number;
     byStatus: StatusStat[];
+    byPaymentMode: PaymentModeStat[];
   }
 
   type MerchantAnaltics = APIResponse<MerchantDetails>;
@@ -130,6 +167,15 @@ global {
     accountId: string;
     role: "consumer" | "merchant";
     merchant?: MerchantProfile;
+    transactionLimits: {
+      dailyLimit: number;
+      singleTransactionLimit: number;
+    };
+    notifications?: {
+      devicePush: boolean;
+      sms: boolean;
+      email: boolean;
+    };
     kycStatus?: KYCStatus;
     kycLevel?: number;
   }
@@ -147,7 +193,8 @@ global {
 
   interface Bank {
     name: string;
-    code: string;
+    bankCode: string;
+    cbnCode: string;
     logoData: string;
     uptimePrediction: number;
   }
@@ -224,6 +271,11 @@ global {
     status: string;
     txType: TransactionType;
     paymentMode: PaymentMode;
+    stan?: string;
+    rrn?: string;
+    responseCode?: string;
+    message?: string;
+    responseMessage?: string;
   }
 
   interface PaginatedTransactions {
@@ -259,15 +311,23 @@ global {
     beneficiaryBankCode: string;
     narration: string;
     OneTimeCode: string;
+    twoFAType: TwoFAType;
     location?: LocationData;
     paymentMode: PaymentMode;
     saveBeneficiary: boolean;
     transactionID: string;
   }
 
+  interface PhoneNumber {
+    label: string;
+    number: string;
+    name: string;
+    imageUri?: string;
+  }
+
   interface AirtimeDataPayload {
     transactionID: string;
-    paymentMode: string;
+    paymentMode: PaymentMode;
     service: string;
     amount: number;
     beneficiaryPhoneNumber: string;
@@ -337,7 +397,8 @@ global {
 
   interface Banks {
     name: string;
-    code: string;
+    bankCode: string;
+    cbnCode: string;
   }
 
   interface Beneficiary {
@@ -352,18 +413,19 @@ global {
   interface BINData {
     scheme: string;
     issuerBank: string;
+    issuerBankLogo: string;
     currency: string;
   }
 
   interface PaymentCard {
     PAN: string;
     expiryDate: string;
-    BIN: string;
-    last4: string;
+    BIN?: string;
+    last4?: string;
   }
 
   interface CardInfo extends PaymentCard {
-    success: boolean;
+    success?: boolean;
     errorMessage?: string;
     PIN: string;
     cryptogram: string;
@@ -371,11 +433,9 @@ global {
     currencyCode: string;
     ATC: number;
     CVR: string;
-    cardNonce: string;
-    cardholderName: string;
-    applicationLabel: string;
+    cryptogram: string;
+    schemeLabel?: string;
     countryCode: string;
-    language: string;
   }
 
   interface Credentials {
@@ -398,6 +458,15 @@ global {
     businessAddress: string;
     businessType: string;
     userId: string;
+  }
+
+  interface ScannedQRData {
+    amount: number;
+    merchantName: string;
+    accountNumber: string;
+    bankCode: string;
+    bankName?: string;
+    merchantId?: string;
   }
 }
 

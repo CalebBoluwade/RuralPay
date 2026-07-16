@@ -9,18 +9,16 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { ThumbsDown, ThumbsUp } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
-  Pressable,
-  ScrollView,
-  Text,
-  View,
-  useColorScheme,
+    Pressable,
+    ScrollView,
+    Text,
+    View,
+    useColorScheme,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const TRANSACTION_TYPE_MAP: Record<string, { emoji: string; label: string }> = {
-  P2P_DEBIT: { emoji: "📤", label: "Money Sent" },
-  P2P_CREDIT: { emoji: "📥", label: "Money Received" },
-  DEBIT: { emoji: "💳", label: "Card Payment" },
+  DEBIT: { emoji: "💳", label: "Payment Made" },
   CREDIT: { emoji: "💰", label: "Payment Received" },
 };
 
@@ -36,7 +34,7 @@ function LoadingView({ isDark }: Readonly<{ isDark: boolean }>) {
         <Text
           className={`text-base font-semibold ${isDark ? "text-slate-400" : "text-slate-600"}`}
         >
-          Loading transaction...
+          Loading Transaction...
         </Text>
       </View>
     </SafeAreaView>
@@ -61,9 +59,9 @@ function NotFoundView({
           Transaction Not Found
         </Text>
         <Text
-          className={`text-sm text-center ${isDark ? "text-slate-400" : "text-slate-600"}`}
+          className={`text-base text-center ${isDark ? "text-slate-400" : "text-slate-600"}`}
         >
-          The transaction you&apos;re looking for doesn&apos;t exist
+          The Transaction You&apos;re Looking For Doesn&apos;t Exist
         </Text>
         <Pressable
           className={`${AppColor(isDark).buttonBackground} rounded-2xl px-8 py-4 mt-4`}
@@ -89,19 +87,10 @@ export default function TransactionDetail() {
   const { user } = useAuth();
 
   useEffect(() => {
-    try {
-      PaymentService.FetchTransactionById(transactionId as string).then(
-        (transaction) => {
-          setTransaction(transaction);
-          setLoading(false);
-        },
-      );
-    } catch {
-      ToastService.error("Error Fetching Transaction");
-      setLoading(false);
-    } finally {
-      setLoading(false);
-    }
+    PaymentService.FetchTransactionById(transactionId as string)
+      .then((transaction) => setTransaction(transaction))
+      .catch(() => ToastService.error("Error Fetching Transaction"))
+      .finally(() => setLoading(false));
   }, [transactionId]);
 
   if (loading) return <LoadingView isDark={isDark} />;
@@ -120,6 +109,7 @@ export default function TransactionDetail() {
       narration: transaction.narration || "N/A",
     });
   };
+  console.log(transaction);
 
   return (
     <SafeAreaView className={`flex-1 ${AppColor(isDark).screenBackground}`}>
@@ -178,11 +168,11 @@ export default function TransactionDetail() {
                 }`}
               >
                 <Text
-                  className={`text-sm font-bold ${
+                  className={`text-base font-bold ${
                     isDark ? "text-slate-300" : "text-slate-600"
                   }`}
                 >
-                  {transaction.toAccount}
+                  {transaction.toAccount || transaction.paymentMode}
                 </Text>
               </View>
             </View>
@@ -207,7 +197,7 @@ export default function TransactionDetail() {
             {user?.role === "consumer" &&
               transaction.status === "COMPLETED" && (
                 <Pressable
-                  className="bg-lime-400 rounded-2xl py-5 items-center"
+                  className="flex-1 bg-lime-400 rounded-2xl py-5 items-center"
                   // onPress={handleDownloadReceipt}
                 >
                   <View className="flex-row items-center gap-2">
@@ -222,7 +212,7 @@ export default function TransactionDetail() {
             {user?.role === "consumer" &&
               transaction.status === "COMPLETED" && (
                 <Pressable
-                  className="border border-red-400 rounded-2xl py-5 items-center"
+                  className="flex-1 border border-red-400 rounded-2xl py-5 items-center"
                   // onPress={handleDownloadReceipt}
                 >
                   <View className="flex-row items-center gap-2">

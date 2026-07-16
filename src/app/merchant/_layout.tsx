@@ -1,4 +1,5 @@
 import { useAuth } from "@/src/components/context/AuthSessionProvider";
+import Unauthenticated from "@/src/components/screens/auth/Unauthenticated";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
 import { useColorScheme } from "react-native";
@@ -7,6 +8,10 @@ export default function MerchantLayout() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const { user, isAuthenticated } = useAuth();
+
+  if (!isAuthenticated || user?.role !== "merchant") {
+    return <Unauthenticated />;
+  }
 
   return (
     <Tabs
@@ -25,8 +30,12 @@ export default function MerchantLayout() {
           name="index"
           options={{
             title: "Dashboard",
-            tabBarIcon: ({ color, size }) => (
-              <Ionicons name="storefront" size={size} color={color} />
+            tabBarIcon: ({ color, focused }) => (
+              <Ionicons
+                size={focused ? 28 : 26}
+                name={focused ? "home" : "home-outline"}
+                color={color}
+              />
             ),
           }}
         />
@@ -34,9 +43,13 @@ export default function MerchantLayout() {
         <Tabs.Screen
           name="sales-analytics"
           options={{
-            title: "Sales Navigator",
-            tabBarIcon: ({ color, size }) => (
-              <Ionicons name="storefront" size={size} color={color} />
+            title: "Analytics",
+            tabBarIcon: ({ color, focused }) => (
+              <Ionicons
+                size={focused ? 28 : 26}
+                name={focused ? "bar-chart" : "bar-chart-outline"}
+                color={color}
+              />
             ),
           }}
         />
@@ -56,6 +69,20 @@ export default function MerchantLayout() {
         />
 
         <Tabs.Screen
+          name="services"
+          options={{
+            title: "Services",
+            tabBarIcon: ({ color, focused }) => (
+              <Ionicons
+                size={focused ? 28 : 26}
+                name={focused ? "grid" : "grid-outline"}
+                color={color}
+              />
+            ),
+          }}
+        />
+
+        <Tabs.Screen
           name="bank-uptime"
           options={{
             title: "Bank Uptime",
@@ -68,19 +95,26 @@ export default function MerchantLayout() {
             ),
           }}
         />
+
+        <Tabs.Screen
+          name="profile"
+          options={{
+            title: "Profile",
+            tabBarIcon: ({ color, focused }) => (
+              <MaterialCommunityIcons
+                size={focused ? 28 : 26}
+                name={focused ? "account" : "account-outline"}
+                color={color}
+              />
+            ),
+          }}
+        />
       </Tabs.Protected>
 
       <Tabs.Screen
-        name="profile"
+        name="Unauthenticated"
         options={{
-          title: "Profile",
-          tabBarIcon: ({ color, focused }) => (
-            <MaterialCommunityIcons
-              size={focused ? 28 : 26}
-              name={focused ? "account" : "account-outline"}
-              color={color}
-            />
-          ),
+          title: "Unauthenticated",
         }}
       />
     </Tabs>

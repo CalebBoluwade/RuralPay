@@ -20,10 +20,16 @@ class AppLogger {
     ? LogLevel.DEBUG
     : LogLevel.WARN;
 
+  async LogInfo(message: string, context?: ErrorContext) {
+    if (this.logLevel <= LogLevel.INFO) {
+      await Analytics.logEvent("APP_INFO", { message, context });
+    }
+  }
+
   async logError(
     error: Error,
     context?: ErrorContext,
-    level: LogLevel = LogLevel.ERROR,
+    level: LogLevel = this.logLevel,
   ) {
     // Send to analytics
     await Analytics.logEvent("APP_ERROR", {

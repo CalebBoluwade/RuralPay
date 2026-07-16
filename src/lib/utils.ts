@@ -34,3 +34,34 @@ export const maskEmail = (email?: string) => {
   const [name, domain] = email.split("@");
   return `${name[0]}••••@${domain}`;
 };
+
+export const maskAccountNumber = (accountNumber?: string) => {
+  if (!accountNumber) return "••••1234";
+  const last4 = accountNumber.slice(-4);
+  return `••••${last4}`;
+};
+
+export const maskCardNumber = (cardNumber?: string) => {
+  if (!cardNumber) return "•••• •••• •••• 1234";
+  const last4 = cardNumber.slice(-4);
+  return `•••• •••• •••• ${last4}`;
+};
+
+export const LoginAPIResponseMessage = (responseCode: number) => {
+  console.log("Login API Response Code: ", responseCode);
+
+  switch (responseCode) {
+    case 401:
+      return "Invalid Credentials";
+    case 400:
+      return "Something Went Wrong";
+    case 429:
+      return "Too Many Login Attempts. Try Again Later";
+    default:
+      return (
+        "Login Failed. Check Your Connection And Try Again. " +
+        (__DEV__ ? process.env.EXPO_PUBLIC_API_URL : "") +
+        (__DEV__ ? (responseCode ? ` (Error Code: ${responseCode})` : "") : "")
+      );
+  }
+};

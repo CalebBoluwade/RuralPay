@@ -1,3 +1,4 @@
+import ScanToPay from "@/assets/images/ScanToPay.svg";
 import CardPIN from "@/src/components/ui/Modals/Transaction/CardPin";
 import { useClearLoadingOnLock } from "@/src/hooks/useClearLoadingOnLock";
 import NFCService from "@/src/lib/services/NFCService";
@@ -8,15 +9,14 @@ import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  Image,
   Modal,
   Pressable,
   Text,
   View,
   useColorScheme,
+  useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { SvgUri } from "react-native-svg";
 
 import { useAuth } from "@/src/components/context/AuthSessionProvider";
 import AmountInput from "@/src/components/ui/Input/AmountInput";
@@ -39,6 +39,8 @@ const CardTapNFCPayments: React.FC<CardTapNFCPaymentsProps> = ({
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
 
+  const { width } = useWindowDimensions();
+
   const [step, setStep] = useState("ENTER_AMOUNT");
   const [amount, setAmount] = useState("");
   const [amountError, setAmountError] = useState("");
@@ -50,6 +52,7 @@ const CardTapNFCPayments: React.FC<CardTapNFCPaymentsProps> = ({
   const [cardPin, setCardPin] = useState("");
   const [cardTransaction, setCardTransaction] = useState<CardDetailsResult>();
   const [rawCardInfo, setRawCardInfo] = useState<CardInfo | null>(null);
+  const [cardReady, setCardReady] = useState(false);
 
   const networkInfo = useNetInfo();
 
@@ -59,13 +62,13 @@ const CardTapNFCPayments: React.FC<CardTapNFCPaymentsProps> = ({
         const nfcInit = await NFCService.initialize();
         if (nfcInit) {
           setNFCReady(true);
-          if (__DEV__) console.log("NFC initialized successfully");
+          if (__DEV__) console.log("NFC Initialized Successfully");
         } else {
           setNFCReady(false);
-          if (__DEV__) console.log("NFC initialization failed");
+          if (__DEV__) console.log("NFC Initialization Failed");
         }
       } catch (err) {
-        if (__DEV__) console.error("NFC init error:", err);
+        if (__DEV__) console.error("NFC Initialization Error:", err);
         setNFCReady(false);
       }
     };
@@ -114,7 +117,7 @@ const CardTapNFCPayments: React.FC<CardTapNFCPaymentsProps> = ({
       const cardResult = await NFCService.ReadNFCCardOnly();
 
       if (!cardResult.success || !cardResult.cardInfo) {
-        setError(cardResult.message || "Failed to read card");
+        setError(cardResult.message || "Failed to Read Card");
         return;
       }
 
@@ -124,10 +127,17 @@ const CardTapNFCPayments: React.FC<CardTapNFCPaymentsProps> = ({
       // Store raw card info for later use with PIN
       setRawCardInfo(cardResult.cardInfo);
       setCardTransaction(cardResult);
+      setCardReady(true);
+
+      // Brief pause so user sees the "remove card" message before PIN screen
+      await new Promise((resolve) => setTimeout(resolve, 1250));
       setStep("PIN_CONFIRMATION");
+      setCardReady(false);
     } catch (error) {
       setError(
-        error instanceof Error ? error.message : "An unknown error occurred",
+        error instanceof Error
+          ? error.message
+          : "Unknown Error Occurred While Reading Card",
       );
       if (__DEV__) console.log(error);
     } finally {
@@ -176,12 +186,12 @@ const CardTapNFCPayments: React.FC<CardTapNFCPaymentsProps> = ({
     cardInfo?: CardInfo;
   } => {
     if (!merchant || !cardPin) {
-      ToastService.warning("Please enter PIN to continue");
+      ToastService.warning("Please Enter PIN to Continue");
       return { valid: false };
     }
 
     if (!rawCardInfo) {
-      ToastService.warning("Card data not available");
+      ToastService.warning("Card Data Not Available");
       return { valid: false };
     }
 
@@ -220,8 +230,8 @@ const CardTapNFCPayments: React.FC<CardTapNFCPaymentsProps> = ({
       );
 
     if (!isConnected) {
-      ToastService.warning("No internet connection. Saving payment locally.");
-      setError("No internet connection");
+      ToastService.warning("No Internet Connection. Saving payment locally.");
+      setError("No Internet Connection");
       return null;
     }
 
@@ -258,7 +268,7 @@ const CardTapNFCPayments: React.FC<CardTapNFCPaymentsProps> = ({
       return;
     }
 
-    if (__DEV__) console.log("[PAYMENT] Starting payment processing...");
+    if (__DEV__) console.log("[PAYMENT] Starting Payment Processing...");
 
     const cardResultWithPIN = await NFCService.ProcessCardWithPIN({
       merchantId: validation.merchant.id,
@@ -281,6 +291,14 @@ const CardTapNFCPayments: React.FC<CardTapNFCPaymentsProps> = ({
 
     if (cardResultWithPIN.transaction) {
       await handleLocationRetrieval(cardResultWithPIN.transaction);
+
+      if (cardResultWithPIN?.transaction?.cardInfo) {
+        delete cardResultWithPIN.transaction.cardInfo.BIN;
+        delete cardResultWithPIN.transaction.cardInfo.last4;
+        delete cardResultWithPIN.transaction.cardInfo.errorMessage;
+        delete cardResultWithPIN.transaction.cardInfo.schemeLabel;
+      }
+
       const paymentResponse = await makePaymentRequest(
         cardResultWithPIN.transaction,
       );
@@ -336,6 +354,7 @@ const CardTapNFCPayments: React.FC<CardTapNFCPaymentsProps> = ({
     setCardPin("");
     setCardTransaction(undefined);
     setRawCardInfo(null);
+    setCardReady(false);
   };
 
   const handlePinCancel = () => {
@@ -390,14 +409,7 @@ const CardTapNFCPayments: React.FC<CardTapNFCPaymentsProps> = ({
 
         {/* Illustration */}
         <View className="items-center mb-6">
-          <SvgUri
-            uri={
-              Image.resolveAssetSource(require("@/assets/images/ScanToPay.svg"))
-                .uri
-            }
-            width={240}
-            height={240}
-          />
+          <ScanToPay width={width - 48} height={(width - 48) * 0.8} />
         </View>
 
         {/* Amount input */}
@@ -452,6 +464,7 @@ const CardTapNFCPayments: React.FC<CardTapNFCPaymentsProps> = ({
       paymentMessage="Enter Your 4-Digit Card PIN to Authorize This Transaction"
       showPinModal={true}
       merchantBusinessName={merchant?.businessName || ""}
+      merchantCommisionRate={merchant?.commisionRate || 0}
       amount={Number.parseFloat(amount)}
       isLoading={loading}
       setIsLoading={setLoading}
@@ -500,13 +513,17 @@ const CardTapNFCPayments: React.FC<CardTapNFCPaymentsProps> = ({
             <Text
               className={`text-2xl font-brand font-bold mb-2 ${isDark ? "text-white" : "text-slate-900"}`}
             >
-              Ready to Scan Payment Card
+              {NFCReady
+                ? "Ready to Scan Payment Card"
+                : error === "NFC Not Available"
+                  ? "NFC Not Available"
+                  : error}
             </Text>
             <Text
               className={`text-base text-center ${isDark ? "text-slate-400" : "text-slate-500"}`}
             >
-              Press Continue Position your NFC Card against the back of the
-              device
+              Press Continue. Position your NFC Card against the back of the
+              Device
             </Text>
           </View>
 
@@ -516,7 +533,7 @@ const CardTapNFCPayments: React.FC<CardTapNFCPaymentsProps> = ({
               className={`rounded-2xl p-4 mb-6 ${isDark ? "bg-red-500/20 border border-red-500/50" : "bg-red-50 border border-red-200"}`}
             >
               <Text
-                className={`text-sm font-brand font-bold ${isDark ? "text-red-400" : "text-red-700"}`}
+                className={`text-base font-brand font-bold ${isDark ? "text-red-400" : "text-red-700"}`}
               >
                 NFC is not available on this device. Please check if NFC is
                 enabled in your phone settings.
@@ -525,7 +542,7 @@ const CardTapNFCPayments: React.FC<CardTapNFCPaymentsProps> = ({
           )}
 
           {/* Loading state */}
-          {loading && (
+          {loading && !cardReady && (
             <View className={`rounded-2xl p-6 items-center mb-6 ${cardClass}`}>
               <ActivityIndicator
                 size="large"
@@ -537,9 +554,36 @@ const CardTapNFCPayments: React.FC<CardTapNFCPaymentsProps> = ({
                 Processing payment...
               </Text>
               <Text
-                className={`text-sm mt-1 ${isDark ? "text-slate-400" : "text-slate-500"}`}
+                className={`text-base mt-1 ${isDark ? "text-slate-400" : "text-slate-500"}`}
               >
                 Please Keep Your Card Close To The Device
+              </Text>
+            </View>
+          )}
+
+          {/* Card read success — safe to remove */}
+          {cardReady && (
+            <View
+              className={`rounded-2xl p-6 items-center mb-6 ${
+                isDark
+                  ? "bg-lime-500/20 border border-lime-500/40"
+                  : "bg-lime-50 border border-lime-200"
+              }`}
+            >
+              <Check size={32} color={isDark ? "#a3e635" : "#65a30d"} />
+              <Text
+                className={`text-base font-brand font-bold mt-3 ${
+                  isDark ? "text-lime-400" : "text-lime-700"
+                }`}
+              >
+                Card Read Successfully
+              </Text>
+              <Text
+                className={`text-sm mt-1 text-center ${
+                  isDark ? "text-slate-400" : "text-slate-500"
+                }`}
+              >
+                You May Remove Your Card
               </Text>
             </View>
           )}

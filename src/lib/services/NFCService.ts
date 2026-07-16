@@ -1,5 +1,4 @@
 import * as Crypto from "expo-crypto";
-import { Platform } from "react-native";
 import * as Keychain from "react-native-keychain";
 import NfcManager, { Ndef, NfcTech } from "react-native-nfc-manager";
 
@@ -84,34 +83,34 @@ class NFCService {
     }
   }
 
-  TapToPayShareAndroid = async (content: string) => {
-    if (Platform.OS !== "android") {
-      if (__DEV__) console.warn("HCE is Only Supported on Android");
-      return;
-    }
-    try {
-      const HCE = await import("react-native-hce");
-      const {
-        NFCTagType4,
-        NFCTagType4NDEFContentType,
-        default: HCEDefault,
-      } = HCE;
+  // TapToPayShareAndroid = async (content: string) => {
+  //   if (Platform.OS !== "android") {
+  //     if (__DEV__) console.warn("HCE is Only Supported on Android");
+  //     return;
+  //   }
+  //   try {
+  //     const HCE = await import("react-native-hce");
+  //     const {
+  //       NFCTagType4,
+  //       NFCTagType4NDEFContentType,
+  //       default: HCEDefault,
+  //     } = HCE;
 
-      const tag = new NFCTagType4({
-        type: NFCTagType4NDEFContentType.Text,
-        content,
-        writable: false,
-      });
+  //     const tag = new NFCTagType4({
+  //       type: NFCTagType4NDEFContentType.Text,
+  //       content,
+  //       writable: false,
+  //     });
 
-      const hceSession = new HCEDefault.HCESession();
-      hceSession.setApplication(tag);
-      hceSession.setEnabled(true);
-      if (__DEV__)
-        console.log("HCE Session Active: Phone is now acting as a tag");
-    } catch (error) {
-      if (__DEV__) console.error("HCE Error:", error);
-    }
-  };
+  //     const hceSession = new HCEDefault.HCESession();
+  //     hceSession.setApplication(tag);
+  //     hceSession.setEnabled(true);
+  //     if (__DEV__)
+  //       console.log("HCE Session Active: Phone is now acting as a tag");
+  //   } catch (error) {
+  //     if (__DEV__) console.error("HCE Error:", error);
+  //   }
+  // };
 
   ReceiveSharedData = async () => {
     try {
@@ -356,10 +355,12 @@ class NFCService {
     merchantId,
     amount,
     cardPIN,
+    txType,
   }: {
     merchantId: string;
     amount: number;
     cardPIN: string;
+    txType?: "DEBIT" | "CREDIT";
   }): Promise<CardDetailsResult> {
     try {
       const compromised = await integrityService.isDeviceCompromised();
@@ -422,7 +423,7 @@ class NFCService {
         amount,
         paymentMode: "CARD",
         cardInfo: cardInfo,
-        txType: "DEBIT",
+        txType: txType ?? "CREDIT",
         // cardInfo: {
         //   currency: "0566", // Naira
         //   pan: cardInfo.cardData.pan,
@@ -497,8 +498,9 @@ class NFCService {
       const cardInfo = await this.readCard();
 
       if (!cardInfo.success || !cardInfo?.PAN || !cardInfo?.BIN) {
-        ToastService.error("Failed to Read Card 3");
-        throw new Error("Failed to Read Card 4");
+        if (__DEV__) console.log("Card Read Failed:", cardInfo);
+        ToastService.error("Card Read Failed");
+        throw new Error("Card Read Failed:");
       }
 
       // Just return the card info without PIN processing
@@ -574,7 +576,7 @@ class NFCService {
 
       return {
         success: true,
-        BIN: cardInfo.BIN,
+        BIN: cardInfo.BIN!,
         message: "Card Processed Successfully",
         transaction: transaction,
       };
@@ -718,43 +720,32 @@ class NFCService {
 
     const envAIDs = process.env.EXPO_PUBLIC_NFC_CARD_AIDS;
 
+    if (__DEV__) console.log("[NFC] EXPO_PUBLIC_NFC_CARD_AIDS raw:", envAIDs ?? "(not set, using hardcoded fallback)");
+
     if (!envAIDs) {
+      // Raw AID bytes only — no APDU header. selectApplication() builds the SELECT wrapper.
       this.cardAIDsCache = [
-        {
-          name: "Mastercard",
-          aid: [
-            0x00, 0xa4, 0x04, 0x00, 0x07, 0xa0, 0x00, 0x00, 0x00, 0x04, 0x10,
-            0x10, 0x00,
-          ],
-        },
-        {
-          name: "Visa",
-          aid: [
-            0x00, 0xa4, 0x04, 0x00, 0x07, 0xa0, 0x00, 0x00, 0x00, 0x03, 0x10,
-            0x10, 0x00,
-          ],
-        },
-        {
-          name: "Maestro",
-          aid: [
-            0x00, 0xa4, 0x04, 0x00, 0x07, 0xa0, 0x00, 0x00, 0x00, 0x04, 0x30,
-            0x60, 0x00,
-          ],
-        },
-        {
-          name: "Verve",
-          aid: [
-            0x00, 0xa4, 0x04, 0x00, 0x07, 0xa0, 0x00, 0x00, 0x00, 0x03, 0x71,
-            0x00, 0x00,
-          ],
-        },
+        { name: "Mastercard", aid: [0xa0, 0x00, 0x00, 0x00, 0x04, 0x10, 0x10] },
+        { name: "Visa",       aid: [0xa0, 0x00, 0x00, 0x00, 0x03, 0x10, 0x10] },
+        { name: "Maestro",    aid: [0xa0, 0x00, 0x00, 0x00, 0x04, 0x30, 0x60] },
+        { name: "Verve",      aid: [0xa0, 0x00, 0x00, 0x00, 0x03, 0x71, 0x00] },
       ];
+      if (__DEV__) console.log("[NFC] Using hardcoded AIDs:", this.cardAIDsCache.map((a) => `${a.name}=${this.bytesToHex(a.aid)}`));
       return this.cardAIDsCache;
     }
 
+    // Env format: "Mastercard:00A4040007A0000000041010" (may include APDU header) OR
+    //             "AfriGo:A000000891010101" (raw AID only)
+    // Detect by checking if hex starts with 00A40400 (SELECT APDU header)
     this.cardAIDsCache = envAIDs.split(",").map((entry) => {
-      const [name, hexAid] = entry.split(":");
-      return { name: name.trim(), aid: this.hexToBytes(hexAid.trim()) };
+      const colonIdx = entry.indexOf(":");
+      const name = entry.slice(0, colonIdx).trim();
+      const hexAid = entry.slice(colonIdx + 1).trim().toUpperCase();
+      // Strip APDU header (00A40400 + 1 length byte = 10 hex chars) if present
+      const rawHex = hexAid.startsWith("00A40400") ? hexAid.slice(10) : hexAid;
+      const aid = this.hexToBytes(rawHex);
+      if (__DEV__) console.log(`[NFC] AID parsed — ${name}: raw="${hexAid}" stripped="${rawHex}" bytes=[${aid.map((b) => "0x" + b.toString(16).padStart(2, "0")).join(", ")}]`);
+      return { name, aid };
     });
 
     return this.cardAIDsCache;
@@ -763,8 +754,8 @@ class NFCService {
   async stopNFC() {
     try {
       await NfcManager.cancelTechnologyRequest();
-    } catch (error) {
-      // Ignore errors if no session is active
+    } catch {
+      if (__DEV__) console.log("No Active NFC request to Cancel");
     }
   }
 
@@ -802,120 +793,342 @@ class NFCService {
       await this.stopNFC();
 
       // Request NFC technology with timeout
+      const nfcTimeout =
+        Number(process.env.EXPO_PUBLIC_NFC_READ_TIMEOUT) || 30000;
       await Promise.race([
         NfcManager.requestTechnology(NfcTech.IsoDep),
         new Promise<never>((_, reject) =>
           setTimeout(
-            () => reject(new Error("NFC timeout - no card detected")),
-            8000,
+            () => reject(new Error("NFC Read Timeout - No Card Detected")),
+            nfcTimeout,
           ),
         ),
       ]);
 
       ToastService.info("Card Detected, Reading...");
 
-      // Step 1: Try direct AID selection first (fast)
-      let applications: { aid: number[]; label: string }[] = [];
+      // Step 1: Select payment application via proper EMV contactless flow
+      // PPSE first (required by some Mastercard contactless cards to initialize state)
+      let selectedApp: { aid: number[]; label: string } | null = null;
+      let selectAppResponse: number[] | null = null;
 
-      const CARD_AIDS = this.getCardAIDs();
-
-      for (const { name, aid } of CARD_AIDS) {
-        try {
-          // Small delay to give card time to respond
-          await new Promise((resolve) => setTimeout(resolve, 50));
-
-          const aidBytes = aid.slice(5); // Remove SELECT command prefix
-          const selectResponse = await this.selectApplication(aidBytes);
-
-          const sw1 = selectResponse?.at(-2);
-          const sw2 = selectResponse?.at(-1);
-
-          if (sw1 === 0x90 && sw2 === 0x00) {
-            applications.push({ aid: aidBytes, label: name });
-            ToastService.info(`Found ${name} Processor`);
-            break; // Use first successful AID
-          }
-        } catch (error: any) {
+      try {
+        const ppseResponse = await this.sendAPDU(APDU_COMMANDS.SELECT_PPSE);
+        const ppseSw1 = ppseResponse[ppseResponse.length - 2];
+        if (ppseSw1 === 0x90) {
+          const applications = this.parsePPSE(ppseResponse);
           if (__DEV__)
-            console.log(`${name} AID failed:`, error?.message || error);
-          // Continue trying other AIDs
+            console.log(
+              "PPSE found apps:",
+              applications.map((a) => a.label),
+            );
+          if (applications.length > 0) {
+            selectedApp = applications[0];
+            selectAppResponse = await this.selectApplication(selectedApp.aid);
+            const sw1 = selectAppResponse?.at(-2);
+            if (sw1 !== 0x90) {
+              selectedApp = null;
+              selectAppResponse = null;
+            }
+          }
+        }
+      } catch (ppseError) {
+        if (__DEV__) console.log("PPSE failed:", ppseError);
+      }
+
+      // Fallback: Try direct AID selection if PPSE didn't work
+      if (!selectedApp) {
+        const CARD_AIDS = this.getCardAIDs();
+        if (__DEV__) console.log("[NFC] PPSE yielded no app, trying direct AID fallback. AIDs to try:", CARD_AIDS.map((a) => `${a.name}(${this.bytesToHex(a.aid)})`));
+        for (const { name, aid } of CARD_AIDS) {
+          try {
+            await new Promise((resolve) => setTimeout(resolve, 50));
+            // aid is already raw AID bytes — selectApplication() wraps with SELECT APDU
+            if (__DEV__) console.log(`[NFC] Trying AID ${name}: SELECT [${aid.map((b) => "0x" + b.toString(16).padStart(2, "0")).join(", ")}]`);
+            const selectResponse = await this.selectApplication(aid);
+            const sw1 = selectResponse?.at(-2);
+            const sw2 = selectResponse?.at(-1);
+            if (__DEV__) console.log(`[NFC] AID ${name} response SW: ${sw1?.toString(16)}${sw2?.toString(16)}, full: [${selectResponse?.join(",")}]`);
+            if (sw1 === 0x90 && sw2 === 0x00) {
+              selectedApp = { aid, label: name };
+              selectAppResponse = selectResponse;
+              if (__DEV__) console.log(`[NFC] Matched card scheme: ${name}`);
+              break;
+            }
+          } catch (error: any) {
+            if (__DEV__)
+              console.log(`[NFC] AID ${name} threw:`, error?.message || error);
+          }
         }
       }
 
-      // Step 1B: If no AID worked, try PPSE as fallback
-      if (!applications || applications.length === 0) {
-        if (__DEV__) console.log("No AIDs detected, trying PPSE...");
-        try {
-          const ppseResponse = await this.sendAPDU(APDU_COMMANDS.SELECT_PPSE);
-          applications = this.parsePPSE(ppseResponse);
-        } catch (ppseError) {
-          if (__DEV__) console.log("PPSE also failed:", ppseError);
-        }
-      }
-
-      if (!applications || applications.length === 0) {
+      if (!selectedApp || !selectAppResponse) {
         throw new Error("No Payment Provider Found on Card");
       }
 
-      // Step 3: Select First Available Application
-      const selectedApp = applications[0];
-      const selectAppResponse = await this.selectApplication(selectedApp.aid);
-
-      // Step 4: Get Processing Options (optional - can fail and we still get data from SELECT response)
-      let processingOptions: { afl?: string; aip?: string } = {};
-      let cardData: number[][] = [selectAppResponse];
-
+      // Extract PDOL from FCI if present (tag 9F38 inside A5 inside 6F)
+      let pdolHex: string | undefined;
       try {
-        const gpoResponse = await this.sendAPDU(APDU_COMMANDS.GPO);
-        processingOptions = this.parseGPO(gpoResponse);
+        const fciBody = selectAppResponse.slice(0, -2);
+        if (__DEV__) console.log("FCI body:", fciBody);
+        const fciTlv = this.parseTLV(fciBody);
+        if (__DEV__) console.log("FCI TLV keys:", Object.keys(fciTlv));
 
-        // Step 5: Try to read application data if AFL is available
-        if (processingOptions.afl) {
-          const aflData = await this.readApplicationData(processingOptions);
-          if (aflData.length > 0) {
-            cardData = aflData;
+        // Try nested 6F -> A5 -> 9F38
+        let a5Hex: string | undefined;
+        if (fciTlv["6F"]) {
+          const innerTlv = this.parseTLV(this.hexStringToBytes(fciTlv["6F"]));
+          if (__DEV__) console.log("Inner 6F TLV keys:", Object.keys(innerTlv));
+          a5Hex = innerTlv["A5"];
+        } else {
+          a5Hex = fciTlv["A5"];
+        }
+
+        if (a5Hex) {
+          const a5Tlv = this.parseTLV(this.hexStringToBytes(a5Hex));
+          if (__DEV__) console.log("A5 TLV keys:", Object.keys(a5Tlv));
+          pdolHex = a5Tlv["9F38"];
+          // Some cards nest PDOL inside BF0C (FCI Issuer Discretionary Data)
+          if (!pdolHex && a5Tlv["BF0C"]) {
+            const bf0cTlv = this.parseTLV(this.hexStringToBytes(a5Tlv["BF0C"]));
+            pdolHex = bf0cTlv["9F38"];
           }
         }
-      } catch (gpoError) {
-        if (__DEV__)
-          console.log(
-            "GPO/AFL reading skipped, using SELECT response:",
-            gpoError,
-          );
-        // Continue with SELECT response data
+
+        // Fallback: PDOL directly in FCI body
+        if (!pdolHex) {
+          pdolHex = fciTlv["9F38"];
+        }
+        if (__DEV__) console.log("PDOL:", pdolHex ?? "none");
+      } catch (e) {
+        if (__DEV__) console.log("PDOL extraction failed:", e);
+      }
+
+      // Step 4: Get Processing Options — try multiple GPO strategies
+      let processingOptions: { afl?: string; aip?: string } = {};
+      let cardData: number[][] = [selectAppResponse!];
+
+      const gpoAttempts: { label: string; data: number[] }[] = [];
+
+      // If PDOL exists, build from it
+      if (pdolHex) {
+        const pdolData = this.buildPDOLData(pdolHex);
+        gpoAttempts.push({ label: "PDOL", data: pdolData });
+      }
+
+      // Mastercard contactless: TTQ + Amount + AmountOther + Country + Currency + Date + TxType + UN
+      // 9F66(4) + 9F02(6) + 9F03(6) + 9F1A(2) + 5F2A(2) + 9A(3) + 9C(1) + 9F37(4) = 28 bytes
+      const now = new Date();
+      const dateHex = now
+        .toISOString()
+        .slice(2, 10)
+        .replace(/-/g, "")
+        .slice(0, 6);
+      const [rb0, rb1, rb2, rb3] = Crypto.getRandomBytes(4);
+      const unHex = (((rb0 << 24) | (rb1 << 16) | (rb2 << 8) | rb3) >>> 0)
+        .toString(16)
+        .padStart(8, "0");
+      const mcData = this.hexToBytes(
+        "B6204000" + // TTQ: contactless MSD + qVSDC supported
+          "000000000100" + // Amount (1.00 minor units)
+          "000000000000" + // Amount Other
+          "0566" + // Terminal Country (Nigeria)
+          "0566" + // Currency (Naira)
+          dateHex + // Date YYMMDD
+          "00" + // Tx Type (purchase)
+          unHex, // Unpredictable Number
+      );
+      gpoAttempts.push({ label: "MC-full", data: mcData });
+
+      // Empty PDOL
+      gpoAttempts.push({ label: "empty", data: [] });
+
+      let gpoSuccess = false;
+      let cardInfo_gpoInline: { cryptogram: string; atc: string; issuerAppData: string } | null = null;
+      for (const attempt of gpoAttempts) {
+        if (gpoSuccess) break;
+        try {
+          // Re-select AID before retry (card may be in bad state after failed GPO)
+          if (gpoAttempts.indexOf(attempt) > 0) {
+            await this.selectApplication(selectedApp!.aid);
+          }
+
+          const pdolLen = attempt.data.length;
+          const gpoCommand = [
+            0x80,
+            0xa8,
+            0x00,
+            0x00,
+            pdolLen + 2,
+            0x83,
+            pdolLen,
+            ...attempt.data,
+            0x00,
+          ];
+          const gpoResponse = await this.sendAPDU(gpoCommand);
+          const gpoSw1 = gpoResponse[gpoResponse.length - 2];
+          const gpoSw2 = gpoResponse[gpoResponse.length - 1];
+
+          if (__DEV__)
+            console.log(
+              `GPO [${attempt.label}]: SW=${gpoSw1.toString(16)}${gpoSw2.toString(16)}`,
+            );
+
+          if (gpoSw1 === 0x90 && gpoSw2 === 0x00) {
+            processingOptions = this.parseGPO(gpoResponse);
+            if (__DEV__) console.log("GPO parsed:", processingOptions);
+            gpoSuccess = true;
+
+            // qVSDC cards embed the cryptogram inline in the GPO 77 template
+            if (!cardInfo_gpoInline) {
+              const gpoClean = gpoResponse.slice(0, -2);
+              if (gpoClean[0] === 0x77) {
+                let off = 1;
+                const l = gpoClean[1];
+                off += l > 0x7f ? 1 + (l & 0x7f) : 1;
+                const gpoTlv = this.parseTLV(gpoClean.slice(off));
+                if (gpoTlv["9F26"]) {
+                  if (__DEV__) console.log("[NFC] Inline GPO cryptogram (qVSDC):", gpoTlv["9F26"]);
+                  cardInfo_gpoInline = {
+                    cryptogram: gpoTlv["9F26"],
+                    atc: gpoTlv["9F36"] || "",
+                    issuerAppData: gpoTlv["9F10"] || "",
+                  };
+                }
+              }
+            }
+
+            if (processingOptions.afl) {
+              const aflData = await this.readApplicationData(processingOptions);
+              if (aflData.length > 0) cardData = aflData;
+            }
+
+            // qVSDC (AIP bit 5 set = 0x0020): PAN lives in SFI 1-2 which AFL may not list.
+            // Always read SFI 1 & 2 records 1-3 and merge — duplicates are harmless.
+            const aipVal = processingOptions.aip
+              ? parseInt(processingOptions.aip, 16)
+              : 0;
+            const isQVSDC = (aipVal & 0x0020) !== 0;
+            if (isQVSDC) {
+              if (__DEV__) console.log("[NFC] qVSDC card detected — reading SFI 1 & 2 for PAN");
+              for (const sfi of [1, 2]) {
+                for (let rec = 1; rec <= 3; rec++) {
+                  try {
+                    const cmd = [0x00, 0xb2, rec, (sfi << 3) | 0x04, 0x00];
+                    const data = await this.sendAPDU(cmd);
+                    if (data[data.length - 2] === 0x90) cardData.push(data);
+                  } catch { /* record absent */ }
+                }
+              }
+            }
+          }
+        } catch (e) {
+          if (__DEV__) console.log(`GPO [${attempt.label}] error:`, e);
+        }
+      }
+
+      // If all GPO attempts failed or no AFL, brute-force read records
+      if (
+        !gpoSuccess ||
+        (cardData.length === 1 && cardData[0] === selectAppResponse)
+      ) {
+        if (__DEV__) console.log("Attempting brute-force SFI read");
+        try {
+          // Re-select to reset card state for READ RECORD
+          await this.selectApplication(selectedApp!.aid);
+          const bruteRecords = await this.bruteForceReadRecords();
+          if (bruteRecords.length > 0) cardData = bruteRecords;
+        } catch (bruteError) {
+          if (__DEV__) console.log("Brute-force SFI read failed:", bruteError);
+        }
       }
 
       // Step 6: Parse card information
       const cardInfo = this.parseCardData(cardData);
+      cardInfo.schemeLabel = selectedApp.label;
 
-      // if (__DEV__) console.log(">>>>>", cardData, cardInfo);
+      // Apply inline GPO cryptogram early — before the BIN guard — so it's
+      // preserved even if we fall through to brute-force or fail validation
+      if (!cardInfo.cryptogram && cardInfo_gpoInline) {
+        cardInfo.cryptogram = cardInfo_gpoInline.cryptogram;
+        if (!cardInfo.ATC && cardInfo_gpoInline.atc)
+          cardInfo.ATC = parseInt(cardInfo_gpoInline.atc, 16);
+        if (!cardInfo.issuerAppData && cardInfo_gpoInline.issuerAppData)
+          cardInfo.issuerAppData = cardInfo_gpoInline.issuerAppData;
+      }
+
+      // Validate essential fields before marking success
+      if (!cardInfo.PAN || !cardInfo.BIN) {
+        cardInfo.success = false;
+        cardInfo.errorMessage =
+          "Could not read card data. Please try again and hold card steady.";
+        return cardInfo;
+      }
+
+      // Step 7: Generate AC (cryptogram) if CDOL1 is available from parsed records
+      // parseTLV on the raw stream to find CDOL1 (tag 8C)
+      try {
+        const rawStream: number[] = [];
+        cardData.forEach((record) => {
+          const clean =
+            record[record.length - 2] === 0x90 ? record.slice(0, -2) : record;
+          const fb = clean[0];
+          if (fb === 0x70 || fb === 0x77 || fb === 0x6f) {
+            let off = 1;
+            const l = clean[1];
+            off += l > 0x7f ? 1 + (l & 0x7f) : 1;
+            rawStream.push(...clean.slice(off));
+          } else if (fb !== 0x80) {
+            rawStream.push(...clean);
+          }
+        });
+        const tlv = this.parseTLV(rawStream);
+        if (__DEV__) console.log("[NFC] CDOL1 (8C):", tlv["8C"] ?? "not found", "| CDOL2 (8D):", tlv["8D"] ?? "not found");
+        const cdol1 = tlv["8C"];
+        if (cdol1) {
+          // Pass amount=1 (1 kobo) — AfriGo rejects ARQC with amount=0
+          const txResult = await this.performTransaction(cdol1, 1);
+          cardInfo.cryptogram = txResult.cryptogram;
+          cardInfo.issuerAppData =
+            txResult.issuerAppData || cardInfo.issuerAppData;
+          cardInfo.ATC = txResult.atc
+            ? parseInt(txResult.atc, 16)
+            : cardInfo.ATC;
+          // Re-extract CVR from fresh IAD
+          if (cardInfo.issuerAppData && cardInfo.issuerAppData.length >= 10) {
+            cardInfo.CVR = cardInfo.issuerAppData.substring(4, 10);
+          }
+        }
+      } catch (genACError) {
+        if (__DEV__) console.log("[NFC] GENERATE AC skipped (card may not support it):", genACError);
+      }
+
+      if (__DEV__) console.log(">>>>>", cardData, cardInfo);
       this.currentCard = cardInfo;
 
       return cardInfo;
     } catch (error) {
       if (__DEV__) console.log(error);
-      // await ErrorHandler.handleAsync("Error Reading Card", {
-      //   action: "Read User Card",
-      //   // metadata: error,
-      // });
+      await ErrorHandler.handle("Error Reading Card", {
+        action: "Read User Card",
+        // metadata: error,
+      });
+
       return {
         success: false,
+        schemeLabel: "",
         errorMessage: error instanceof Error ? error.message : "",
         BIN: "",
         last4: "",
         PAN: "",
         PIN: "",
         expiryDate: "",
-        cardholderName: "",
         ATC: 0,
-        applicationLabel: "",
         cryptogram: "",
         issuerAppData: "",
         CVR: "",
         currencyCode: "",
         countryCode: "",
-        cardNonce: "",
-        language: "",
       };
     } finally {
       this.isReading = false;
@@ -976,6 +1189,28 @@ class NFCService {
     return records;
   }
 
+  // Fallback: try common SFI (1-10) and record (1-5) combinations when GPO/AFL unavailable
+  private async bruteForceReadRecords(): Promise<number[][]> {
+    const records: number[][] = [];
+    for (let sfi = 1; sfi <= 10; sfi++) {
+      for (let rec = 1; rec <= 5; rec++) {
+        try {
+          const cmd = [0x00, 0xb2, rec, (sfi << 3) | 0x04, 0x00];
+          const data = await this.sendAPDU(cmd);
+          const sw1 = data[data.length - 2];
+          const sw2 = data[data.length - 1];
+          if (sw1 === 0x90 && sw2 === 0x00) {
+            records.push(data);
+          }
+        } catch {
+          // Record doesn't exist, continue
+        }
+      }
+    }
+    if (__DEV__) console.log(`Brute-force found ${records.length} records`);
+    return records;
+  }
+
   private parsePPSE(response: number[]): { aid: number[]; label: string }[] {
     // Parse PPSE response to extract AIDs
     const applications: { aid: number[]; label: string }[] = [];
@@ -1025,37 +1260,42 @@ class NFCService {
         // Step A: Remove Status Words (last 2 bytes, usually 144, 0)
         let cleanRecord = record;
         if (record.length >= 2) {
-          // Check for 0x90 0x00 (144, 0)
           const sw1 = record[record.length - 2];
           if (sw1 === 0x90) {
             cleanRecord = record.slice(0, -2);
           }
         }
 
-        // Step B: Unwrap Tag 0x70
-        if (cleanRecord[0] === 0x70) {
-          // Calculate where the data actually starts
-          let offset = 1; // Skip Tag 70
-          const len = cleanRecord[1];
+        // Step B: Unwrap known EMV template tags (0x70, 0x77, 0x6F, 0x80)
+        const firstByte = cleanRecord[0];
+        const isTemplate =
+          firstByte === 0x70 || firstByte === 0x77 || firstByte === 0x6f;
 
-          // Handle EMV multi-byte length encoding
+        if (isTemplate) {
+          let offset = 1; // Skip Tag byte
+          const len = cleanRecord[1];
           if (len > 0x7f) {
             const byteCount = len & 0x7f;
             offset += 1 + byteCount;
           } else {
             offset += 1;
           }
-
-          // Push ONLY the inner body to our stream
           rawDataStream.push(...cleanRecord.slice(offset));
+        } else if (firstByte === 0x80) {
+          // Format 1 primitive: skip tag + length, rest is AIP+AFL (not card data fields)
+          // Do not push — GPO Format 1 is handled in parseGPO, not here
         } else {
-          // Fallback: If no 0x70 wrapper, just add the data
           rawDataStream.push(...cleanRecord);
         }
       });
 
       // 2. PARSE THE UNWRAPPED STREAM
       const tlvData = this.parseTLV(rawDataStream);
+
+      if (__DEV__) console.log("[NFC] parseCardData TLV keys:", Object.keys(tlvData));
+      if (__DEV__) console.log("[NFC] Tag 57 (Track2):", tlvData["57"] ?? "missing");
+      if (__DEV__) console.log("[NFC] Tag 5A (PAN):", tlvData["5A"] ?? "missing");
+      if (__DEV__) console.log("[NFC] Tag 9F26 (Cryptogram):", tlvData["9F26"] ?? "missing");
 
       const cardInfo: CardInfo = {
         BIN: "",
@@ -1064,16 +1304,13 @@ class NFCService {
         PAN: "",
         PIN: "",
         expiryDate: "",
-        cardholderName: "",
-        applicationLabel: "",
+        schemeLabel: "",
         cryptogram: "",
         issuerAppData: "",
         CVR: "",
         ATC: 0,
         currencyCode: "",
         countryCode: "",
-        language: "",
-        cardNonce: "",
       };
 
       // Track 2 Equivalent Data (Tag 57) - This contains PAN + Expiry
@@ -1091,6 +1328,8 @@ class NFCService {
       // PAN (Tag 5A) - Fallback if not in Track 2
       if (!cardInfo.PAN && tlvData["5A"]) {
         cardInfo.PAN = this.parsePAN(tlvData["5A"]);
+        cardInfo.last4 = cardInfo.PAN.slice(-4);
+        cardInfo.BIN = cardInfo.PAN.slice(0, 6);
       }
 
       // Expiry Date (if not found in Track 2)
@@ -1099,19 +1338,19 @@ class NFCService {
       }
 
       // Cardholder Name (Tag 5F20)
-      if (tlvData["5F20"]) {
-        cardInfo.cardholderName =
-          this.hexToString(tlvData["5F20"]).trim() || "N/A";
-      }
+      // if (tlvData["5F20"]) {
+      //   cardInfo.cardholderName =
+      //     this.hexToString(tlvData["5F20"]).trim() || "N/A";
+      // }
 
       // Application Label (Tag 50)
       if (tlvData["50"]) {
-        cardInfo.applicationLabel = this.hexToString(tlvData["50"]).trim();
+        cardInfo.schemeLabel = this.hexToString(tlvData["50"]).trim();
       }
 
       // Application Preferred Name (Tag 9F12) - Alternative label
-      if (!cardInfo.applicationLabel && tlvData["9F12"]) {
-        cardInfo.applicationLabel = this.hexToString(tlvData["9F12"]).trim();
+      if (!cardInfo.schemeLabel && tlvData["9F12"]) {
+        cardInfo.schemeLabel = this.hexToString(tlvData["9F12"]).trim();
       }
 
       // Application Cryptogram (Tag 9F26)
@@ -1130,21 +1369,27 @@ class NFCService {
           ? Number.parseInt(tlvData["9F4A"], 16)
           : 0;
 
-      // Issuer Country Code
-      cardInfo.countryCode = tlvData["5F28"] || "";
-
-      // Currency Code - Try multiple possible tags
-      cardInfo.currencyCode = tlvData["5F2A"] || tlvData["9F42"] || "";
-
-      // Language Preference
-      cardInfo.language = tlvData["5F2D"]
-        ? this.hexToString(tlvData["5F2D"])
+      // Issuer Country Code — BCD-encoded decimal string, strip leading zeros ("0566" -> "566")
+      cardInfo.countryCode = tlvData["5F28"]
+        ? tlvData["5F28"].replace(/^0+/, "")
         : "";
 
-      // Card Verification Results (CVR) - Use available tags
-      cardInfo.CVR = tlvData["9F34"] || tlvData["8E"] || "";
+      // Currency Code — same BCD stripping
+      const rawCurrency = tlvData["5F2A"] || tlvData["9F42"] || "";
+      cardInfo.currencyCode = rawCurrency ? rawCurrency.replace(/^0+/, "") : "";
 
-      cardInfo.cardNonce = tlvData["9F37"] || "";
+      // Card Verification Results (CVR) — Tag 9F34 is CVM List (not CVR).
+      // CVR lives inside Issuer Application Data (9F10), bytes 3-5.
+      // Extract it only if IAD is present and long enough.
+      if (cardInfo.issuerAppData && cardInfo.issuerAppData.length >= 10) {
+        // IAD structure: 06 [length] [CVR 3 bytes] ...
+        // CVR starts at byte offset 2 (after 06 + length byte), 3 bytes = 6 hex chars
+        cardInfo.CVR = cardInfo.issuerAppData.substring(4, 10);
+      } else {
+        cardInfo.CVR = tlvData["9F34"] || tlvData["8E"] || "";
+      }
+
+      // cardInfo.cardNonce = tlvData["9F37"] || "";
 
       return cardInfo;
     } catch {
@@ -1155,16 +1400,13 @@ class NFCService {
         PAN: "",
         PIN: "",
         expiryDate: "",
-        cardholderName: "",
-        applicationLabel: "",
+        schemeLabel: "",
         cryptogram: "",
         issuerAppData: "",
         CVR: "",
         ATC: 0,
         currencyCode: "",
         countryCode: "",
-        language: "",
-        cardNonce: "",
       };
 
       return cardInfo;
@@ -1311,8 +1553,8 @@ class NFCService {
   // Helper: Parse the PAN (Tag 5A)
   // EMV stores PAN as "Packed BCD" (e.g., 0x12 0x34 -> "1234")
   private parsePAN(hexString: string): string {
-    let pan = hexString.replace(/F/g, ""); // 'F' is padding in BCD
-    return pan;
+    // Strip only trailing F padding
+    return hexString.toUpperCase().replace(/F+$/, "");
   }
 
   // Helper: Parse Track 2 Data (Tag 57)
@@ -1321,11 +1563,12 @@ class NFCService {
     hexString: string,
   ): { pan: string; expiryDate: string } | null {
     try {
-      // Clean the hex string
-      const raw = hexString.toUpperCase().replace(/F/g, "");
+      // Strip only trailing F padding, NOT all F chars — F can appear in PAN/expiry/service code
+      const raw = hexString.toUpperCase().replace(/F+$/, "");
+      if (__DEV__) console.log("[NFC] parseTrack2 raw:", raw);
 
-      // The separator in Track 2 Hex is usually 'D' (or sometimes '=' in text representations)
       const separatorIndex = raw.indexOf("D");
+      if (__DEV__) console.log("[NFC] parseTrack2 separator 'D' at index:", separatorIndex);
 
       if (separatorIndex === -1) return null;
 
@@ -1395,7 +1638,6 @@ class NFCService {
     while (i < cdolHex.length) {
       let tag = cdolHex.substr(i, 2);
       i += 2;
-      // Handle 2-byte tags (e.g., 9F02)
       if ((parseInt(tag, 16) & 0x1f) === 0x1f) {
         tag += cdolHex.substr(i, 2);
         i += 2;
@@ -1405,6 +1647,63 @@ class NFCService {
       fields.push({ tag, length: len });
     }
     return fields;
+  }
+
+  // Build PDOL response data from PDOL tag list using same terminal values as CDOL
+  private buildPDOLData(pdolHex: string): number[] {
+    const fields = this.parseCDOL(pdolHex);
+    const now = new Date();
+    const dateYYMMDD = now.toISOString().slice(2, 10).replace(/-/g, "");
+    const [b0, b1, b2, b3] = Crypto.getRandomBytes(4);
+    const nonce = (((b0 << 24) | (b1 << 16) | (b2 << 8) | b3) >>> 0)
+      .toString(16)
+      .padStart(8, "0")
+      .toUpperCase();
+
+    let hex = "";
+    for (const { tag, length } of fields) {
+      switch (tag.toUpperCase()) {
+        case "9F66":
+          hex += "B6204000".padStart(length * 2, "0");
+          break; // TTQ
+        case "9F02":
+          hex += "000000000000".slice(-(length * 2));
+          break; // Amount
+        case "9F03":
+          hex += "000000000000".slice(-(length * 2));
+          break; // Amount Other
+        case "9F1A":
+          hex += "0566".slice(-(length * 2));
+          break; // Terminal Country
+        case "5F2A":
+          hex += "0566".slice(-(length * 2));
+          break; // Currency
+        case "9A":
+          hex += dateYYMMDD.slice(-(length * 2));
+          break; // Date
+        case "9C":
+          hex += "00".padStart(length * 2, "0");
+          break; // Tx Type
+        case "9F37":
+          hex += nonce.slice(-(length * 2));
+          break; // Unpredictable Number
+        case "9F35":
+          hex += "22".padStart(length * 2, "0");
+          break; // Terminal Type
+        case "9F45":
+          hex += "0000".slice(-(length * 2));
+          break; // Data Auth Code
+        case "9F4C":
+          hex += "0000000000000000".slice(-(length * 2));
+          break; // ICC Dynamic Number
+        case "9F34":
+          hex += "000000".slice(-(length * 2));
+          break; // CVM Results
+        default:
+          hex += "00".repeat(length);
+      }
+    }
+    return this.hexToBytes(hex);
   }
 
   /**
@@ -1449,8 +1748,20 @@ class NFCService {
         case "9F37": // Unpredictable Number (The Nonce)
           dataPacket += nonce;
           break;
+        case "9F21": { // Transaction Time (HHMMSS)
+          const now2 = new Date();
+          const hh = now2.getUTCHours().toString().padStart(2, "0");
+          const mm2 = now2.getUTCMinutes().toString().padStart(2, "0");
+          const ss = now2.getUTCSeconds().toString().padStart(2, "0");
+          dataPacket += (hh + mm2 + ss).slice(-(field.length * 2));
+          break;
+        }
+        case "9F4E": // Merchant Name and Location (variable, pad with spaces)
+          dataPacket += Buffer.from("RuralPay".padEnd(field.length, " ")).toString("hex").toUpperCase().slice(0, field.length * 2);
+          break;
         default:
           // Fill unknown fields with zeros to avoid breaking the card
+          if (__DEV__) console.log(`[NFC] CDOL unknown tag ${field.tag} (${field.length}b) — zero-filling`);
           dataPacket += "0".repeat(field.length * 2);
       }
     });
@@ -1460,54 +1771,88 @@ class NFCService {
 
   /**
    * 3. EXECUTE: The "GENERATE AC" Command
+   * P1 values: 0x80 = ARQC (online auth request), 0x40 = TC (offline approve), 0x00 = AAC (decline)
+   * Fallback order: ARQC -> TC -> AAC
+   * All three produce a valid cryptogram (9F26) the backend can use.
    */
   private async performTransaction(
     cdol1Raw: string,
     amount: number,
   ): Promise<EmvTransactionResult> {
-    try {
-      // A. Prepare Data
-      const cdolStructure = this.parseCDOL(cdol1Raw);
-      const { hex: dataBody, nonce } = this.buildTransactionData(
-        cdolStructure,
-        amount,
-      );
+    const cdolStructure = this.parseCDOL(cdol1Raw);
+    const { hex: dataBody, nonce } = this.buildTransactionData(cdolStructure, amount);
+    const dataBytes = this.hexToBytes(dataBody);
 
-      // B. Build APDU Command
-      // CLA=80, INS=AE (Gen AC), P1=80 (ARQC), P2=00
-      const commandBytes = [
-        0x80,
-        0xae,
-        0x80,
-        0x00,
-        dataBody.length / 2, // Lc (Length of data)
-        ...this.hexToBytes(dataBody),
-        0x00, // Le (Expected length of response)
-      ];
+    const p1Attempts: { label: string; p1: number }[] = [
+      { label: "ARQC", p1: 0x80 },
+      { label: "TC",   p1: 0x40 },
+      { label: "AAC",  p1: 0x00 },
+    ];
 
-      // C. Send to Card
-      const response = await this.sendAPDU(commandBytes);
+    let lastError: unknown;
 
-      // D. Parse Response (Template 77 or 80)
-      // (Assuming you use the parser helper we wrote earlier)
-      const tlv = this.parseTLV(response);
+    for (const { label, p1 } of p1Attempts) {
+      try {
+        if (__DEV__) console.log(`[NFC] GENERATE AC attempt: ${label} (P1=0x${p1.toString(16).padStart(2, "0")})`);
 
-      if (!tlv["9F26"]) {
-        throw new Error("Transaction Declined: No Cryptogram returned");
+        const commandBytes = [0x80, 0xae, p1, 0x00, dataBytes.length, ...dataBytes, 0x00];
+        const response = await this.sendAPDU(commandBytes);
+
+        const sw1 = response[response.length - 2];
+        const sw2 = response[response.length - 1];
+        if (__DEV__) console.log(`[NFC] GENERATE AC [${label}] SW: ${sw1.toString(16).padStart(2,"0")}${sw2.toString(16).padStart(2,"0")}, raw: [${response.join(",")}]`);
+
+        if (sw1 !== 0x90 || sw2 !== 0x00) {
+          if (__DEV__) console.log(`[NFC] GENERATE AC [${label}] rejected by card, trying next...`);
+          continue;
+        }
+
+        const clean = response.slice(0, -2);
+        const firstByte = clean[0];
+        let tlv: Record<string, string>;
+
+        if (firstByte === 0x77) {
+          let off = 1;
+          const l = clean[1];
+          off += l > 0x7f ? 1 + (l & 0x7f) : 1;
+          tlv = this.parseTLV(clean.slice(off));
+        } else if (firstByte === 0x80) {
+          let off = 1;
+          const l = clean[1];
+          off += l > 0x7f ? 1 + (l & 0x7f) : 1;
+          const body = clean.slice(off);
+          tlv = {
+            "9F27": body.slice(0, 1).map((b) => b.toString(16).padStart(2, "0")).join(""),
+            "9F36": body.slice(1, 3).map((b) => b.toString(16).padStart(2, "0")).join(""),
+            "9F26": body.slice(3, 11).map((b) => b.toString(16).padStart(2, "0")).join(""),
+            "9F10": body.slice(11).map((b) => b.toString(16).padStart(2, "0")).join(""),
+          };
+        } else {
+          tlv = this.parseTLV(clean);
+        }
+
+        if (!tlv["9F26"]) {
+          if (__DEV__) console.log(`[NFC] GENERATE AC [${label}] SW=9000 but no 9F26 in response, trying next...`);
+          continue;
+        }
+
+        if (__DEV__) console.log(`[NFC] GENERATE AC succeeded with ${label}, cryptogram: ${tlv["9F26"]}`);
+        return {
+          cryptogram: tlv["9F26"],
+          issuerAppData: tlv["9F10"] || "",
+          atc: tlv["9F36"] || "",
+          unpredictableNumber: nonce,
+          transactionDate: new Date().toISOString(),
+          transactionAmount: amount.toString(),
+        };
+      } catch (e) {
+        if (__DEV__) console.log(`[NFC] GENERATE AC [${label}] threw:`, e);
+        lastError = e;
       }
-
-      return {
-        cryptogram: tlv["9F26"],
-        issuerAppData: tlv["9F10"] || "",
-        atc: tlv["9F36"] || "",
-        unpredictableNumber: nonce,
-        transactionDate: new Date().toISOString(),
-        transactionAmount: amount.toString(),
-      };
-    } catch (e) {
-      if (__DEV__) console.error("GENERATE AC Failed", e);
-      throw e;
     }
+
+    if (__DEV__) console.log("[NFC] All GENERATE AC attempts failed (card may not support command)");
+    throw lastError ?? new Error("GENERATE AC: all attempts failed (ARQC, TC, AAC)");
   }
 }
 

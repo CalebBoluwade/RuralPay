@@ -1,3 +1,6 @@
+import { useLanguage } from "@/src/components/context/LanguageContext";
+import Button from "@/src/components/ui/Button";
+import Card from "@/src/components/ui/Card";
 import AmountInput from "@/src/components/ui/Input/AmountInput";
 import OptimizedInput from "@/src/components/ui/Input/OptimizedInput";
 import BanksModal from "@/src/components/ui/Modals/BanksModal";
@@ -17,16 +20,16 @@ import { categoryEmojis } from "@/src/lib/utils/narrationCategories";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { router } from "expo-router";
 import * as SecureStore from "expo-secure-store";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  Switch,
-  Text,
-  View,
-  useColorScheme,
+    ActivityIndicator,
+    Pressable,
+    ScrollView,
+    Switch,
+    Text,
+    View,
+    useColorScheme,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -35,6 +38,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 const BankTransfers = () => {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
+  const { t } = useLanguage();
   const { abortController } = useAbortable("bank-transfers");
   const [loading, setLoading] = useState(false);
   const [showBankModal, setShowBankModal] = useState(false);
@@ -87,10 +91,10 @@ const BankTransfers = () => {
     setAccountName(null);
 
     try {
-      const selectedBank = banks.find((bank) => bank.code === bankCode);
+      const selectedBank = banks.find((bank) => bank.bankCode === bankCode);
       if (selectedBank) {
         const account = await AccountService.ResolveAccountName(
-          selectedBank.code,
+          selectedBank.bankCode,
           accountNumber,
           abortController.signal,
         );
@@ -103,7 +107,7 @@ const BankTransfers = () => {
     } catch (error) {
       // AbortError is expected when user navigates away
       if (error instanceof Error && error.name !== "AbortError") {
-        if (__DEV__) console.error("Name enquiry failed:", error);
+        if (__DEV__) console.error("Name Enquiry Failed:", error);
       }
     } finally {
       setNameLoading(false);
@@ -140,15 +144,19 @@ const BankTransfers = () => {
     fetchBanks();
   }, []);
 
+  const nameEnquiryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   useEffect(() => {
-    performNameEnquiry();
+    if (nameEnquiryTimer.current) clearTimeout(nameEnquiryTimer.current);
+    nameEnquiryTimer.current = setTimeout(performNameEnquiry, 500);
+    return () => {
+      if (nameEnquiryTimer.current) clearTimeout(nameEnquiryTimer.current);
+    };
   }, [bankCode, accountNumber]);
 
   const onSubmit = async (data: TransferFormData) => {
     if (!isAccountNameValid(accountName)) {
-      setErrorMessage(
-        "Please Verify the Account Details. Name Enquiry Failed.",
-      );
+      setErrorMessage(t("bankTransfer.accountVerifyFailed"));
       return false;
     }
 
@@ -157,12 +165,13 @@ const BankTransfers = () => {
   };
 
   const processTransfer = async (
+    selected2FA: TwoFAType,
     TwoFA_VerificationCode: string,
   ): Promise<TransactionHistoryItem> => {
     if (!transferData) throw new Error("No Transfer Data Found");
 
     const selectedBank = banks.find(
-      (bank) => bank.code === transferData.bankCode,
+      (bank) => bank.bankCode === transferData.bankCode,
     );
 
     if (!transferData.fromAccount) {
@@ -181,17 +190,21 @@ const BankTransfers = () => {
       beneficiaryAccountNumber: transferData.accountNumber,
       narration: transferData.narration || `Transfer to ${accountName}`,
       beneficiaryBankName: selectedBank?.name || "",
-      beneficiaryBankCode: selectedBank?.code || "",
+      beneficiaryBankCode: selectedBank?.bankCode || "",
       beneficiaryAccountName: accountName || "",
       saveBeneficiary,
       OneTimeCode: TwoFA_VerificationCode,
+      twoFAType: selected2FA,
       ...(location && { location }),
     };
 
     const payment = await PaymentService.B2BTransfer(payload);
 
+    console.log(payment);
+
     // Check if response indicates an error
     if (!payment.success) {
+      setErrorMessage(payment.errorMessage!);
       throw new Error(payment.errorMessage);
     }
 
@@ -199,16 +212,14 @@ const BankTransfers = () => {
   };
 
   const handlePinSuccess = async (
+    selected2FA: TwoFAType,
     TwoFA_VerificationCode: string,
   ): Promise<boolean> => {
     if (!transferData) return false;
 
     if (!isAccountNameValid(accountName)) {
       setShowPinModal(false);
-      setErrorMessage(
-        "Account Verification Failed. Cannot Proceed With Transfer.",
-      );
-
+      setErrorMessage(t("bankTransfer.accountVerifyFailedTransfer"));
       return false;
     }
 
@@ -216,7 +227,7 @@ const BankTransfers = () => {
     setLoading(true);
 
     try {
-      const result = await processTransfer(TwoFA_VerificationCode);
+      const result = await processTransfer(selected2FA, TwoFA_VerificationCode);
 
       result.amount = Number(transferData.amount);
       result.narration = transferData.narration;
@@ -234,7 +245,7 @@ const BankTransfers = () => {
             b.bankCode === transferData.bankCode,
         );
         if (!exists) {
-          const bank = banks.find((b) => b.code === transferData.bankCode);
+          const bank = banks.find((b) => b.bankCode === transferData.bankCode);
           list.push({
             accountNumber: transferData.accountNumber,
             accountName,
@@ -252,8 +263,12 @@ const BankTransfers = () => {
 
       return !!result;
     } catch (error: any) {
-      if (__DEV__) console.log("Transfer error:", error);
-      setErrorMessage(error.message || "Transfer Failed. Please Try Again.");
+      const APIErr = error as APIResponse<{}>;
+      if (__DEV__) console.log("Transfer error:", APIErr);
+
+      setErrorMessage(
+        APIErr.errorMessage || "Transaction Failed. Please Try Again.",
+      );
 
       setLoading(false);
       return false;
@@ -279,7 +294,7 @@ const BankTransfers = () => {
   };
 
   const handleBankSelection = (bank: Bank) => {
-    setValue("bankCode", bank.code);
+    setValue("bankCode", bank.bankCode);
     setSelectedBankName(bank.name);
     setShowBankModal(false);
   };
@@ -305,7 +320,7 @@ const BankTransfers = () => {
       className={`flex-1 ${isDark ? "bg-slate-950" : "bg-slate-50"}`}
     >
       <ScreenHeader
-        title="Bank Transfers"
+        title={t("bankTransfer.title")}
         goBack
         onBack={() => router.back()}
       />
@@ -322,8 +337,8 @@ const BankTransfers = () => {
         <OptimizedInput
           control={control}
           name="bankCode"
-          label="Select Bank"
-          placeholder="Choose A Bank"
+          label={t("bankTransfer.selectBank")}
+          placeholder={t("bankTransfer.chooseBank")}
           onPress={() => setShowBankModal(true)}
           editable={false}
           displayValue={selectedBankName}
@@ -333,13 +348,13 @@ const BankTransfers = () => {
           <Text
             className={`text-xl font-semibold ${isDark ? "text-white" : "text-gray-900"}`}
           >
-            Account Number
+            {t("bankTransfer.accountNumber")}
           </Text>
           <Pressable onPress={() => setShowBeneficiaryModal(true)}>
             <Text
-              className={`text-sm font-semibold ${isDark ? "text-lime-400" : "text-lime-700"}`}
+              className={`text-base font-semibold ${isDark ? "text-lime-400" : "text-lime-700"}`}
             >
-              Beneficiaries
+              {t("bankTransfer.beneficiaries")}
             </Text>
           </Pressable>
         </View>
@@ -348,7 +363,7 @@ const BankTransfers = () => {
           control={control}
           name="accountNumber"
           label=""
-          placeholder="Enter 10-Digit Account Number"
+          placeholder={t("bankTransfer.enterAccountNumber")}
           keyboardType="numeric"
           maxLength={10}
         />
@@ -369,7 +384,7 @@ const BankTransfers = () => {
               <Text
                 className={`ml-2 ${isDark ? "text-white" : "text-gray-900"}`}
               >
-                Resolving Account Name...
+                {t("bankTransfer.resolvingName")}
               </Text>
             </View>
           </View>
@@ -385,9 +400,9 @@ const BankTransfers = () => {
             }`}
           >
             <Text
-              className={`text-sm ${isDark ? "text-gray-400" : "text-black"}`}
+              className={`text-base ${isDark ? "text-gray-400" : "text-black"}`}
             >
-              Account Name:
+              {t("bankTransfer.accountNameLabel")}
             </Text>
             <Text
               className={`font-semibold ${
@@ -402,8 +417,8 @@ const BankTransfers = () => {
         <OptimizedInput
           control={control}
           name="narration"
-          label="Narration"
-          placeholder="Enter Transaction Description"
+          label={t("bankTransfer.narration")}
+          placeholder={t("bankTransfer.narrationPlaceholder")}
           maxLength={50}
         />
 
@@ -427,17 +442,14 @@ const BankTransfers = () => {
           ))}
         </View>
 
-        <View
-          className={`flex-row items-center justify-between mb-5 p-4 rounded-2xl backdrop-blur-xl ${
-            isDark
-              ? "bg-white/10 border border-white/20"
-              : "bg-gray-100 border border-gray-200"
-          }`}
+        <Card
+          className="flex-row items-center justify-between mb-5 p-4 backdrop-blur-xl"
+          lightClass="bg-gray-100 border border-gray-200"
         >
           <Text
-            className={`text-sm font-semibold ${isDark ? "text-white" : "text-gray-600"}`}
+            className={`text-base font-semibold ${isDark ? "text-white" : "text-gray-600"}`}
           >
-            Save as Beneficiary
+            {t("bankTransfer.saveAsBeneficiary")}
           </Text>
           <Switch
             value={saveBeneficiary}
@@ -448,24 +460,14 @@ const BankTransfers = () => {
             }}
             thumbColor="#fff"
           />
-        </View>
+        </Card>
 
-        <Pressable
-          className={`p-6 rounded-2xl mb-4 ${
-            isDark ? "bg-lime-400" : "bg-emerald-700"
-          } ${loading ? "opacity-50" : ""}`}
+        <Button
+          label={t("common.sendMoney")}
+          loading={loading}
           onPress={handleSubmit(onSubmit)}
-          disabled={loading}
-          style={{ pointerEvents: loading ? "none" : "auto" }}
-        >
-          {loading ? (
-            <ActivityIndicator color={isDark ? "#a78bfa" : "#7c3aed"} />
-          ) : (
-            <Text className={`text-xl font-bold text-center`}>
-              💸 Send Money
-            </Text>
-          )}
-        </Pressable>
+          className="mb-4"
+        />
 
         {transferData && (
           <TransactionPin

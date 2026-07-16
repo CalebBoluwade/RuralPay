@@ -1,3 +1,4 @@
+// import "dotenv/config";
 import { ConfigContext, ExpoConfig } from "expo/config";
 import { version } from "./package.json";
 
@@ -8,20 +9,16 @@ const OWNER = "calebjnr";
 // App production config
 const APP_NAME = "RuralPay";
 const BUNDLE_IDENTIFIER = "com.zegiftedtechnologies.ruralpay";
-const APP_DOMAIN = "applinks:app.ruralpay.com";
+const APP_DOMAIN = "applinks:ruralpay.zegiftedtechnologies.com";
+const ANDROID_HOST = "ruralpay.zegiftedtechnologies.com";
 const PACKAGE_NAME = "com.zegiftedtechnologies.ruralpay";
-const ICON = "./assets/images/RuralPayLogo.png";
-const ADAPTIVE_ICON = "./assets/images/RuralPayLogo.png";
+const ICON = "./assets/images/RuralPay.png";
+const ADAPTIVE_ICON = "./assets/images/RuralPay.png";
 const SCHEME = "ruralpay";
 
 export default ({ config }: ConfigContext): ExpoConfig => {
-  const appEnv = process.env.APP_ENV || process.env.EXPO_PUBLIC_ENVIRONMENT;
-
-  if (!appEnv) {
-    throw new Error(
-      "APP_ENV or EXPO_PUBLIC_ENVIRONMENT environment variable is required",
-    );
-  }
+  const appEnv =
+    process.env.APP_ENV || process.env.EXPO_PUBLIC_ENVIRONMENT || "development";
 
   const {
     name,
@@ -31,52 +28,82 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     packageName,
     scheme,
     googleServicesFile,
-  } = getDynamicAppConfig(appEnv as "development" | "preview" | "production");
+  } = {
+    name: APP_NAME,
+    bundleIdentifier: BUNDLE_IDENTIFIER,
+    packageName: PACKAGE_NAME,
+    icon: ICON,
+    adaptiveIcon: ADAPTIVE_ICON,
+    scheme: SCHEME,
+    googleServicesFile: "./google-services.json",
+  };
 
   return {
     ...config,
     name: name,
     version, // Automatically bump your project version with `npm version patch`, `npm version minor` or `npm version major`.
     slug: PROJECT_SLUG, // Must be consistent across all environments.
-    orientation: "portrait",
+    orientation: "default",
     userInterfaceStyle: "automatic",
-    assetBundlePatterns: ["**/*"],
-    // newArchEnabled: true,
+    assetBundlePatterns: ["assets/**/*"],
     icon: icon,
     scheme: scheme,
     ios: {
       supportsTablet: true,
       bundleIdentifier: bundleIdentifier,
-      appleTeamId: "",
+      appleTeamId: "G3YNG3LDQ3",
       associatedDomains: [APP_DOMAIN],
       googleServicesFile: "./GoogleService-Info.plist",
       config: {
         googleMobileAdsAutoInit: false,
       },
       entitlements: {
+        "com.apple.security.application-groups": [
+          "group.com.zegiftedtechnologies.ruralpay",
+        ],
         "com.apple.developer.nfc.readersession.formats": ["NDEF", "TAG"],
         "aps-environment":
           appEnv === "production" ? "production" : "development",
       },
       infoPlist: {
+        UISupportedInterfaceOrientations: [
+          "UIInterfaceOrientationPortrait",
+          "UIInterfaceOrientationLandscapeLeft",
+          "UIInterfaceOrientationLandscapeRight",
+        ],
+        "UISupportedInterfaceOrientations~ipad": [
+          "UIInterfaceOrientationPortrait",
+          "UIInterfaceOrientationPortraitUpsideDown",
+          "UIInterfaceOrientationLandscapeLeft",
+          "UIInterfaceOrientationLandscapeRight",
+        ],
         UIBackgroundModes: ["fetch", "remote-notification"],
         ITSAppUsesNonExemptEncryption: false,
-        NSCameraUsageDescription: "RuralPay uses The Camera To Scan QR Codes",
-        NFCReaderUsageDescription: "RuralPay uses NFC to Read Payment Cards",
+        NSCameraUsageDescription:
+          "RuralPay Uses The Camera To Scan QR Codes And Verify User Identity",
+        NFCReaderUsageDescription: "RuralPay Uses NFC to Read Payment Cards",
         NSLocationAlwaysAndWhenInUseUsageDescription:
           "RuralPay Uses Device Location To Enhance Transaction Security and Aid Fraud Prevention",
         NSLocationWhenInUseUsageDescription:
           "RuralPay Uses Device Location To Enhance Transaction Security and Aid Fraud Prevention",
         FIREBASE_ANALYTICS_COLLECTION_ENABLED: true,
+        CFBundleAllowMixedLocalizations: true,
+        CFBundleLocalizations: ["fr"],
+        CFBundleURLTypes: [
+          {
+            CFBundleURLSchemes: ["ruralpay"],
+          },
+        ],
         LSApplicationCategoryType: "public.app-category.finance",
+        NSSupportsLiveActivities: true,
+        NSSupportsLiveActivitiesFrequentUpdates: true,
       },
     },
     android: {
       adaptiveIcon: {
         foregroundImage: adaptiveIcon,
+        monochromeImage: "./assets/images/RuralPay-Monochrome.png",
         backgroundColor: "#ffffff",
-        backgroundImage: "./assets/images/RuralPayLogo.png",
-        monochromeImage: "./assets/images/RuralPayLogo.png",
       },
       predictiveBackGestureEnabled: false,
       package: packageName,
@@ -87,8 +114,22 @@ export default ({ config }: ConfigContext): ExpoConfig => {
           data: [
             {
               scheme: "https",
-              host: APP_DOMAIN,
-              pathPrefix: "/(transaction)",
+              host: ANDROID_HOST,
+              pathPrefix: "/qrpay",
+            },
+            {
+              scheme: "https",
+              host: ANDROID_HOST,
+              pathPrefix: "/checkout",
+            },
+          ],
+          category: ["BROWSABLE", "DEFAULT"],
+        },
+        {
+          action: "VIEW",
+          data: [
+            {
+              scheme: "ruralpay",
             },
           ],
           category: ["BROWSABLE", "DEFAULT"],
@@ -119,7 +160,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       eas: {
         projectId: EAS_PROJECT_ID,
       },
-      apiUrl: getApiUrl(appEnv as "development" | "preview" | "production"),
+      // apiUrl: getApiUrl(appEnv as "development" | "preview" | "production"),
       environment: appEnv,
       router: {},
     },
@@ -129,14 +170,15 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       favicon: "./assets/images/favicon.png",
     },
     plugins: [
+      "./plugins/withMainApplicationFix",
       "expo-audio",
       [
         "expo-font",
         {
-          fonts: ["./assets/fonts/AutourOne-Regular.ttf"],
+          fonts: ["./assets/fonts/AutourOne.ttf"],
         },
       ],
-
+      "@bacons/apple-targets",
       "expo-image",
       "expo-sharing",
       "expo-web-browser",
@@ -147,7 +189,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
           backgroundColor: "#e6ede7",
           android: {
             image: ICON,
-            imageWidth: 76,
+            imageWidth: 250,
+            imageHeight: 250,
           },
         },
       ],
@@ -174,10 +217,12 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       "./plugins/withModularHeaders",
       "./plugins/withMavenCentral",
       "./plugins/withBLEPermissions",
-      "./plugins/withScreenSecurity",
+      "./plugins/withAndroidWidget",
+      "./plugins/withIOSWidget",
+      // ...(appEnv === "production" ? ["./plugins/withScreenSecurity"] : []),
       [
         "react-native-nfc-manager",
-        { nfcReaderUsageDescription: "Allow NFC to Scan Devices." },
+        { nfcReaderUsageDescription: "Allow NFC to Scan Cards For Payment" },
       ],
       [
         "expo-location",
@@ -200,7 +245,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
           enableFrameProcessors: true,
         },
       ],
-      ["@stripe/stripe-react-native", {}],
+      // ["@stripe/stripe-react-native", {}],
       // [
       //   "expo-sqlite",
       //   {
@@ -249,51 +294,14 @@ export default ({ config }: ConfigContext): ExpoConfig => {
   };
 };
 
-export const getDynamicAppConfig = (
-  environment: "development" | "preview" | "production",
-) => {
-  if (environment === "production") {
-    return {
-      name: APP_NAME,
-      bundleIdentifier: BUNDLE_IDENTIFIER,
-      packageName: PACKAGE_NAME,
-      icon: ICON,
-      adaptiveIcon: ADAPTIVE_ICON,
-      scheme: SCHEME,
-      googleServicesFile: "./google-services.json",
-    };
-  }
-
-  if (environment === "preview") {
-    return {
-      name: `${APP_NAME} Staging`,
-      bundleIdentifier: `${BUNDLE_IDENTIFIER}.staging`,
-      packageName: PACKAGE_NAME,
-      icon: ICON,
-      adaptiveIcon: ADAPTIVE_ICON,
-      scheme: `${SCHEME}-preview`,
-      googleServicesFile: "./google-services.json",
-    };
-  }
-
-  return {
-    name: `${APP_NAME} Development`,
-    bundleIdentifier: `${BUNDLE_IDENTIFIER}.dev`,
-    packageName: PACKAGE_NAME,
-    icon: ICON,
-    adaptiveIcon: ADAPTIVE_ICON,
-    scheme: `${SCHEME}-dev`,
-  };
-};
-
-export const getApiUrl = (
-  environment: "development" | "preview" | "production",
-): string => {
-  const envApiUrl = process.env.EXPO_PUBLIC_API_URL;
-  if (!envApiUrl) {
-    throw new Error(
-      `EXPO_PUBLIC_API_URL Environment Variable Required for ${environment} Environment`,
-    );
-  }
-  return envApiUrl;
-};
+// export const getApiUrl = (
+//   environment: "development" | "preview" | "production",
+// ): string => {
+//   const envApiUrl = process.env.EXPO_PUBLIC_API_URL;
+//   if (!envApiUrl) {
+//     throw new Error(
+//       `EXPO_PUBLIC_API_URL Environment Variable Required for ${environment} Environment`,
+//     );
+//   }
+//   return envApiUrl;
+// };

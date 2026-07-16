@@ -1,8 +1,11 @@
 import { SessionExpiryModal } from "@/src/components/ui/Modals/SessionExpiryModal";
 import { authService } from "@/src/lib/services/AuthService";
 import { complianceService } from "@/src/lib/services/ComplianceService";
+import QRCodeService from "@/src/lib/services/QRCodeService";
+import WidgetStorageService from "@/src/lib/services/WidgetStorageService";
 import { biometricService } from "@/src/lib/utils/SecureStorage";
 import { router } from "expo-router";
+import * as SecureStore from "expo-secure-store";
 import { jwtDecode } from "jwt-decode";
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { DeviceEventEmitter } from "react-native";
@@ -10,11 +13,14 @@ import { DeviceEventEmitter } from "react-native";
 interface AuthContextType {
   user: User | null;
   token: string | null;
+  refreshToken: string | null;
   isLocked: boolean;
   lock: () => void;
   unlock: () => void;
   isLoading: boolean;
   isAuthenticated: boolean;
+  isFirstLogin: boolean;
+  clearFirstLogin: () => void;
   nativeAuthLogin: boolean;
   nativeAuthTransactions: boolean;
   visibleBalance: boolean;
@@ -47,9 +53,13 @@ export function AuthSessionProvider({
   const [hasRequiredConsents, setHasRequiredConsents] = useState(false);
   const [consentOutdated, setConsentOutdated] = useState(false);
   const [token, setToken] = useState<string | null>(null);
+  const [refreshToken, setRefreshToken] = useState<string | null>(null);
   const [isLocked, setIsLocked] = useState(false);
   const [showSessionExpiredModal, setShowSessionExpiredModal] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [isFirstLogin, setIsFirstLogin] = useState(false);
+
+  const clearFirstLogin = () => setIsFirstLogin(false);
 
   const lock = () => setIsLocked(true);
   const unlock = () => setIsLocked(false);
@@ -72,6 +82,7 @@ export function AuthSessionProvider({
       if (authData) {
         setUser(authData.details.user);
         setToken(authData.details.token);
+        setRefreshToken(authData.details.refreshToken);
       }
       setHasBiometricCredentials(hasBiometric);
       if (hasBiometric) setNativeAuthLogin(true);
@@ -158,15 +169,51 @@ export function AuthSessionProvider({
 
     const authResponse = await authService.login(identifier, password);
     setToken(authResponse.details.token);
+    setRefreshToken(authResponse.details.refreshToken);
     setUser(authResponse.details.user);
+
+    // Track login count for progressive security setup
+    try {
+      const countStr = await SecureStore.getItemAsync("login_count");
+      const loginCount = parseInt(countStr || "0", 10);
+      await SecureStore.setItemAsync("login_count", String(loginCount + 1));
+    } catch (e) {
+      if (__DEV__) console.warn("[AuthSession] Failed to track login count", e);
+    }
 
     await biometricService.storeBiometricCredentials(identifier, password);
     setHasBiometricCredentials(true);
     setNativeAuthLogin(true);
 
-    if (authResponse.details.user.role === "merchant") {
+    // Mark onboarding as complete after successful login
+    try {
+      await SecureStore.setItemAsync("onboarding_shown", "true");
+    } catch (e) {
+      if (__DEV__)
+        console.warn("[AuthSession] Failed to mark onboarding complete", e);
+    }
+
+    // Sync role to widget shared storage
+    const role = authResponse.details.user.role ?? "consumer";
+    try {
+      WidgetStorageService.set("user_role", role);
+      if (role === "merchant") {
+        const bizName = authResponse.details.user.merchant?.businessName ?? "";
+        WidgetStorageService.set("merchant_name", bizName);
+      }
+    } catch (e) {
+      if (__DEV__) console.error("[AuthSession] Failed to write user_role", e);
+    }
+
+    // Pre-fetch QR so widget has it immediately after login
+    if (role === "merchant") {
+      QRCodeService.GeneratePaymentQR().catch((e) => {
+        if (__DEV__) console.warn("[AuthSession] Pre-fetch QR failed", e);
+      });
+      DeviceEventEmitter.emit("USER_LOGGED_IN");
       return router.replace("/merchant");
-    } else if (authResponse.details.user.role === "consumer") {
+    } else if (role === "consumer") {
+      DeviceEventEmitter.emit("USER_LOGGED_IN");
       return router.replace("/user");
     }
   };
@@ -190,12 +237,51 @@ export function AuthSessionProvider({
       credentials.password,
     );
 
+    // Track login count for progressive security setup
+    try {
+      const countStr = await SecureStore.getItemAsync("login_count");
+      const loginCount = parseInt(countStr || "0", 10);
+      await SecureStore.setItemAsync("login_count", String(loginCount + 1));
+    } catch (e) {
+      if (__DEV__) console.warn("[AuthSession] Failed to track login count", e);
+    }
+
     setToken(authResponse.details.token);
+    setRefreshToken(authResponse.details.refreshToken);
     setUser(authResponse.details.user);
 
-    if (authResponse.details.user.role === "merchant") {
+    // Mark onboarding as complete after successful biometric login
+    try {
+      await SecureStore.setItemAsync("onboarding_shown", "true");
+    } catch (e) {
+      if (__DEV__)
+        console.warn("[AuthSession] Failed to mark onboarding complete", e);
+    }
+
+    const role = authResponse.details.user.role ?? "consumer";
+    try {
+      WidgetStorageService.set("user_role", role);
+      if (role === "merchant") {
+        const bizName = authResponse.details.user.merchant?.businessName ?? "";
+        WidgetStorageService.set("merchant_name", bizName);
+      }
+    } catch (e) {
+      if (__DEV__)
+        console.error(
+          "[AuthSession] biometricLogin: Failed to write user_role",
+          e,
+        );
+    }
+
+    if (role === "merchant") {
+      QRCodeService.GeneratePaymentQR().catch((e) => {
+        if (__DEV__)
+          console.warn("[AuthSession] biometricLogin: Pre-fetch QR failed", e);
+      });
+      DeviceEventEmitter.emit("USER_LOGGED_IN");
       return router.replace("/merchant");
-    } else if (authResponse.details.user.role === "consumer") {
+    } else if (role === "consumer") {
+      DeviceEventEmitter.emit("USER_LOGGED_IN");
       return router.replace("/user");
     }
   };
@@ -264,6 +350,8 @@ export function AuthSessionProvider({
         user,
         isLoading,
         isAuthenticated: !!user,
+        isFirstLogin,
+        clearFirstLogin,
         nativeAuthLogin,
         nativeAuthTransactions,
         visibleBalance,
@@ -278,6 +366,7 @@ export function AuthSessionProvider({
         updateVisibleBalance,
         checkConsents,
         token,
+        refreshToken,
         isLocked,
         lock,
         unlock,

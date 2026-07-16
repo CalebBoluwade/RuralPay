@@ -2,7 +2,6 @@ import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
 import { router } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import { DeviceEventEmitter } from "react-native";
-import { config } from "./config";
 import { ErrorHandler } from "./utils/ErrorHandler";
 
 const AUTH_TOKEN_KEY = "auth_token";
@@ -47,7 +46,7 @@ declare module "axios" {
 }
 
 export const axiosInstance = axios.create({
-  baseURL: config.apiUrl,
+  baseURL: process.env.EXPO_PUBLIC_API_URL,
   timeout: Number(process.env.EXPO_PUBLIC_API_TIMEOUT || 30000),
   headers: {
     "Content-Type": "application/json",
@@ -57,6 +56,8 @@ export const axiosInstance = axios.create({
 // Request interceptor
 axiosInstance.interceptors.request.use(
   async (config) => {
+    if (__DEV__) console.log("URL:", config.baseURL + (config.url ?? ""));
+
     try {
       const isAuthEndpoint = config.url?.startsWith("/auth/");
       const token = await SecureStore.getItemAsync(AUTH_TOKEN_KEY);
@@ -64,7 +65,13 @@ axiosInstance.interceptors.request.use(
         config.headers.Authorization = `Bearer ${token}`;
       }
     } catch (error) {
-      if (__DEV__) console.error("Error in request interceptor:", error, "for URL:", config.url);
+      if (__DEV__)
+        console.error(
+          "Error in request interceptor:",
+          error,
+          "for URL:",
+          config.url,
+        );
       await ErrorHandler.handle(
         error,
         {
@@ -123,12 +130,21 @@ axiosInstance.interceptors.response.use(
       if (__DEV__) {
         console.log("[API] Request cancelled (AbortError)");
       }
+
+      console.log(error);
       return Promise.reject(error);
     }
 
     // Only log API errors, not network connectivity issues or expected auth failures
-    const isAuthEndpointError = originalRequest?.url?.startsWith("/auth/");
-    if (error.response?.status && error.response.status !== 0 && !isAuthEndpointError) {
+    const isAuthEndpointError =
+      originalRequest?.url?.startsWith("/auth/") ||
+      originalRequest?.url?.startsWith("/encryption/");
+    if (
+      error.response?.status &&
+      error.response.status !== 0 &&
+      error.response.status !== 401 &&
+      !isAuthEndpointError
+    ) {
       await ErrorHandler.handle(
         error,
         {
@@ -145,7 +161,9 @@ axiosInstance.interceptors.response.use(
 
     // Handle 401 Unauthorized — emit event for AuthSessionProvider instead of immediate redirect
     // Skip auth endpoints: a 401 on /auth/* means wrong credentials, not session expiry
-    const isAuthEndpoint = originalRequest?.url?.startsWith("/auth/");
+    const isAuthEndpoint =
+      originalRequest?.url?.startsWith("/auth/") ||
+      originalRequest?.url?.startsWith("/encryption/");
     if (
       error.response?.status === 401 &&
       originalRequest &&
@@ -153,6 +171,12 @@ axiosInstance.interceptors.response.use(
       !isAuthEndpoint
     ) {
       originalRequest._retry = true;
+
+      // Only treat as session expiry if a token was actually stored
+      const existingToken = await SecureStore.getItemAsync(AUTH_TOKEN_KEY);
+      if (!existingToken) {
+        return Promise.reject(toError(error));
+      }
 
       // Clear auth data
       await SecureStore.deleteItemAsync(AUTH_TOKEN_KEY);
@@ -189,18 +213,21 @@ axiosInstance.interceptors.response.use(
       originalRequest._retry = true;
       isRefreshing = true;
 
-      router.push("/auth/lock-screen");
+      router.push("/lock-screen");
       DeviceEventEmitter.emit("LOCK_SCREEN_SHOWN");
 
       try {
         await new Promise<void>((resolve, reject) => {
-          const successSub = DeviceEventEmitter.addListener("PIN_SUCCESS", () => {
-            successSub.remove();
-            cancelSub.remove();
-            isRefreshing = false;
-            processQueue(null);
-            resolve();
-          });
+          const successSub = DeviceEventEmitter.addListener(
+            "PIN_SUCCESS",
+            () => {
+              successSub.remove();
+              cancelSub.remove();
+              isRefreshing = false;
+              processQueue(null);
+              resolve();
+            },
+          );
 
           const cancelSub = DeviceEventEmitter.addListener("PIN_CANCEL", () => {
             successSub.remove();
@@ -219,6 +246,24 @@ axiosInstance.interceptors.response.use(
       }
     }
 
-    return Promise.reject(error);
+    return Promise.reject(toError(error));
   },
 );
+
+function toError(error: unknown): Error {
+  if (error instanceof Error && !(error as any).response) return error;
+
+  const axiosError = error as any;
+  const responseData = axiosError?.response?.data;
+
+  const message =
+    responseData?.message ||
+    responseData?.errorMessage ||
+    (responseData?.ResponseCode
+      ? `[${responseData.ResponseCode}] Request failed`
+      : null) ||
+    axiosError?.message ||
+    "An unexpected error occurred";
+
+  return new Error(message);
+}

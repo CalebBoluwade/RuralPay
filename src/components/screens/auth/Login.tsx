@@ -1,5 +1,8 @@
+import CBNLogo from "@/assets/images/CBN.svg";
+import CreditCard from "@/assets/images/CreditCard.svg";
 import { useAuth } from "@/src/components/context/AuthSessionProvider";
 import { useLanguage } from "@/src/components/context/LanguageContext";
+import Button from "@/src/components/ui/Button";
 import OptimizedInput from "@/src/components/ui/Input/OptimizedInput";
 import Loading from "@/src/components/ui/Modals/Loading";
 import SelectLanguageModal from "@/src/components/ui/Modals/SelectLanguageModal";
@@ -20,7 +23,6 @@ import {
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import {
-  Image,
   Pressable,
   ScrollView,
   Text,
@@ -30,12 +32,14 @@ import {
 } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { SvgUri } from "react-native-svg";
 
-export default function LoginScreen() {
+export default function LoginScreen({
+  appVersion = "1.0.0",
+  environment = "development",
+}: Readonly<{ appVersion?: string; environment?: string }>) {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
 
   const {
     login,
@@ -148,12 +152,13 @@ export default function LoginScreen() {
       className={`flex-1 ${isDark ? "bg-slate-950" : "bg-slate-50"}`}
     >
       <Loading
-        loading={isLoading}
+        loading={isSubmitting}
         isInitialLoad={isLoading}
         accentColor={isDark ? "#a3e635" : "#65a30d"}
         isDark={isDark}
         screenName="Login"
       />
+
       <KeyboardAwareScrollView
         contentContainerStyle={{ flexGrow: 1 }}
         enableOnAndroid
@@ -165,12 +170,12 @@ export default function LoginScreen() {
           contentContainerClassName="flex-grow"
           keyboardShouldPersistTaps="handled"
         >
-          <View className="flex-1 justify-between px-6 pt-2 pb-1">
+          <View className="flex-1 justify-between px-5 pt-2 pb-1">
             {/* Header with Language Selector */}
             <View className="flex-row justify-between items-center mb-8">
               <View>
                 <Text
-                  className={`text-sm ${isDark ? "text-slate-400" : "text-slate-600"} mb-1`}
+                  className={`text-lg ${isDark ? "text-slate-400" : "text-slate-600"} mb-1`}
                 >
                   {t("auth.welcomeBack")}
                 </Text>
@@ -198,15 +203,7 @@ export default function LoginScreen() {
             </View>
 
             <View className="items-center">
-              <SvgUri
-                uri={
-                  Image.resolveAssetSource(
-                    require("@/assets/images/CreditCard.svg"),
-                  ).uri
-                }
-                width={width - 48}
-                height={(width - 48) * 0.8}
-              />
+              <CreditCard width={width - 70} height={(height - 350) * 0.8} />
             </View>
 
             {/* Login Form */}
@@ -269,31 +266,25 @@ export default function LoginScreen() {
                   <Square size={18} color={isDark ? "#64748b" : "#94a3b8"} />
                 )}
                 <Text
-                  className={`text-sm ${isDark ? "text-slate-400" : "text-slate-600"}`}
+                  className={`text-base ${isDark ? "text-slate-400" : "text-slate-600"}`}
                 >
-                  Remember me
+                  Remember Me
                 </Text>
               </Pressable>
 
               <Pressable onPress={() => router.push("/forgot-password")}>
-                <Text className="text-lime-500 text-sm font-semibold">
+                <Text className="text-lime-500 text-base font-semibold">
                   {t("auth.forgotPassword")}
                 </Text>
               </Pressable>
             </View>
 
             {/* Login Button */}
-            <Pressable
+            <Button
+              label={isSubmitting ? "Signing In..." : t("auth.login")}
+              loading={isSubmitting}
               onPress={handleSubmit(onSubmit)}
-              disabled={isSubmitting}
-              className={`bg-lime-400 rounded-2xl py-4 shadow-lg mb-2 ${
-                isSubmitting ? "opacity-50" : ""
-              }`}
-            >
-              <Text className="text-black text-lg font-bold text-center">
-                {isSubmitting ? "Signing In..." : t("auth.login")}
-              </Text>
-            </Pressable>
+            />
 
             {/* Sign Up Link */}
             <View className="flex-row justify-center items-center mt-2">
@@ -316,7 +307,7 @@ export default function LoginScreen() {
               <Text
                 className={`text-base ${isDark ? "text-slate-400" : "text-slate-600"}`}
               >
-                Got a minute?{" "}
+                Got A Minute?{" "}
               </Text>
               <Pressable onPress={() => router.push("/(common)/feedback")}>
                 <Text className="text-lime-500 text-base font-bold">
@@ -326,23 +317,16 @@ export default function LoginScreen() {
             </View>
 
             <View className="flex-row justify-center items-center gap-2">
-              <SvgUri
-                uri={
-                  Image.resolveAssetSource(require("@/assets/images/CBN.svg"))
-                    .uri
-                }
-                width={32}
-                height={32}
-              />
+              <CBNLogo width={32} height={32} />
 
               <View className="flex-row">
                 <Text
-                  className={`text-sm ${isDark ? "text-slate-400" : "text-slate-600"}`}
+                  className={`text-base ${isDark ? "text-slate-400" : "text-slate-600"}`}
                 >
-                  Licensed by the{" "}
+                  Licensed By The{" "}
                 </Text>
                 <Text
-                  className={`text-sm font-semibold ${isDark ? "text-slate-400" : "text-slate-600"}`}
+                  className={`text-base font-semibold ${isDark ? "text-slate-400" : "text-slate-600"}`}
                 >
                   CBN
                 </Text>

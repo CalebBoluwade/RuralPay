@@ -1,11 +1,9 @@
+import { SCHEME_ASSETS } from "@/src/lib/assets";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { Asset } from "expo-asset";
 import React, { useEffect, useRef } from "react";
 import { Animated, Pressable, Text, View } from "react-native";
-import { SvgUri } from "react-native-svg";
 
 type TokenStatus = "ACTIVE" | "INACTIVE" | "PENDING";
-type CardScheme = "VISA" | "MASTERCARD" | "VERVE";
 
 interface UICardInfo {
   bin: string;
@@ -33,12 +31,7 @@ const TOKEN_STATUS_COLORS: Record<
   PENDING: { bg: "#ca8a0433", text: "#fbbf24", label: "Pending" },
 };
 
-const SCHEME_ASSETS: Partial<Record<CardScheme, number>> = {
-  VISA: require("@/assets/images/visa.svg"),
-  MASTERCARD: require("@/assets/images/mastercard.svg"),
-};
-
-function TokenBadge({ status }: { status: TokenStatus }) {
+function TokenBadge({ status }: Readonly<{ status: TokenStatus }>) {
   const { bg, text, label } = TOKEN_STATUS_COLORS[status];
   return (
     <View
@@ -63,7 +56,10 @@ function TokenBadge({ status }: { status: TokenStatus }) {
   );
 }
 
-function NFCIcon({ active, color }: { active: boolean; color: string }) {
+function NFCIcon({
+  active,
+  color,
+}: Readonly<{ active: boolean; color: string }>) {
   const pulse = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
@@ -117,13 +113,13 @@ function NFCIcon({ active, color }: { active: boolean; color: string }) {
   );
 }
 
-function SchemeLogo({ scheme }: { scheme: CardScheme }) {
-  const assetModule = SCHEME_ASSETS[scheme];
-  const uri = assetModule ? Asset.fromModule(assetModule).uri : null;
+function SchemeLogo({ scheme }: Readonly<{ scheme: CardScheme }>) {
+  const SchemeAsset = SCHEME_ASSETS[scheme];
+
   return (
     <View style={{ alignItems: "center", gap: 2 }}>
-      {uri ? (
-        <SvgUri uri={uri} width={48} height={28} />
+      {SchemeAsset ? (
+        <SchemeAsset width={48} height={28} />
       ) : (
         <>
           <MaterialCommunityIcons

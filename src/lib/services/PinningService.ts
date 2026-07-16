@@ -29,7 +29,7 @@ class PinningService {
     if (!domain || !hashesRaw) {
       if (__DEV__)
         console.warn(
-          "[PinningService] SSL pin env vars not set — pinning skipped",
+          "[PinningService] SSL Pin ENV Variables Not Set — Pinning Skipped",
         );
       return;
     }

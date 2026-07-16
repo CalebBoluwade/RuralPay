@@ -49,7 +49,7 @@ const AmountInput = ({ onAmountChange, error }: AmountInputProps) => {
         }`}
       >
         {/* <Text
-          className={`text-sm font-medium pb-2 ${
+          className={`text-base font-medium pb-2 ${
             isDark ? "text-gray-400" : "text-gray-600"
           }`}
         >
@@ -78,23 +78,25 @@ const AmountInput = ({ onAmountChange, error }: AmountInputProps) => {
 
         <View className="pt-4 border-t border-emerald-500/20">
           <View className="flex-row flex-wrap gap-3 items-center">
-            {["500", "1000", "2000", "5000", "10000", "20000"].map((preset) => (
-              <Pressable
-                key={preset}
-                onPress={() => handleAmountChange(preset)}
-                className={`px-3 py-1 rounded-full ${
-                  isDark ? "bg-emerald-500/30" : "bg-emerald-100"
-                }`}
-              >
-                <Text
-                  className={`font-semibold ${
-                    isDark ? "text-emerald-300" : "text-emerald-700"
+            {["500", "1000", "2000", "5000", "10000", "20000", "50000"].map(
+              (preset) => (
+                <Pressable
+                  key={preset}
+                  onPress={() => handleAmountChange(preset)}
+                  className={`px-3 py-1 rounded-full ${
+                    isDark ? "bg-emerald-500/30" : "bg-emerald-100"
                   }`}
                 >
-                  ₦{preset.replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
-                </Text>
-              </Pressable>
-            ))}
+                  <Text
+                    className={`font-semibold ${
+                      isDark ? "text-emerald-300" : "text-emerald-700"
+                    }`}
+                  >
+                    ₦{preset.replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
+                  </Text>
+                </Pressable>
+              ),
+            )}
           </View>
         </View>
         {error && (

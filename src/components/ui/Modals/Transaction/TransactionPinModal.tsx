@@ -1,3 +1,4 @@
+import { useIdentityGate } from "@/src/hooks/useIdentityGate";
 import AccountService from "@/src/lib/services/AccountService";
 import { ReceiptService } from "@/src/lib/services/ReceiptService";
 import ToastService from "@/src/lib/services/ToastService";
@@ -11,8 +12,8 @@ import {
   Fingerprint,
   Grid2x2,
   Lock,
-  Mail,
   MessageSquare,
+  ScanEye,
   ScanFace,
   ScanLine,
   ShieldCheck,
@@ -20,6 +21,7 @@ import {
 } from "lucide-react-native";
 import React, { useEffect } from "react";
 import {
+  Alert,
   Keyboard,
   Modal,
   Pressable,
@@ -41,12 +43,15 @@ import PinSetupModal from "../PinSetupModal";
 import TransactionFailure from "./TransactionFailure";
 import TransactionSuccess from "./TransactionSuccess";
 
-interface TransactionPinProps {
+interface TransactionPINProps {
   paymentMessage: string;
   showPinModal: boolean;
   // onSuccess?: () => void;
   error: string;
-  initiateTransaction: (TwoFA_VerificationCode: string) => Promise<boolean>;
+  initiateTransaction: (
+    TwoFAType: TwoFAType,
+    TwoFA_VerificationCode: string,
+  ) => Promise<boolean>;
   onCancel?: () => void;
   isLoading: boolean;
   setIsLoading: React.Dispatch<React.SetStateAction<boolean>>;
@@ -54,7 +59,7 @@ interface TransactionPinProps {
   transactionResult?: TransactionHistoryItem; // TransactionData
 }
 
-const TransactionPin: React.FC<TransactionPinProps> = ({
+const TransactionPin: React.FC<TransactionPINProps> = ({
   paymentMessage,
   showPinModal,
   initiateTransaction,
@@ -74,10 +79,12 @@ const TransactionPin: React.FC<TransactionPinProps> = ({
   const [hasPin, setHasPin] = React.useState<boolean>(false);
   const [showPinSetup, setShowPinSetup] = React.useState<boolean>(false);
   const [currentStep, setCurrentStep] = React.useState<AuthStep>("PIN");
-  const [selected2FA, setSelected2FA] = React.useState<string>("");
+  const [selected2FA, setSelected2FA] = React.useState<TwoFAType>();
   const [lockSeconds, setLockSeconds] = React.useState<number>(0);
+  const [isVerifyingLiveness, setIsVerifyingLiveness] = React.useState(false);
   const isLocked = lockSeconds > 0;
   const codeLength = new Array(6).fill(0);
+  const { requireVerification } = useIdentityGate();
 
   const handleDownloadReceipt = async () => {
     if (transactionResult) {
@@ -89,44 +96,52 @@ const TransactionPin: React.FC<TransactionPinProps> = ({
   };
 
   const TFAOptions: {
-    id: string;
+    id: TwoFAType;
     title: string;
     sub: string;
     icon: React.FC<{ size: number; color: string }>;
   }[] = [
     {
-      id: "sms",
-      title: "SMS Verification",
-      sub: `Code will be sent to ${maskPhone(user?.phoneNumber)}`,
+      id: "OTP",
+      title: "OTP Verification",
+      sub: `Code will be sent to ${maskPhone(user?.phoneNumber)} and ${maskEmail(user?.email)} and will expire in 10 Mins`,
       icon: MessageSquare,
     },
     {
-      id: "email",
-      title: "Email Verification",
-      sub: `Code will be sent to ${maskEmail(user?.email)}`,
-      icon: Mail,
+      id: "BYPASS",
+      title: "Biometric Verification",
+      sub: "Use your fingerprint or face to verify",
+      icon:
+        biometricType === "facial"
+          ? ScanFace
+          : biometricType === "fingerprint"
+            ? Fingerprint
+            : ScanLine,
+    },
+    {
+      id: "FACIAL_RECOGNITION",
+      title: "Facial Recognition",
+      sub: "Use Liveness Checks to Verify",
+      icon: ScanEye,
     },
   ];
 
-  const send2FACode = async (method: string) => {
+  const send2FACode = async () => {
     setIsLoading(true);
     try {
-      const response = await AccountService.SendUserOTP(
-        "2FA-CODE",
-        method === "sms" ? "SMS" : "Email",
-      );
+      const response = await AccountService.SendUserOTP("2FA-CODE");
 
       if (response.success) {
-        ToastService.success(
-          `Verification Code Sent via ${selected2FA === "sms" ? "SMS" : "Email"}`,
-        );
+        ToastService.success(`Verification Code Sent`);
         setCurrentStep("Verify-2FA");
       } else {
-        ToastService.error("Failed to Send verification code");
+        Alert.alert("Error", "Failed to Send verification code");
       }
     } catch {
-      ToastService.error("Failed to Send verification code");
+      Alert.alert("Error", "Failed to Send verification code");
     } finally {
+      setIsLoading(false);
+      setIsVerifyingLiveness(false);
       setIsLoading(false);
     }
   };
@@ -136,6 +151,7 @@ const TransactionPin: React.FC<TransactionPinProps> = ({
     try {
       // "2FA-CODE"
       const transactionResult = await initiateTransaction(
+        selected2FA!,
         TwoFA_VerificationCode,
       );
       if (transactionResult) {
@@ -156,7 +172,6 @@ const TransactionPin: React.FC<TransactionPinProps> = ({
   useEffect(() => {
     if (!showPinModal) {
       setCode([]);
-      setSelected2FA("");
       return;
     }
 
@@ -391,9 +406,35 @@ const TransactionPin: React.FC<TransactionPinProps> = ({
           <Pressable
             key={option.id}
             onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
               setSelected2FA(option.id);
-              send2FACode(option.id);
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              if (option.id === "FACIAL_RECOGNITION") {
+                setIsVerifyingLiveness(true);
+                requireVerification(
+                  (result) => {
+                    setIsVerifyingLiveness(false);
+                    Validate2FACode(result?.identityToken ?? "");
+                  },
+                  () => {
+                    setIsVerifyingLiveness(false);
+                    ToastService.error("Facial verification failed");
+                  },
+                );
+              } else if (option.id === "BYPASS") {
+                biometricService
+                  .onFingerPrintPress(isBiometricSupported)
+                  .then((result) => {
+                    if (result) {
+                      Validate2FACode("BIOMETRIC-VERIFIED");
+                    } else {
+                      ToastService.error("Biometric verification failed");
+                    }
+                  });
+              } else if (option.id === "OTP") {
+                send2FACode();
+              } else {
+                Alert.alert("Error", "Unsupported 2FA method selected");
+              }
             }}
             disabled={isLoading}
             className={`p-4 mb-4 rounded-2xl border-2 ${isDark ? "bg-white/5 border-white/10" : "bg-white border-gray-200"}`}
@@ -411,7 +452,7 @@ const TransactionPin: React.FC<TransactionPinProps> = ({
                   {option.title}
                 </Text>
                 <Text
-                  className={`text-xs mt-1 ${isDark ? "text-gray-400" : "text-gray-600"}`}
+                  className={`text-base mt-1 ${isDark ? "text-gray-400" : "text-gray-600"}`}
                 >
                   {option.sub}
                 </Text>
@@ -451,8 +492,7 @@ const TransactionPin: React.FC<TransactionPinProps> = ({
         <Text
           className={`text-base text-center px-8 ${isDark ? "text-gray-400" : "text-gray-600"}`}
         >
-          We&apos;ve sent a 8-digit code to your{" "}
-          {selected2FA === "sms" ? "phone" : "email"}
+          We&apos;ve Sent a 8-digit Code To Your Device
         </Text>
       </View>
 
@@ -492,7 +532,7 @@ const TransactionPin: React.FC<TransactionPinProps> = ({
       <Pressable
         onPress={() => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-          send2FACode(selected2FA === "sms" ? "SMS" : "Email");
+          send2FACode();
         }}
         disabled={isLoading}
         className="items-center mb-4"
@@ -613,7 +653,8 @@ const TransactionPin: React.FC<TransactionPinProps> = ({
           hasPin &&
           (showPinModal ||
             currentStep === "Success" ||
-            currentStep === "Failure")
+            currentStep === "Failure") &&
+          !isVerifyingLiveness
         }
         animationType="slide"
         presentationStyle="pageSheet"

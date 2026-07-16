@@ -89,7 +89,7 @@ const PaymentMethodItem: React.FC<PaymentMethodItemProps> = ({
     </View>
     <View className="flex-1">
       <Text
-        className={`text-sm font-brand font-bold ${isDark ? "text-white" : "text-slate-900"}`}
+        className={`text-base font-brand font-bold ${isDark ? "text-white" : "text-slate-900"}`}
       >
         {method.name}
       </Text>
@@ -296,7 +296,7 @@ const VoucherSection: React.FC<VoucherSectionProps> = ({
                   </View>
                 </View>
                 <Text
-                  className={`text-sm font-bold ${isDark ? "text-lime-400" : "text-lime-700"}`}
+                  className={`text-base font-bold ${isDark ? "text-lime-400" : "text-lime-700"}`}
                 >
                   -₦{saving.toLocaleString()}
                 </Text>

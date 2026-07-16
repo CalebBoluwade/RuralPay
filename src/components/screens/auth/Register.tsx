@@ -1,5 +1,6 @@
 import { useAuth } from "@/src/components/context/AuthSessionProvider";
 import { useLanguage } from "@/src/components/context/LanguageContext";
+import InfoChip from "@/src/components/ui/InfoChip";
 import OptimizedInput from "@/src/components/ui/Input/OptimizedInput";
 import PinSetupModal from "@/src/components/ui/Modals/PinSetupModal";
 import ScreenHeader from "@/src/components/ui/ScreenHeader";
@@ -16,11 +17,17 @@ import {
   CheckCircle,
   ChevronDown,
   ChevronUp,
-  ShieldCheck,
 } from "lucide-react-native";
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
-import { Pressable, Text, TextInput, View, useColorScheme } from "react-native";
+import {
+  Modal,
+  Pressable,
+  Text,
+  TextInput,
+  View,
+  useColorScheme,
+} from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { SafeAreaView } from "react-native-safe-area-context";
 import LivenessVerificationScreen from "./LivenessVerificationScreen";
@@ -38,6 +45,29 @@ export default function RegisterScreen() {
     useState<VerificationResult | null>(null);
 
   const [phoneOTP, setPhoneOTP] = useState("");
+  const [otpCooldown, setOtpCooldown] = useState(60);
+  const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const startCooldown = useCallback(() => {
+    setOtpCooldown(60);
+    if (cooldownRef.current) clearInterval(cooldownRef.current);
+    cooldownRef.current = setInterval(() => {
+      setOtpCooldown((prev) => {
+        if (prev <= 1) {
+          clearInterval(cooldownRef.current!);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  }, []);
+
+  useEffect(() => {
+    if (step === "phone-verify") startCooldown();
+    return () => {
+      if (cooldownRef.current) clearInterval(cooldownRef.current);
+    };
+  }, [step]);
 
   // Merchant
   const [isMerchant, setIsMerchant] = useState(false);
@@ -69,30 +99,28 @@ export default function RegisterScreen() {
     reValidateMode: "onChange",
   });
 
+  const [showLivenessGate, setShowLivenessGate] = useState(false);
+
+  // New order: personal → phone-verify → merchant (if applicable) → liveness → pin
   const OnSubmit = async (data: RegisterFormData) => {
     setRegistrationData({
       ...data,
       isMerchant: isMerchant,
     });
-
-    if (isMerchant) {
-      setStep("merchant");
-    } else {
-      setStep("liveness");
-    }
+    setStep("phone-verify");
   };
 
   const HandleMerchantSubmit = () => {
     if (!businessName.trim()) {
-      ToastService.warning("Business Name is required");
+      ToastService.warning(t("auth.businessNameRequired"));
       return;
     }
     if (!businessAddress.trim()) {
-      ToastService.warning("Business Address is required");
+      ToastService.warning(t("auth.businessAddressRequired"));
       return;
     }
     if (!businessType.trim()) {
-      ToastService.warning("Business Type is required");
+      ToastService.warning(t("auth.businessTypeRequired"));
       return;
     }
 
@@ -102,24 +130,33 @@ export default function RegisterScreen() {
       businessAddress: businessAddress,
       businessType: businessType,
     }));
-    setStep("liveness");
+    setShowLivenessGate(true);
   };
 
   const HandlePhoneVerify = async () => {
-    if (phoneOTP.length < 6 && phoneOTP.length > 8) {
-      ToastService.warning("Please Enter the 8-digit Code");
+    if (phoneOTP.length !== 6) {
+      ToastService.warning(t("auth.invalidOtp"));
       return;
     }
 
-    // const OtpValidation = await AccountService.ValidateUserPhoneNumberOTP("BVN", phoneOTP);
+    const OtpValidation = await AccountService.ValidateUserPhoneNumberOTP(
+      "Registration",
+      phoneOTP,
+    );
 
-    // if (!OtpValidation.valid) {
-    //   ToastService.error(OtpValidation.message || "Failed to Validate OTP");
-    //   return;
-    // }
+    if (!OtpValidation.success) {
+      ToastService.error(
+        OtpValidation.message || t("auth.otpValidationFailed"),
+      );
+      return;
+    }
 
-    ToastService.success("Phone Number Verified Successfully");
-    setStep("liveness");
+    ToastService.success(t("auth.phoneVerifiedSuccess"));
+    if (isMerchant) {
+      setStep("merchant");
+    } else {
+      setShowLivenessGate(true);
+    }
   };
 
   const HandleLivenessSuccess = (result: VerificationResult) => {
@@ -161,8 +198,8 @@ export default function RegisterScreen() {
 
       ToastService.success(
         registrationData.isMerchant
-          ? "Merchant Registration Successful"
-          : "Registration Successful",
+          ? t("auth.merchantRegistrationSuccess")
+          : t("auth.registrationSuccess"),
       );
 
       setShowPinModal(false);
@@ -171,22 +208,29 @@ export default function RegisterScreen() {
       setShowPinModal(false);
       setStep("personal");
       ToastService.error(
-        error instanceof Error
-          ? error.message
-          : "Registration failed. Please try again",
+        error instanceof Error ? error.message : t("auth.registrationFailed"),
       );
     }
   };
 
   const HandlePinCancel = () => {
     setShowPinModal(false);
-    setStep("phone-verify");
+    setStep("liveness");
+  };
+
+  const STEP_LABELS: Record<UserRegistrationStep, string> = {
+    personal: t("auth.progressStepPersonal"),
+    "phone-verify": t("auth.progressStepPhone"),
+    merchant: t("auth.progressStepMerchant"),
+    liveness: t("auth.progressStepLiveness"),
+    pin: t("auth.progressStepPin"),
+    success: t("auth.progressStepSuccess"),
   };
 
   const RenderProgressBar = () => {
     const Steps: UserRegistrationStep[] = isMerchant
-      ? ["personal", "merchant", "phone-verify", "liveness"]
-      : ["personal", "phone-verify", "liveness"];
+      ? ["personal", "phone-verify", "merchant", "liveness", "pin"]
+      : ["personal", "phone-verify", "liveness", "pin"];
 
     const CurrentIndex = Steps.indexOf(step);
 
@@ -197,28 +241,11 @@ export default function RegisterScreen() {
           style={{ width: "100%" }}
         >
           {Steps.map((s, index) => (
-            <View key={s} className="flex-1 flex-row items-center">
-              <View
-                className={`w-8 h-8 rounded-full items-center justify-center ${
-                  index <= CurrentIndex
-                    ? isDark
-                      ? "bg-lime-600"
-                      : "bg-lime-700"
-                    : isDark
-                      ? "bg-white/10"
-                      : "bg-gray-200"
-                }`}
-              >
-                <Text
-                  className={`text-sm font-bold ${index <= CurrentIndex ? "text-white" : isDark ? "text-gray-500" : "text-gray-400"}`}
-                >
-                  {index + 1}
-                </Text>
-              </View>
-              {index < Steps.length - 1 && (
+            <View key={s} className="flex-1 flex-col items-center">
+              <View className="flex-row items-center w-full">
                 <View
-                  className={`flex-1 h-1 mx-2 ${
-                    index < CurrentIndex
+                  className={`w-8 h-8 rounded-full items-center justify-center ${
+                    index <= CurrentIndex
                       ? isDark
                         ? "bg-lime-600"
                         : "bg-lime-700"
@@ -226,8 +253,48 @@ export default function RegisterScreen() {
                         ? "bg-white/10"
                         : "bg-gray-200"
                   }`}
-                />
-              )}
+                >
+                  <Text
+                    className={`text-base font-bold ${
+                      index <= CurrentIndex
+                        ? "text-white"
+                        : isDark
+                          ? "text-gray-500"
+                          : "text-gray-400"
+                    }`}
+                  >
+                    {index + 1}
+                  </Text>
+                </View>
+                {index < Steps.length - 1 && (
+                  <View
+                    className={`flex-1 h-1 mx-1 ${
+                      index < CurrentIndex
+                        ? isDark
+                          ? "bg-lime-600"
+                          : "bg-lime-700"
+                        : isDark
+                          ? "bg-white/10"
+                          : "bg-gray-200"
+                    }`}
+                  />
+                )}
+              </View>
+              <Text
+                style={{ fontSize: 9 }}
+                className={`mt-1 text-center ${
+                  index === CurrentIndex
+                    ? isDark
+                      ? "text-lime-400 font-bold"
+                      : "text-lime-700 font-bold"
+                    : isDark
+                      ? "text-gray-500"
+                      : "text-gray-400"
+                }`}
+                numberOfLines={1}
+              >
+                {STEP_LABELS[s]}
+              </Text>
             </View>
           ))}
         </View>
@@ -236,10 +303,10 @@ export default function RegisterScreen() {
   };
 
   const RenderSubtitle = (): string => {
-    if (step === "personal") return "Enter Your Personal Details";
-    if (step === "merchant") return "Enter Your Business Information";
-    if (step === "phone-verify") return "Enter Phone Verification Code";
-    if (step === "liveness") return "Follow The Prompts";
+    if (step === "personal") return t("auth.enterPersonalDetails");
+    if (step === "merchant") return t("auth.enterBusinessInfo");
+    if (step === "phone-verify") return t("auth.enterPhoneCode");
+    if (step === "liveness") return t("auth.followPrompts");
     return "";
   };
 
@@ -253,10 +320,14 @@ export default function RegisterScreen() {
         subtitle={RenderSubtitle()}
         onBack={() => {
           if (step === "personal") router.back();
-          else if (step === "merchant") setStep("personal");
-          else if (step === "phone-verify")
-            setStep(isMerchant ? "merchant" : "personal");
-          else if (step === "liveness") setStep("phone-verify");
+          else if (step === "phone-verify") setStep("personal");
+          else if (step === "merchant") setStep("phone-verify");
+          else if (step === "liveness")
+            setStep(isMerchant ? "merchant" : "phone-verify");
+          else if (step === "pin") {
+            setShowPinModal(false);
+            setStep("liveness");
+          }
         }}
       />
 
@@ -274,10 +345,181 @@ export default function RegisterScreen() {
           {/* Personal Info Step */}
           {step === "personal" && (
             <View className="flex-1">
-              {/* Merchant Registration Toggle */}
+              {/* Roadmap card — shown once before user fills anything */}
+              <View
+                className={`rounded-2xl p-4 mb-4 gap-3 ${
+                  isDark
+                    ? "bg-white/5 border border-white/10"
+                    : "bg-white border border-slate-100 shadow-sm"
+                }`}
+              >
+                <View>
+                  <Text
+                    className={`text-base font-bold ${
+                      isDark ? "text-white" : "text-slate-900"
+                    }`}
+                  >
+                    {t("auth.stepRoadmapTitle")}
+                  </Text>
+                  <Text
+                    className={`text-xs mt-0.5 ${
+                      isDark ? "text-slate-400" : "text-slate-500"
+                    }`}
+                  >
+                    {isMerchant
+                      ? t("auth.stepRoadmapSubtitleMerchant")
+                      : t("auth.stepRoadmapSubtitle")}
+                  </Text>
+                </View>
+                <View className="gap-2">
+                  {(isMerchant
+                    ? [
+                        { emoji: "👤", label: t("auth.roadmapStep1") },
+                        { emoji: "📱", label: t("auth.roadmapStep2") },
+                        { emoji: "🏪", label: t("auth.roadmapStep3") },
+                        { emoji: "🤳", label: t("auth.roadmapStep4") },
+                        { emoji: "🔐", label: t("auth.roadmapStep5") },
+                      ]
+                    : [
+                        { emoji: "👤", label: t("auth.roadmapStep1") },
+                        { emoji: "📱", label: t("auth.roadmapStep2") },
+                        { emoji: "🤳", label: t("auth.roadmapStep4") },
+                        { emoji: "🔐", label: t("auth.roadmapStep5") },
+                      ]
+                  ).map(({ emoji, label }, i) => (
+                    <View key={label} className="flex-row items-center gap-2">
+                      <View
+                        className={`w-6 h-6 rounded-full items-center justify-center ${
+                          i === 0
+                            ? isDark
+                              ? "bg-lime-600"
+                              : "bg-lime-700"
+                            : isDark
+                              ? "bg-white/10"
+                              : "bg-slate-100"
+                        }`}
+                      >
+                        <Text style={{ fontSize: 12 }}>{emoji}</Text>
+                      </View>
+                      <Text
+                        className={`text-base ${
+                          i === 0
+                            ? isDark
+                              ? "text-lime-400 font-semibold"
+                              : "text-lime-700 font-semibold"
+                            : isDark
+                              ? "text-slate-400"
+                              : "text-slate-500"
+                        }`}
+                      >
+                        {i === 0 ? `${label} ← You are here` : label}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+
+              {/* Step context banner */}
+              <View
+                className={`flex-row items-center gap-3 px-4 py-3 rounded-2xl mb-4 ${
+                  isDark
+                    ? "bg-blue-500/10 border border-blue-500/20"
+                    : "bg-blue-50 border border-blue-100"
+                }`}
+              >
+                <Text style={{ fontSize: 20 }}>👤</Text>
+                <Text
+                  className={`flex-1 text-base ${isDark ? "text-blue-300" : "text-blue-700"}`}
+                >
+                  {t("auth.stepPersonalHint")}
+                </Text>
+              </View>
+
+              <OptimizedInput
+                control={control}
+                name="firstName"
+                label={t("auth.firstName")}
+                placeholder={t("auth.firstName")}
+                error={errors.firstName}
+              />
+
+              <OptimizedInput
+                control={control}
+                name="lastName"
+                label={t("auth.lastName")}
+                placeholder={t("auth.lastName")}
+                error={errors.lastName}
+              />
+
+              <OptimizedInput
+                control={control}
+                name="username"
+                label={t("auth.username")}
+                placeholder={t("auth.username")}
+                autoCapitalize="none"
+                error={errors.username}
+              />
+
+              <OptimizedInput
+                control={control}
+                name="email"
+                label={t("auth.email")}
+                placeholder={t("auth.email")}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                error={errors.email}
+              />
+
+              <OptimizedInput
+                control={control}
+                name="phoneNumber"
+                label={t("auth.phoneNumber")}
+                placeholder={t("auth.phoneNumber")}
+                keyboardType="phone-pad"
+                error={errors.phoneNumber}
+              />
+
+              {/* BVN field + explainer */}
+              <OptimizedInput
+                control={control}
+                name="BVN"
+                label={t("auth.bvn")}
+                placeholder={t("auth.bvnPlaceholder")}
+                keyboardType="numeric"
+                error={errors.BVN}
+                labelRight={
+                  <InfoChip
+                    label="What is BVN?"
+                    explanation={t("auth.bvnHelp")}
+                  />
+                }
+                maxLength={11}
+              />
+
+              <OptimizedInput
+                control={control}
+                name="password"
+                label={t("auth.password")}
+                placeholder={t("auth.password")}
+                secureTextEntry
+                showPasswordToggle
+                error={errors.password}
+              />
+
+              <OptimizedInput
+                control={control}
+                name="confirmPassword"
+                label={t("auth.confirmPassword")}
+                placeholder={t("auth.confirmPassword")}
+                secureTextEntry
+                showPasswordToggle
+                error={errors.confirmPassword}
+              />
+
+              {/* Merchant toggle — moved to bottom so it doesn't confuse regular users */}
               <Pressable
                 onPress={() => setIsMerchant(!isMerchant)}
-                className={`flex-row items-center p-4 rounded-2xl mb-4 backdrop-blur-xl ${
+                className={`flex-row items-center p-4 rounded-2xl my-2 ${
                   isDark
                     ? "bg-white/10 border border-white/20"
                     : "bg-white/60 border border-gray-200/50"
@@ -300,97 +542,15 @@ export default function RegisterScreen() {
                   <Text
                     className={`text-base font-semibold ${isDark ? "text-white" : "text-gray-900"}`}
                   >
-                    Register As A New Merchant
+                    {t("auth.registerAsMerchant")}
                   </Text>
                   <Text
-                    className={`text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}
+                    className={`text-base ${isDark ? "text-gray-400" : "text-gray-600"}`}
                   >
-                    Accept Payments For Your Business
+                    {t("auth.registerAsMerchantSubtitle")}
                   </Text>
                 </View>
               </Pressable>
-
-              <OptimizedInput
-                control={control}
-                name="firstName"
-                label={t("auth.firstName")}
-                placeholder="Enter your First Name"
-                error={errors.firstName}
-              />
-
-              <OptimizedInput
-                control={control}
-                name="lastName"
-                label={t("auth.lastName")}
-                placeholder="Enter your Last Name"
-                error={errors.lastName}
-              />
-
-              <OptimizedInput
-                control={control}
-                name="username"
-                label="Username"
-                placeholder="Choose a Unique Username"
-                autoCapitalize="none"
-                error={errors.username}
-              />
-
-              <OptimizedInput
-                control={control}
-                name="email"
-                label={t("auth.email")}
-                placeholder="Enter your Email Address"
-                keyboardType="email-address"
-                autoCapitalize="none"
-                error={errors.email}
-              />
-
-              <OptimizedInput
-                control={control}
-                name="phoneNumber"
-                label={t("auth.phoneNumber")}
-                placeholder="Enter Your Phone Number"
-                keyboardType="phone-pad"
-                error={errors.phoneNumber}
-              />
-
-              <OptimizedInput
-                control={control}
-                name="BVN"
-                label={"BVN (Bank Verification Number)"}
-                placeholder="Enter Your 11-digit BVN"
-                keyboardType="numeric"
-                error={errors.BVN}
-                labelRight={
-                  <ShieldCheck
-                    size={21}
-                    color={isDark ? "#ffffff" : "#000000"}
-                  />
-                }
-                maxLength={11}
-                // editable={isSubmitting}
-              />
-
-              <OptimizedInput
-                control={control}
-                name="password"
-                label={t("auth.password")}
-                placeholder="Enter your Password"
-                secureTextEntry
-                showPasswordToggle
-                error={errors.password}
-              />
-
-              <OptimizedInput
-                control={control}
-                name="confirmPassword"
-                label={t("auth.confirmPassword")}
-                placeholder="Confirm Your Password"
-                secureTextEntry
-                showPasswordToggle
-                // editable={isSubmitting}
-                error={errors.confirmPassword}
-              />
 
               <Pressable
                 onPress={handleSubmit(OnSubmit)}
@@ -400,7 +560,7 @@ export default function RegisterScreen() {
                 }`}
               >
                 <Text className="text-black text-lg font-bold text-center">
-                  {isSubmitting ? "Processing..." : t("common.continue")}
+                  {isSubmitting ? t("common.processing") : t("common.continue")}
                 </Text>
               </Pressable>
 
@@ -426,6 +586,22 @@ export default function RegisterScreen() {
           {/* Merchant Info Step */}
           {step === "merchant" && (
             <View className="flex-1">
+              {/* Step context banner */}
+              <View
+                className={`flex-row items-center gap-3 px-4 py-3 rounded-2xl mb-4 ${
+                  isDark
+                    ? "bg-blue-500/10 border border-blue-500/20"
+                    : "bg-blue-50 border border-blue-100"
+                }`}
+              >
+                <Text style={{ fontSize: 20 }}>🏪</Text>
+                <Text
+                  className={`flex-1 text-base ${isDark ? "text-blue-300" : "text-blue-700"}`}
+                >
+                  {t("auth.stepMerchantHint")}
+                </Text>
+              </View>
+
               <View
                 className={`rounded-2xl p-6 mb-6 backdrop-blur-xl ${
                   isDark
@@ -447,12 +623,12 @@ export default function RegisterScreen() {
                   <Text
                     className={`text-xl font-brand text-center ${isDark ? "text-white" : "text-gray-900"}`}
                   >
-                    Business Information
+                    {t("auth.businessInformation")}
                   </Text>
                   <Text
-                    className={`text-sm text-center mt-2 ${isDark ? "text-gray-400" : "text-gray-600"}`}
+                    className={`text-base text-center mt-2 ${isDark ? "text-gray-400" : "text-gray-600"}`}
                   >
-                    Tell us about your business to start accepting payments
+                    {t("auth.businessInformationSubtitle")}
                   </Text>
                 </View>
 
@@ -462,7 +638,7 @@ export default function RegisterScreen() {
                       ? "bg-white/10 border border-white/20 text-white"
                       : "bg-white/60 border border-gray-200/50 text-gray-900"
                   }`}
-                  placeholder="Business Name"
+                  placeholder={t("auth.businessName")}
                   placeholderTextColor={isDark ? "#9CA3AF" : "#6B7280"}
                   value={businessName}
                   onChangeText={setBusinessName}
@@ -474,7 +650,7 @@ export default function RegisterScreen() {
                       ? "bg-white/10 border border-white/20 text-white"
                       : "bg-white/60 border border-gray-200/50 text-gray-900"
                   }`}
-                  placeholder="Business Address"
+                  placeholder={t("auth.businessAddress")}
                   placeholderTextColor={isDark ? "#9CA3AF" : "#6B7280"}
                   value={businessAddress}
                   onChangeText={setBusinessAddress}
@@ -503,7 +679,7 @@ export default function RegisterScreen() {
                             : "text-gray-500"
                       }`}
                     >
-                      {businessType || "Select Business Type"}
+                      {businessType || t("auth.selectBusinessType")}
                     </Text>
                     {showBusinessTypeDropdown ? (
                       <ChevronUp
@@ -566,70 +742,26 @@ export default function RegisterScreen() {
                 className={`py-4 rounded-2xl ${isDark ? "bg-lime-600" : "bg-lime-700"}`}
               >
                 <Text className="text-white text-lg font-semibold text-center">
-                  Continue to Verification
+                  {t("auth.continueToVerification")}
+                </Text>
+              </Pressable>
+
+              {/* Escape hatch for users who toggled merchant by mistake */}
+              <Pressable
+                onPress={() => {
+                  setIsMerchant(false);
+                  setStep("phone-verify");
+                }}
+                className="py-3 items-center"
+              >
+                <Text
+                  className={`text-base ${isDark ? "text-slate-500" : "text-slate-400"}`}
+                >
+                  {t("auth.notAMerchant")}
                 </Text>
               </Pressable>
             </View>
           )}
-
-          {/* BVN Entry Step */}
-          {/* {step === "bvn" && (
-            <View className="flex-1">
-              <View
-                className={`rounded-2xl p-6 my-6 backdrop-blur-xl ${cardClass}`}
-              >
-                <View className="items-center mb-4 mt-2">
-                  <View
-                    className={`w-16 h-16 rounded-full items-center justify-center mb-4 ${
-                      isDark ? "bg-lime-500/20" : "bg-lime-100"
-                    }`}
-                  >
-                    
-                  </View>
-
-                  <Text
-                    className={`text-2xl mb-2 font-brand text-center ${isDark ? "text-white" : "text-gray-900"}`}
-                  >
-                    Bank Verification Number
-                  </Text>
-                  <Text
-                    className={`text-base text-center my-2 ${isDark ? "text-gray-400" : "text-gray-600"}`}
-                  >
-                    Enter your  to Verify Your Identity
-                  </Text>
-                </View>
-
-                <TextInput
-                  className={`p-4 rounded-2xl text-lg text-center backdrop-blur-xl mb-4 ${
-                    isDark
-                      ? "border-2 border-lime-500/40 text-white"
-                      : "border-2 border-lime-400 text-gray-900"
-                  }`}
-                  placeholder="Enter 11-digit BVN"
-                  placeholderTextColor={isDark ? "#9CA3AF" : "#6B7280"}
-                  value={BVN}
-                  onChangeText={setBVN}
-                  keyboardType="numeric"
-                  maxLength={11}
-                />
-
-                <Text
-                  className={`text-lg my-5 font-light ${isDark ? "text-blue-300" : "text-blue-700"}`}
-                >
-                  Your BVN Is Only Used For Verification Purposes
-                </Text>
-              </View>
-
-              <Pressable
-                onPress={HandleBvnSubmit}
-                className={`py-4 rounded-2xl ${isDark ? "bg-lime-600" : "bg-lime-700"}`}
-              >
-                <Text className="text-white text-lg font-semibold text-center">
-                  Verify BVN
-                </Text>
-              </Pressable>
-            </View>
-          )} */}
 
           {/* Liveness Step */}
           {step === "liveness" && (
@@ -644,6 +776,22 @@ export default function RegisterScreen() {
           {/* Phone Verification Step */}
           {step === "phone-verify" && (
             <View className="flex-1">
+              {/* Step context banner */}
+              <View
+                className={`flex-row items-center gap-3 px-4 py-3 rounded-2xl mb-4 ${
+                  isDark
+                    ? "bg-blue-500/10 border border-blue-500/20"
+                    : "bg-blue-50 border border-blue-100"
+                }`}
+              >
+                <Text style={{ fontSize: 20 }}>📱</Text>
+                <Text
+                  className={`flex-1 text-base ${isDark ? "text-blue-300" : "text-blue-700"}`}
+                >
+                  {t("auth.stepPhoneHint")}
+                </Text>
+              </View>
+
               <View
                 className={`rounded-2xl p-6 mb-6 backdrop-blur-xl ${
                   isDark
@@ -665,12 +813,12 @@ export default function RegisterScreen() {
                   <Text
                     className={`text-xl font-brand text-center ${isDark ? "text-white" : "text-gray-900"}`}
                   >
-                    Verify Phone Number
+                    {t("auth.verifyPhoneNumber")}
                   </Text>
                   <Text
-                    className={`text-sm text-center mt-2 ${isDark ? "text-gray-400" : "text-gray-600"}`}
+                    className={`text-base text-center mt-2 ${isDark ? "text-gray-400" : "text-gray-600"}`}
                   >
-                    Enter the 6-digit Code sent via SMS, WhatsApp, and Email
+                    {t("auth.verifyPhoneSubtitle")}
                   </Text>
                 </View>
 
@@ -687,36 +835,48 @@ export default function RegisterScreen() {
                       ? "bg-white/10 border border-white/20 text-white"
                       : "bg-white/60 border border-gray-200/50 text-gray-900"
                   }`}
-                  placeholder="0 0 0 0 0 0 0 0"
+                  placeholder="0  0  0  0  0  0"
                   placeholderTextColor={isDark ? "#9CA3AF" : "#6B7280"}
                   value={phoneOTP}
                   onChangeText={setPhoneOTP}
                   keyboardType="numeric"
                   autoComplete="one-time-code"
-                  maxLength={8}
+                  maxLength={6}
                 />
 
                 <Pressable
+                  disabled={otpCooldown > 0}
                   onPress={() => {
                     try {
                       AccountService.SendUserOTP(
                         "Registration",
-                        registrationData?.phoneNumber ?? "",
+                        // registrationData?.phoneNumber ?? "",
                       );
-                      ToastService.info("Verification Code Resent");
+                      ToastService.info(t("auth.otpResent"));
+                      startCooldown();
                     } catch (error) {
                       ToastService.error(
                         error instanceof Error
                           ? error.message
-                          : "Failed to resend code. Please try again.",
+                          : t("auth.resendFailed"),
                       );
                     }
                   }}
                 >
                   <Text
-                    className={`text-center ${isDark ? "text-lime-400" : "text-lime-600"}`}
+                    className={`text-center ${
+                      otpCooldown > 0
+                        ? isDark
+                          ? "text-slate-500"
+                          : "text-slate-400"
+                        : isDark
+                          ? "text-lime-400"
+                          : "text-lime-600"
+                    }`}
                   >
-                    Resend Code
+                    {otpCooldown > 0
+                      ? `Resend Code in ${otpCooldown}s`
+                      : t("auth.resendCode")}
                   </Text>
                 </Pressable>
               </View>
@@ -726,7 +886,7 @@ export default function RegisterScreen() {
                 className={`py-4 rounded-2xl ${isDark ? "bg-lime-600" : "bg-lime-700"}`}
               >
                 <Text className="text-white text-lg font-semibold text-center">
-                  Complete Registration
+                  {t("auth.completeRegistration")}
                 </Text>
               </Pressable>
             </View>
@@ -739,6 +899,102 @@ export default function RegisterScreen() {
         onComplete={HandlePinComplete}
         onCancel={HandlePinCancel}
       />
+
+      {/* Liveness pre-warning gate — shown as a modal before the camera opens */}
+      <Modal
+        visible={showLivenessGate}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowLivenessGate(false)}
+      >
+        <View
+          className="flex-1 justify-end"
+          style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+        >
+          <View
+            className={`rounded-t-3xl p-6 gap-4 ${
+              isDark ? "bg-slate-900" : "bg-white"
+            }`}
+          >
+            <View className="items-center gap-2">
+              <Text style={{ fontSize: 52 }}>🤳</Text>
+              <Text
+                className={`text-xl font-bold text-center ${
+                  isDark ? "text-white" : "text-slate-900"
+                }`}
+              >
+                {t("auth.livenessTitle")}
+              </Text>
+              <Text
+                className={`text-base text-center leading-relaxed ${
+                  isDark ? "text-slate-400" : "text-slate-500"
+                }`}
+              >
+                {t("auth.livenessWhyHint")}
+              </Text>
+            </View>
+
+            {[
+              { emoji: "👁️", text: t("auth.livenessStep1") },
+              { emoji: "🔄", text: t("auth.livenessStep2") },
+              { emoji: "✅", text: t("auth.livenessStep3") },
+            ].map(({ emoji, text }) => (
+              <View key={text} className="flex-row items-center gap-3">
+                <Text style={{ fontSize: 20 }}>{emoji}</Text>
+                <Text
+                  className={`flex-1 text-base ${
+                    isDark ? "text-slate-300" : "text-slate-600"
+                  }`}
+                >
+                  {text}
+                </Text>
+              </View>
+            ))}
+
+            <View
+              className={`flex-row items-center gap-2 px-3 py-2 rounded-xl ${
+                isDark
+                  ? "bg-blue-500/10 border border-blue-500/20"
+                  : "bg-blue-50 border border-blue-100"
+              }`}
+            >
+              <Text style={{ fontSize: 14 }}>🔒</Text>
+              <Text
+                className={`flex-1 text-xs ${
+                  isDark ? "text-blue-300" : "text-blue-700"
+                }`}
+              >
+                {t("auth.livenessPrivacyNote")}
+              </Text>
+            </View>
+
+            <Pressable
+              onPress={() => {
+                setShowLivenessGate(false);
+                setStep("liveness");
+              }}
+              className="rounded-2xl py-4 bg-lime-400"
+            >
+              <Text className="text-black text-lg font-bold text-center">
+                {t("auth.livenessReady")}
+              </Text>
+            </Pressable>
+
+            <Pressable
+              onPress={() => setShowLivenessGate(false)}
+              className="py-2 items-center"
+            >
+              <Text
+                className={`text-base ${
+                  isDark ? "text-slate-500" : "text-slate-400"
+                }`}
+              >
+                {t("common.cancel")}
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }

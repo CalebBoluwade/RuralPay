@@ -1,58 +1,101 @@
-import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { useAuth } from "@/src/components/context/AuthSessionProvider";
+import Unauthenticated from "@/src/components/screens/auth/Unauthenticated";
 import {
-  Badge,
-  Icon,
-  Label,
-  NativeTabs,
-  VectorIcon,
-} from "expo-router/unstable-native-tabs";
-import React from "react";
+  FontAwesome,
+  Ionicons,
+  MaterialCommunityIcons,
+} from "@expo/vector-icons";
+import { Tabs } from "expo-router";
+import { HandCoins, LucideLightbulb } from "lucide-react-native";
+import { useColorScheme } from "react-native";
 
-export default function TabLayout() {
-  const icon = { iconColor: "#65a30d", backgroundColor: "#ecfccb" };
+export default function MerchantLayout() {
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === "dark";
+  const { user, isAuthenticated } = useAuth();
+
+  if (!isAuthenticated || user?.role !== "consumer") {
+    return <Unauthenticated />;
+  }
 
   return (
-    <NativeTabs
-      backgroundColor={"#f7fee7"}
-      iconColor={{ default: "#a3a3a3", selected: "#65a30d" }}
-      tintColor={"#65a30d"}
-      indicatorColor={"#fff"}
-      rippleColor={"#ecfccb"}
+    <Tabs
+      screenOptions={{
+        headerShown: false,
+        tabBarActiveTintColor: isDark ? "#a78bfa" : "#7c3aed",
+        tabBarInactiveTintColor: isDark ? "#6b7280" : "#9ca3af",
+        tabBarStyle: {
+          backgroundColor: isDark ? "#0a0a0f" : "#ffffff",
+          borderTopColor: isDark ? "#1f2937" : "#e5e7eb",
+        },
+      }}
     >
-      <NativeTabs.Trigger name="index" options={icon}>
-        <Label hidden>Home</Label>
-        <Icon
-          src={<VectorIcon family={MaterialCommunityIcons} name="home" />}
+      <Tabs.Protected guard={isAuthenticated && user?.role === "consumer"}>
+        <Tabs.Screen
+          name="index"
+          options={{
+            title: "Dashboard",
+            tabBarIcon: ({ color, size }) => (
+              <Ionicons name="storefront" size={size} color={color} />
+            ),
+          }}
         />
-        <Badge>3</Badge>
-      </NativeTabs.Trigger>
 
-      <NativeTabs.Trigger name="Tracker" options={icon}>
-        <Label hidden>Tracker</Label>
-        <Icon src={<VectorIcon family={Feather} name="pie-chart" />} />
-      </NativeTabs.Trigger>
-
-      <NativeTabs.Trigger name="BankTransfers" options={icon}>
-        <Label hidden>Payments</Label>
-        <Icon src={<VectorIcon family={Ionicons} name="cash-outline" />} />
-      </NativeTabs.Trigger>
-
-      <NativeTabs.Trigger name="ValueAddedServices" options={icon}>
-        <Label hidden>Services</Label>
-        <Icon src={<VectorIcon family={Ionicons} name="cog-outline" />} />
-      </NativeTabs.Trigger>
-
-      <NativeTabs.Trigger name="Profile" options={icon}>
-        <Label hidden>Profile</Label>
-        <Icon
-          src={
-            <VectorIcon
-              family={MaterialCommunityIcons}
-              name="account-outline"
-            />
-          }
+        <Tabs.Screen
+          name="tracker"
+          options={{
+            title: "Funds Tracker",
+            tabBarIcon: ({ color, size }) => (
+              <FontAwesome name="pie-chart" size={size} color={color} />
+            ),
+          }}
         />
-      </NativeTabs.Trigger>
-    </NativeTabs>
+
+        <Tabs.Screen
+          name="bank-transfers"
+          options={{
+            title: "Bank Transfers",
+            tabBarIcon: ({ color, focused }) => (
+              <HandCoins size={focused ? 28 : 26} color={color} />
+            ),
+          }}
+        />
+
+        <Tabs.Screen
+          name="services"
+          options={{
+            title: "Services",
+            tabBarIcon: ({ color, focused }) => (
+              <LucideLightbulb
+                size={focused ? 28 : 26}
+                // name={focused ? "plug-circle-bolt" : "plug-circle-minus"}
+                color={color}
+              />
+            ),
+          }}
+        />
+
+        <Tabs.Screen
+          name="profile"
+          options={{
+            title: "Profile",
+            tabBarIcon: ({ color, focused }) => (
+              <MaterialCommunityIcons
+                size={focused ? 28 : 26}
+                name={focused ? "account" : "account-outline"}
+                color={color}
+              />
+            ),
+          }}
+        />
+      </Tabs.Protected>
+
+      {/* Hide non-tab screens from tab bar */}
+      {/* <Tabs.Screen name="bank-transfers" options={{ href: null }} /> */}
+      <Tabs.Screen name="cards" options={{ href: null }} />
+      <Tabs.Screen name="manageLinkedAccounts" options={{ href: null }} />
+      <Tabs.Screen name="qrPayments" options={{ href: null }} />
+      <Tabs.Screen name="tapPayments" options={{ href: null }} />
+    </Tabs>
   );
 }

@@ -1,10 +1,11 @@
 import { useAuth } from "@/src/components/context/AuthSessionProvider";
+import { maskCardNumber } from "@/src/lib/utils";
 import { formatAmount } from "@/src/lib/utils/formatAmount";
 import React from "react";
 import { Text, View, useColorScheme } from "react-native";
 
 interface TransactionReceiptProps {
-  transaction: TransactionHistory;
+  transaction: TransactionHistoryItem;
 }
 
 const TransactionReceipt: React.FC<TransactionReceiptProps> = ({
@@ -53,7 +54,7 @@ const TransactionReceipt: React.FC<TransactionReceiptProps> = ({
             }`}
           >
             <Text
-              className={`text-sm font-bold ${
+              className={`text-base font-bold ${
                 transaction.status === "COMPLETED"
                   ? "text-green-500"
                   : "text-orange-500"
@@ -229,7 +230,13 @@ const TransactionReceipt: React.FC<TransactionReceiptProps> = ({
         )}
 
         {transaction.fromAccount && (
-          <View className="flex-row justify-between items-center py-3">
+          <View
+            className={`flex-row justify-between items-center py-3 ${
+              transaction.paymentMode === "CARD"
+                ? `border-b ${isDark ? "border-white/10" : "border-gray-200"}`
+                : ""
+            }`}
+          >
             <Text
               className={`text-lg font-medium ${isDark ? "text-gray-400" : "text-gray-600"}`}
             >
@@ -238,9 +245,80 @@ const TransactionReceipt: React.FC<TransactionReceiptProps> = ({
             <Text
               className={`text-lg font-semibold text-right flex-1 ml-4 ${isDark ? "text-white" : "text-gray-900"}`}
             >
-              {transaction.fromAccount}
+              {transaction.paymentMode === "CARD"
+                ? maskCardNumber(transaction.fromAccount)
+                : transaction.fromAccount}
             </Text>
           </View>
+        )}
+
+        {transaction.paymentMode === "CARD" && (
+          <>
+            {transaction.stan && (
+              <View
+                className={`flex-row justify-between items-center py-3 border-b ${isDark ? "border-white/10" : "border-gray-200"}`}
+              >
+                <Text
+                  className={`text-lg font-medium ${isDark ? "text-gray-400" : "text-gray-600"}`}
+                >
+                  STAN
+                </Text>
+                <Text
+                  className={`text-lg font-semibold ${isDark ? "text-white" : "text-gray-900"}`}
+                >
+                  {transaction.stan}
+                </Text>
+              </View>
+            )}
+            {transaction.rrn && (
+              <View
+                className={`flex-row justify-between items-center py-3 border-b ${isDark ? "border-white/10" : "border-gray-200"}`}
+              >
+                <Text
+                  className={`text-lg font-medium ${isDark ? "text-gray-400" : "text-gray-600"}`}
+                >
+                  RRN
+                </Text>
+                <Text
+                  className={`text-lg font-semibold ${isDark ? "text-white" : "text-gray-900"}`}
+                >
+                  {transaction.rrn}
+                </Text>
+              </View>
+            )}
+            {transaction.responseCode && (
+              <View
+                className={`flex-row justify-between items-center py-3 border-b ${isDark ? "border-white/10" : "border-gray-200"}`}
+              >
+                <Text
+                  className={`text-lg font-medium ${isDark ? "text-gray-400" : "text-gray-600"}`}
+                >
+                  Response Code
+                </Text>
+                <Text
+                  className={`text-lg font-semibold ${isDark ? "text-white" : "text-gray-900"}`}
+                >
+                  {transaction.responseCode}
+                </Text>
+              </View>
+            )}
+            {(transaction.responseMessage || transaction.message) && (
+              <View
+                className={`flex-row justify-between items-center py-3 border-b ${isDark ? "border-white/10" : "border-gray-200"}`}
+              >
+                <Text
+                  className={`text-lg font-medium ${isDark ? "text-gray-400" : "text-gray-600"}`}
+                >
+                  Response Message
+                </Text>
+                <Text
+                  className={`text-lg font-semibold text-right flex-1 ml-4 ${isDark ? "text-white" : "text-gray-900"}`}
+                >
+                  {transaction.responseMessage || transaction.message}
+                </Text>
+              </View>
+            )}
+          </>
         )}
       </View>
     </View>

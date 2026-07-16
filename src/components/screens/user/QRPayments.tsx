@@ -1,20 +1,18 @@
+import Button from "@/src/components/ui/Button";
+import InfoChip from "@/src/components/ui/InfoChip";
 import PaymentMethodModal from "@/src/components/ui/Modals/Transaction/PaymentMethodModal";
 import TransactionPin from "@/src/components/ui/Modals/Transaction/TransactionPinModal";
 import ScreenHeader from "@/src/components/ui/ScreenHeader";
 import { useClearLoadingOnLock } from "@/src/hooks/useClearLoadingOnLock";
+import PaymentActivityService from "@/src/lib/services/PaymentActivityService";
 import PaymentService from "@/src/lib/services/PaymentService";
 import QRCodeService from "@/src/lib/services/QRCodeService";
 import ToastService from "@/src/lib/services/ToastService";
+import WidgetStorageService from "@/src/lib/services/WidgetStorageService";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { router, useLocalSearchParams } from "expo-router";
-import React, { useRef, useState } from "react";
-import {
-  ActivityIndicator,
-  Pressable,
-  Text,
-  View,
-  useColorScheme,
-} from "react-native";
+import React, { useEffect, useRef, useState } from "react";
+import { ActivityIndicator, Text, View, useColorScheme } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const QRPayments = () => {
@@ -23,14 +21,15 @@ const QRPayments = () => {
 
   const { token } = useLocalSearchParams<{ token?: string }>();
 
-  if (__DEV__) console.log(token);
-
   const [scanned, setScanned] = useState(false);
   const processingScan = useRef(false);
+  const paymentComplete = useRef(false);
   const [loading, setLoading] = useState(false);
   const [paymentResult, setPaymentResult] = useState<any>(null);
   const [error, setError] = useState("");
-  const [scannedQRData, setScannedQRData] = useState<any>(null);
+  const [scannedQRData, setScannedQRData] = useState<ScannedQRData | null>(
+    null,
+  );
   const [permission, requestPermission] = useCameraPermissions();
 
   const [showPaymentMethodModal, setShowPaymentMethodModal] = useState(false);
@@ -43,33 +42,64 @@ const QRPayments = () => {
     accountName?: string;
   } | null>(null);
 
-  const ProcessPayment = async (twoFACode: string): Promise<boolean> => {
+  // Auto-process token from deep link
+  useEffect(() => {
+    if (!token) return;
+    WidgetStorageService.set("pending_qr_payment_token", token);
+    handleBarCodeScanned({ data: token });
+  }, [token]);
+
+  const ProcessPayment = async (
+    selected2FA: TwoFAType,
+    twoFACode: string,
+  ): Promise<boolean> => {
     if (!pendingPaymentData?.accountNumber || !scannedQRData) {
       setError("Missing payment information");
+      return false;
+    }
+
+    if (!scannedQRData.accountNumber || !scannedQRData.bankCode) {
+      setError("Invalid QR Code: missing merchant account details");
       return false;
     }
 
     setIsProcessingPayment(true);
     setError("");
 
+    const txId = PaymentService.generateTransactionId("QR");
+    PaymentActivityService.start(
+      txId,
+      "QR",
+      `₦${scannedQRData.amount.toLocaleString()}`,
+      scannedQRData.merchantName,
+    );
+
     try {
       const payment = await PaymentService.B2BTransfer({
         amount: scannedQRData.amount,
         currency: "NGN",
-        beneficiaryBankCode: "000",
-        beneficiaryBankName: scannedQRData.merchantName,
-        beneficiaryAccountNumber: "0000000000",
+        beneficiaryBankCode: scannedQRData.bankCode,
+        beneficiaryBankName:
+          scannedQRData.bankName ?? scannedQRData.merchantName,
+        beneficiaryAccountNumber: scannedQRData.accountNumber,
         beneficiaryAccountName: scannedQRData.merchantName,
         fromAccount: pendingPaymentData.accountNumber,
-        narration: `QR Payment to ${scannedQRData.merchantName}`,
+        narration: `QR Payment IFO ${scannedQRData.merchantName}`,
         OneTimeCode: twoFACode,
         saveBeneficiary: false,
         paymentMode: "QR",
-        transactionID: PaymentService.generateTransactionId("QR"),
+        transactionID: txId,
         txType: "DEBIT",
+        twoFAType: selected2FA,
       });
 
       if (payment.success) {
+        paymentComplete.current = true;
+        PaymentActivityService.update(
+          "success",
+          `₦${scannedQRData.amount.toLocaleString()}`,
+          scannedQRData.merchantName,
+        );
         setPaymentResult({
           amount: scannedQRData.amount.toString(),
           recipient: scannedQRData.merchantName,
@@ -81,10 +111,20 @@ const QRPayments = () => {
         return true;
       }
 
+      PaymentActivityService.update(
+        "failed",
+        `₦${scannedQRData.amount.toLocaleString()}`,
+        scannedQRData.merchantName,
+      );
       setError(payment.errorMessage || "Payment processing failed");
       return false;
     } catch (error) {
       if (__DEV__) console.error(error);
+      PaymentActivityService.update(
+        "failed",
+        `₦${scannedQRData.amount.toLocaleString()}`,
+        scannedQRData.merchantName,
+      );
       setError((error as Error).message || "Failed to process payment");
       return false;
     } finally {
@@ -92,8 +132,11 @@ const QRPayments = () => {
     }
   };
 
-  const handlePinSuccess = async (twoFACode: string): Promise<boolean> => {
-    return await ProcessPayment(twoFACode);
+  const handlePinSuccess = async (
+    selected2FA: TwoFAType,
+    twoFACode: string,
+  ): Promise<boolean> => {
+    return await ProcessPayment(selected2FA, twoFACode);
   };
 
   const handleBarCodeScanned = async ({ data }: { data: string }) => {
@@ -159,12 +202,8 @@ const QRPayments = () => {
   const handlePaymentComplete = () => {
     setShowPinModal(false);
     setPendingPaymentData(null);
-    // Navigate to success screen or show success message
     ToastService.success("Payment completed successfully");
-    // Optionally navigate back after successful payment
-    setTimeout(() => {
-      router.back();
-    }, 2000);
+    router.back();
   };
 
   const handleCancel = () => {
@@ -182,7 +221,13 @@ const QRPayments = () => {
       <SafeAreaView
         className={`flex-1 ${isDark ? "bg-[#0a0a0f]" : "bg-[#f5f5fa]"}`}
       >
-        <ScreenHeader title="Scan QR Code" onBack={() => router.back()} />
+        <ScreenHeader title="Scan to Pay" onBack={() => router.back()} />
+        <View className="px-5 pb-2">
+          <InfoChip
+            label="How does this work?"
+            explanation="Point your phone camera at the QR code displayed at the shop or on the merchant's screen. The app will automatically read it and show you the payment details before you confirm."
+          />
+        </View>
 
         <View className="flex-1 justify-center items-center px-6">
           {loading && !scannedQRData ? (
@@ -197,19 +242,17 @@ const QRPayments = () => {
               >
                 Camera Access Is Required To Scan QR Codes.
               </Text>
-              <Pressable
-                className={`bg-lime-400 rounded-2xl py-4 shadow-lg px-6`}
-                onPress={requestPermission}
-              >
-                <Text className="font-semibold">Grant Permission</Text>
-              </Pressable>
+              <Button label="Grant Permission" onPress={requestPermission} />
             </View>
           ) : (
             <View className="w-full h-[70%] rounded-2xl overflow-hidden">
               <CameraView
                 style={{ flex: 1 }}
                 onBarcodeScanned={
-                  scanned || showPaymentMethodModal || showPinModal
+                  scanned ||
+                  showPaymentMethodModal ||
+                  showPinModal ||
+                  paymentComplete.current
                     ? undefined
                     : handleBarCodeScanned
                 }

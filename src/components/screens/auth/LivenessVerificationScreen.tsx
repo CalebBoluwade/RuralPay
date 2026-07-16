@@ -1,24 +1,26 @@
 import {
-  CHALLENGE_LABELS,
-  VerificationResult,
-  useLiveness,
+    CHALLENGE_LABELS,
+    VerificationResult,
+    useLiveness,
 } from "@/src/hooks/useLiveness";
+import { router } from "expo-router";
 import {
-  Fingerprint,
-  RotateCcw,
-  ScanFace,
-  ShieldCheck,
+    Fingerprint,
+    RotateCcw,
+    ScanFace,
+    ShieldCheck,
 } from "lucide-react-native";
 import { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  Pressable,
-  Text,
-  View,
-  useColorScheme,
+    ActivityIndicator,
+    Pressable,
+    Text,
+    View,
+    useColorScheme,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Camera } from "react-native-vision-camera";
+import ScreenHeader from "../../ui/ScreenHeader";
 
 interface LivenessVerificationProps {
   userId: string;
@@ -52,6 +54,8 @@ export default function LivenessVerificationScreen({
     error,
     start,
     reset,
+    requestPermission,
+    hasPermission,
   } = useLiveness(bvn);
 
   const cardClass = isDark
@@ -59,6 +63,14 @@ export default function LivenessVerificationScreen({
     : "bg-white border border-slate-200 shadow-sm";
 
   const handleBegin = async () => {
+    // Request permission first, before changing screen step
+    if (!hasPermission) {
+      const granted = await requestPermission();
+      if (!granted) {
+        onFailure("Camera Permission Denied.");
+        return;
+      }
+    }
     setScreenStep("camera");
     await start();
   };
@@ -86,10 +98,24 @@ export default function LivenessVerificationScreen({
     <SafeAreaView
       className={isDark ? "flex-1 bg-slate-950" : "flex-1 bg-slate-50"}
     >
+      <ScreenHeader
+        title={
+          screenStep === "idle"
+            ? "Identity Verification"
+            : screenStep === "success"
+              ? "Verification Successful"
+              : screenStep === "failed"
+                ? "Verification Failed"
+                : "Liveness Check In Progress"
+        }
+        subtitle="Verify Your Identity Using Your Face"
+        goBack
+        onBack={() => router.back()}
+      />
       {/* ── IDLE ── */}
       {screenStep === "idle" && (
-        <View className="flex-1 px-5 mt-6 gap-6">
-          <View>
+        <View className="flex-1 justify-end px-5 mt-6 gap-6">
+          {/* <View>
             <Text
               className={`text-3xl text-center font-brand font-bold ${isDark ? "text-white" : "text-slate-900"}`}
             >
@@ -100,7 +126,7 @@ export default function LivenessVerificationScreen({
             >
               Verify your identity using your face and BVN to proceed.
             </Text>
-          </View>
+          </View> */}
 
           <View className={`rounded-2xl overflow-hidden ${cardClass}`}>
             <StepItem
@@ -148,7 +174,7 @@ export default function LivenessVerificationScreen({
             ref={cameraRef}
             style={{ flex: 1 }}
             device={device}
-            isActive
+            isActive={screenStep === "camera"}
             photo
             frameProcessor={frameProcessor}
             pixelFormat="yuv"
@@ -222,9 +248,9 @@ export default function LivenessVerificationScreen({
               Identity Verified
             </Text>
             <Text
-              className={`text-sm text-center ${isDark ? "text-slate-400" : "text-slate-500"}`}
+              className={`text-base text-center ${isDark ? "text-slate-400" : "text-slate-500"}`}
             >
-              Your face and BVN have been matched successfully.
+              Your Face and BVN Matched Successfully.
             </Text>
           </View>
         </View>
@@ -251,7 +277,7 @@ export default function LivenessVerificationScreen({
               className="mt-2 w-full rounded-2xl py-4 items-center bg-lime-500"
               onPress={handleRetry}
             >
-              <Text className="text-sm font-brand font-bold text-white">
+              <Text className="text-base font-brand font-bold text-white">
                 Try Again
               </Text>
             </Pressable>
@@ -278,11 +304,11 @@ function StepItem({
   return (
     <View
       className={`flex-row items-center px-4 py-4 gap-4 ${
-        !isLast
-          ? isDark
+        isLast
+          ? ""
+          : isDark
             ? "border-b border-white/10"
             : "border-b border-slate-100"
-          : ""
       }`}
     >
       <View

@@ -1,3 +1,5 @@
+import Button from "@/src/components/ui/Button";
+import Card from "@/src/components/ui/Card";
 import BanksModal from "@/src/components/ui/Modals/BanksModal";
 import ScreenHeader from "@/src/components/ui/ScreenHeader";
 import AccountService from "@/src/lib/services/AccountService";
@@ -6,14 +8,14 @@ import { router } from "expo-router";
 import { ChevronDown, ShieldCheck } from "lucide-react-native";
 import { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    Modal,
-    Pressable,
-    ScrollView,
-    Text,
-    TextInput,
-    View,
-    useColorScheme,
+  ActivityIndicator,
+  Modal,
+  Pressable,
+  ScrollView,
+  Text,
+  TextInput,
+  View,
+  useColorScheme,
 } from "react-native";
 
 export default function LinkBankAccount() {
@@ -65,7 +67,7 @@ export default function LinkBankAccount() {
 
     setVerifying(true);
     const result = await AccountService.ResolveAccountName(
-      selectedBank.code,
+      selectedBank.bankCode,
       accountNumber,
     );
     setAccountName(
@@ -89,7 +91,7 @@ export default function LinkBankAccount() {
       setLoading(true);
 
       const x = await AccountService.LinkAccount({
-        bankCode: selectedBank?.code!,
+        bankCode: selectedBank?.bankCode!,
         accountNumber,
         IsPrimary: false,
       });
@@ -138,12 +140,9 @@ export default function LinkBankAccount() {
               </Text>
             </View>
 
-            <View
-              className={`px-6 py-6 rounded-3xl mb-6 ${
-                isDark
-                  ? "bg-white/10 border-2 border-white/20"
-                  : "bg-gray-50 border-2 border-gray-200"
-              }`}
+            <Card
+              lightClass="bg-gray-50 border-2 border-gray-200"
+              className="px-6 py-6 mb-6"
             >
               <Text
                 className={`text-base font-semibold mb-4 ${
@@ -220,7 +219,7 @@ export default function LinkBankAccount() {
                   </Text>
                 </View>
               </View>
-            </View>
+            </Card>
 
             <View
               className={`px-6 py-5 rounded-3xl ${
@@ -246,7 +245,7 @@ export default function LinkBankAccount() {
                 </Text>
               </View>
               <Text
-                className={`text-sm mt-2 ${
+                className={`text-base mt-2 ${
                   isDark ? "text-lime-300" : "text-lime-700"
                 }`}
               >
@@ -256,25 +255,12 @@ export default function LinkBankAccount() {
           </View>
 
           <View>
-            <Pressable
-              className={`py-5 rounded-2xl mt-3 mb-3 ${
-                processingDebit
-                  ? "bg-gray-400"
-                  : isDark
-                    ? "bg-lime-600"
-                    : "bg-lime-600"
-              }`}
+            <Button
+              label="Proceed to Verification"
+              loading={processingDebit}
               onPress={handleDirectDebit}
-              disabled={processingDebit}
-            >
-              {processingDebit ? (
-                <ActivityIndicator size="small" color="#fff" />
-              ) : (
-                <Text className="text-white text-center text-xl font-bold">
-                  Proceed to Verification
-                </Text>
-              )}
-            </Pressable>
+              className="mt-3 mb-3"
+            />
 
             <Pressable className="py-4" onPress={() => router.back()}>
               <Text
@@ -326,7 +312,7 @@ export default function LinkBankAccount() {
               onPress={() => setShowBankModal(true)}
             >
               <Text
-                className={`text-sm font-semibold mb-2 ${
+                className={`text-base font-semibold mb-2 ${
                   isDark ? "text-gray-300" : "text-gray-700"
                 }`}
               >
@@ -359,7 +345,7 @@ export default function LinkBankAccount() {
 
             <View className="mb-4">
               <Text
-                className={`text-sm font-semibold mb-2 ${
+                className={`text-base font-semibold mb-2 ${
                   isDark ? "text-gray-300" : "text-gray-700"
                 }`}
               >
@@ -393,7 +379,7 @@ export default function LinkBankAccount() {
                   color={isDark ? "#a78bfa" : "#7c3aed"}
                 />
                 <Text
-                  className={`ml-3 text-sm ${
+                  className={`ml-3 text-base ${
                     isDark ? "text-gray-300" : "text-gray-700"
                   }`}
                 >
@@ -405,7 +391,7 @@ export default function LinkBankAccount() {
             {accountName && !verifying && (
               <View className="mb-4">
                 <Text
-                  className={`text-sm font-semibold mb-2 ${
+                  className={`text-base font-semibold mb-2 ${
                     isDark ? "text-gray-300" : "text-gray-700"
                   }`}
                 >
@@ -423,21 +409,12 @@ export default function LinkBankAccount() {
               </View>
             )}
 
-            <Pressable
-              className={`py-4 rounded-2xl mt-6 ${
-                accountName && !verifying
-                  ? isDark
-                    ? "bg-lime-600"
-                    : "bg-lime-600"
-                  : "bg-gray-400"
-              }`}
-              onPress={handleLinkAccount}
+            <Button
+              label="Link Account"
               disabled={!accountName || verifying}
-            >
-              <Text className="text-white text-center text-lg font-bold">
-                Link Account
-              </Text>
-            </Pressable>
+              onPress={handleLinkAccount}
+              className="mt-6"
+            />
 
             <BanksModal
               banks={banks}
@@ -458,12 +435,9 @@ export default function LinkBankAccount() {
             isDark ? "bg-black/80" : "bg-black/50"
           }`}
         >
-          <View
-            className={`rounded-3xl p-8 items-center backdrop-blur-xl ${
-              isDark
-                ? "bg-white/10 border border-white/20"
-                : "bg-white border border-gray-200"
-            }`}
+          <Card
+            lightClass="bg-white border border-gray-200"
+            className="rounded-3xl p-8 items-center backdrop-blur-xl"
           >
             <ActivityIndicator
               size="large"
@@ -476,7 +450,7 @@ export default function LinkBankAccount() {
             >
               Linking account...
             </Text>
-          </View>
+          </Card>
         </View>
       </Modal>
     </View>

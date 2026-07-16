@@ -9,9 +9,10 @@ class AccountService {
     return response;
   }
 
-  async getAccountData(): Promise<AccountData> {
-    const response = await axiosInstance.get("/account");
-    return response.de;
+  async getAccountData(): Promise<APIResponse<AccountData>> {
+    const response =
+      await axiosInstance.get<APIResponse<AccountData>>("/account");
+    return response;
   }
 
   async GetVirtualAccount(): Promise<{
@@ -100,14 +101,13 @@ class AccountService {
     }
   }
 
-  async SendUserOTP(action: string, channel: string): Promise<APIResponse<{}>> {
-    if (__DEV__) console.log(action, channel);
+  async SendUserOTP(action: string): Promise<APIResponse<{}>> {
+    if (__DEV__) console.log(action);
     try {
       const response = await axiosInstance.post<APIResponse<{}>>(
         "/account/send-otp",
         {
           action,
-          channel,
         },
       );
 
@@ -155,6 +155,42 @@ class AccountService {
       const message =
         error.response?.data?.message || "Identity verification failed";
       return { success: false, message, details: { identityToken: "" } };
+    }
+  }
+
+  async updateSpendingLimits(limits: {
+    dailyLimit: number;
+    singleTransactionLimit: number;
+  }): Promise<APIResponse<{}>> {
+    try {
+      const response = await axiosInstance.patch<APIResponse<{}>>(
+        "/account/spending-limits",
+        limits,
+      );
+      return response;
+    } catch (error: any) {
+      const message =
+        error.response?.data?.message || "Failed to update spending limits";
+      return { success: false, message, details: {} };
+    }
+  }
+
+  async updateNotificationSettings(settings: {
+    pushNotifications: boolean;
+    smsNotifications: boolean;
+    emailNotifications: boolean;
+  }): Promise<APIResponse<{}>> {
+    try {
+      const response = await axiosInstance.patch<APIResponse<{}>>(
+        "/account/notification-settings",
+        settings,
+      );
+      return response;
+    } catch (error: any) {
+      const message =
+        error.response?.data?.message ||
+        "Failed to update notification settings";
+      return { success: false, message, details: {} };
     }
   }
 

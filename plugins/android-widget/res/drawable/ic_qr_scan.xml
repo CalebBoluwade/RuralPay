@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- QR viewfinder icon -->
+    <path android:fillColor="#2563eb"
+        android:pathData="M3,3h7v7H3V3zm1,1v5h5V4H4zm1,1h3v3H5V5z" />
+    <path android:fillColor="#2563eb"
+        android:pathData="M14,3h7v7h-7V3zm1,1v5h5V4h-5zm1,1h3v3h-3V5z" />
+    <path android:fillColor="#2563eb"
+        android:pathData="M3,14h7v7H3v-7zm1,1v5h5v-5H4zm1,1h3v3H5v-3z" />
+    <path android:fillColor="#2563eb"
+        android:pathData="M14,14h2v2h-2zM16,14h2v2h-2zM18,14h3v2h-3zM14,16h2v2h-2zM16,18h2v2h-2zM18,16h2v2h-2zM20,18h1v3h-3v-1h2z" />
+</vector>

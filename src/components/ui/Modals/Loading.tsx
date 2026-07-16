@@ -28,7 +28,7 @@ const Loading = ({
         >
           <ActivityIndicator size="large" color={accentColor} />
           <Text
-            className={`mt-4 text-sm font-semibold ${isDark ? "text-slate-300" : "text-slate-700"}`}
+            className={`mt-4 text-base font-semibold ${isDark ? "text-slate-300" : "text-slate-700"}`}
           >
             Loading {screenName}...
           </Text>

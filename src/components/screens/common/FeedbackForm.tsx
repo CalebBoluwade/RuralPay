@@ -1,7 +1,12 @@
 import { useLanguage } from "@/src/components/context/LanguageContext";
+import Button from "@/src/components/ui/Button";
+import Card from "@/src/components/ui/Card";
 import OptimizedInput from "@/src/components/ui/Input/OptimizedInput";
+import Loading from "@/src/components/ui/Modals/Loading";
 import ScreenHeader from "@/src/components/ui/ScreenHeader";
 import { UserFeedBack, UserFeedBackSchema } from "@/src/lib/schema/validations";
+import FeedbackService from "@/src/lib/services/FeedbackService";
+import ToastService from "@/src/lib/services/ToastService";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { router } from "expo-router";
 import * as StoreReview from "expo-store-review";
@@ -79,7 +84,17 @@ const FeedbackForm = () => {
   };
 
   const onSubmit = async (data: UserFeedBack) => {
-    if (__DEV__) console.log(data);
+    const result = await FeedbackService.submitFeedback({
+      ...data,
+      starRating,
+    });
+
+    if (result.success) {
+      ToastService.success("Thanks for your feedback! 🙌");
+      router.back();
+    } else {
+      ToastService.error(result.message || "Failed to submit feedback");
+    }
   };
 
   return (
@@ -98,8 +113,10 @@ const FeedbackForm = () => {
           contentContainerClassName="px-4 pb-10"
         >
           {/* Hero */}
-          <View
-            className={`rounded-3xl p-5 mb-3 ${isDark ? "bg-white/5 border border-white/10" : "bg-white border border-gray-100"}`}
+          <Card
+            darkClass="bg-white/5 border border-white/10"
+            lightClass="bg-white border border-gray-100"
+            className="rounded-3xl p-5 mb-3"
           >
             <View className="flex-row gap-3 items-center">
               <Text className="text-3xl mb-2">🙌</Text>
@@ -111,16 +128,18 @@ const FeedbackForm = () => {
             </View>
 
             <Text
-              className={`text-sm leading-5 ${isDark ? "text-slate-400" : "text-slate-500"}`}
+              className={`text-base leading-5 ${isDark ? "text-slate-400" : "text-slate-500"}`}
             >
               Every Piece of feedback goes directly to our team. Help us build
               the product you deserve.
             </Text>
-          </View>
+          </Card>
 
           {/* Star Rating */}
-          <View
-            className={`rounded-3xl p-5 mb-3 items-center ${isDark ? "bg-white/5 border border-white/10" : "bg-white border border-gray-100"}`}
+          <Card
+            darkClass="bg-white/5 border border-white/10"
+            lightClass="bg-white border border-gray-100"
+            className="rounded-3xl p-5 mb-3 items-center"
           >
             <Text
               className={`text-lg font-semibold font-brand mb-1 ${isDark ? "text-white" : "text-slate-900"}`}
@@ -150,11 +169,13 @@ const FeedbackForm = () => {
                     : "We're Sorry To Hear That. Please Tell Us More 👇"}
               </Text>
             )}
-          </View>
+          </Card>
 
           {/* Feedback Fields */}
-          <View
-            className={`rounded-3xl p-5 mb-6 ${isDark ? "bg-white/5 border border-white/10" : "bg-white border border-gray-100"}`}
+          <Card
+            darkClass="bg-white/5 border border-white/10"
+            lightClass="bg-white border border-gray-100"
+            className="rounded-3xl p-5 mb-6"
           >
             {SECTIONS.map(({ name, emoji, label, placeholder }) => (
               <OptimizedInput
@@ -167,18 +188,15 @@ const FeedbackForm = () => {
                 error={errors[name]}
               />
             ))}
-          </View>
+          </Card>
 
           {/* Submit */}
-          <Pressable
+          <Button
+            label="Send Feedback 🚀"
             onPress={handleSubmit(onSubmit)}
-            disabled={isSubmitting}
-            className={`bg-lime-400 rounded-2xl py-4 shadow-lg mb-4 ${isSubmitting ? "opacity-50" : ""}`}
-          >
-            <Text className="text-black text-lg font-bold text-center">
-              {isSubmitting ? "Sending..." : "Send Feedback 🚀"}
-            </Text>
-          </Pressable>
+            loading={isSubmitting}
+            className="shadow-lg mb-4"
+          />
 
           {/* Privacy note */}
           <View className="flex-row justify-center items-center gap-1">
@@ -191,6 +209,14 @@ const FeedbackForm = () => {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <Loading
+        loading={isSubmitting}
+        isInitialLoad={isSubmitting}
+        accentColor={isDark ? "#a3e635" : "#65a30d"}
+        isDark={isDark}
+        screenName="Feedback"
+      />
     </SafeAreaView>
   );
 };

@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { SvgUri } from "react-native-svg";
+import Button from "../Button";
 
 interface BankModalProps {
   banks: Bank[];
@@ -38,7 +39,7 @@ const renderBankItem = (
 
   return (
     <Pressable
-      key={bank.code}
+      key={bank.bankCode}
       className={`p-4 gap-4 flex-row w-full items-center ${
         isDark ? "border-b border-white/10" : "border-b border-gray-100"
       }`}
@@ -135,38 +136,25 @@ const BanksModal: React.FC<BankModalProps> = ({
               />
             </View>
           ) : fetchError ? (
-            <View className="flex-1 items-center justify-center py-16 gap-3">
+            <View className="flex-1 items-center justify-center py-16 px-6 gap-3">
               <Text
-                className={`text-base ${isDark ? "text-gray-400" : "text-gray-500"}`}
+                className={`text-lg ${isDark ? "text-gray-400" : "text-gray-500"}`}
               >
                 Failed To Load Banks
               </Text>
-              <Pressable
-                onPress={onRetry}
-                className={`px-5 py-2 rounded-xl ${
-                  isDark ? "bg-emerald-500/20" : "bg-emerald-100"
-                }`}
-              >
-                <Text
-                  className={`font-semibold ${
-                    isDark ? "text-emerald-400" : "text-emerald-700"
-                  }`}
-                >
-                  Retry
-                </Text>
-              </Pressable>
+              <Button label="Retry" onPress={onRetry} />
             </View>
           ) : (
             <FlatList
               data={filteredBanks}
-              keyExtractor={(item) => item.code}
+              keyExtractor={(item) => item.bankCode}
               renderItem={({ item }) =>
                 renderBankItem(item, isDark, onBankSelected)
               }
               ListEmptyComponent={
-                <View className="flex-1 items-center justify-center py-16">
+                <View className="flex-1 items-center justify-center py-16 px-6">
                   <Text
-                    className={`text-base ${isDark ? "text-gray-400" : "text-gray-500"}`}
+                    className={`text-lg ${isDark ? "text-gray-400" : "text-gray-500"}`}
                   >
                     No Banks Found
                   </Text>

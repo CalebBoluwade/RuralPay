@@ -14,14 +14,29 @@ module.exports = function withMavenCentral(config) {
       if (fs.existsSync(hceBuildGradle)) {
         let contents = fs.readFileSync(hceBuildGradle, 'utf8');
 
-        // Remove jcenter() if present (removed in Gradle 9)
+        // ❌ Remove deprecated jcenter
         contents = contents.replace(/\s*jcenter\(\)/g, '');
 
-        // Add mavenCentral() to buildscript repositories if missing
-        if (!contents.match(/buildscript[\s\S]*?repositories[\s\S]*?mavenCentral\(\)/)) {
+        // ✅ Ensure repositories
+        contents = contents.replace(
+          /(repositories\s*\{)/g,
+          `$1
+        google()
+        mavenCentral()`
+        );
+
+        // ✅ Fix Kotlin version (CRITICAL)
+        contents = contents.replace(
+          /ext\.kotlin_version\s*=\s*["'][^"']+["']/,
+          `ext.kotlin_version = "1.9.24"`
+        );
+
+        // If kotlin version doesn't exist, inject it
+        if (!contents.includes('ext.kotlin_version')) {
           contents = contents.replace(
-            /(buildscript[\s\S]*?repositories\s*\{)/,
-            '$1\n    mavenCentral()'
+            /(buildscript\s*\{)/,
+            `$1
+    ext.kotlin_version = "1.9.24"`
           );
         }
 

@@ -1,5 +1,6 @@
 import AccountService from "@/src/lib/services/AccountService";
 import ToastService from "@/src/lib/services/ToastService";
+import { router } from "expo-router";
 import { Eye, EyeOff } from "lucide-react-native";
 import React, { useEffect, useRef, useState } from "react";
 import {
@@ -22,7 +23,7 @@ interface BalanceCardProps {
 }
 
 const { width } = Dimensions.get("window");
-const CARD_PADDING = 4;
+const CARD_PADDING = 0;
 const CARD_WIDTH = width - 50;
 const CARD_MARGIN = 8;
 
@@ -48,7 +49,7 @@ const BalanceCard: React.FC<BalanceCardProps> = ({
       setInternalLoading(false);
     } catch (error) {
       if (__DEV__) console.warn(error);
-      ToastService.error("Failed to load Balance");
+      ToastService.error("Failed To Load Balance");
       setInternalLoading(false);
     }
   };
@@ -103,21 +104,40 @@ const BalanceCard: React.FC<BalanceCardProps> = ({
 
   if (!allAccounts?.accounts?.length) {
     return (
-      <View
-        className={`bg-lime-800/75 rounded-2xl shadow-lg border-2 border-dashed ${
+      <Pressable
+        onPress={() => router.push("/link-account" as any)}
+        className={`rounded-2xl mx-4 mb-2 p-5 ${
           isDark
-            ? "bg-lime-600/20 border-lime-300"
-            : "bg-lime-50 border-lime-800 shadow-lg"
-        } py-5 px-4 mx-4`}
+            ? "bg-lime-600/15 border-2 border-dashed border-lime-500/40"
+            : "bg-lime-50 border-2 border-dashed border-lime-400"
+        }`}
       >
-        <View className="flex-row justify-between items-center">
-          <Text className="text-white text-base font-medium">
-            No Accounts available
-          </Text>
-          <Text className="text-white text-right text-xl font-bold">NA</Text>
+        <View className="flex-row items-center gap-4">
+          <View
+            className={`w-14 h-14 rounded-2xl items-center justify-center ${
+              isDark ? "bg-lime-500/20" : "bg-lime-100"
+            }`}
+          >
+            <Text style={{ fontSize: 28 }}>🏦</Text>
+          </View>
+          <View className="flex-1">
+            <Text
+              className={`text-base font-bold ${
+                isDark ? "text-lime-400" : "text-lime-700"
+              }`}
+            >
+              Link A Bank Account To See Your Balance
+            </Text>
+            <Text
+              className={`text-xs mt-1 ${
+                isDark ? "text-slate-400" : "text-slate-500"
+              }`}
+            >
+              Tap here to add your first account — takes about 1 minute
+            </Text>
+          </View>
         </View>
-        <Text className="text-white text-3xl font-bold">₦0.00</Text>
-      </View>
+      </Pressable>
     );
   }
 
@@ -129,10 +149,10 @@ const BalanceCard: React.FC<BalanceCardProps> = ({
           className={`px-4 py-5 mb-3 mx-2 rounded-xl ${isDark ? "bg-white/10" : "bg-black/10"}`}
         >
           <View className="flex-row justify-between items-center mb-1">
-            <Text className={`${isDark ? "text-white/80" : ""} text-sm`}>
+            <Text className={`${isDark ? "text-white/80" : ""} text-base`}>
               Daily Spending
             </Text>
-            <Text className={`${isDark ? "text-white/80" : ""} text-sm`}>
+            <Text className={`${isDark ? "text-white/80" : ""} text-base`}>
               {visibleBalance
                 ? `₦${(allAccounts.dailySpent || 0).toLocaleString()} / ₦${(allAccounts.dailyLimit || 1000).toLocaleString()}`
                 : "•••• / ••••"}
@@ -196,7 +216,7 @@ const BalanceCard: React.FC<BalanceCardProps> = ({
                     {account.accountId || "NA"}
                   </Text>
 
-                  <Text className="text-white text-sm font-brand font-semibold">
+                  <Text className="text-white text-base font-brand font-semibold">
                     {account.accountName || "NA"}
                   </Text>
                 </View>

@@ -1,4 +1,5 @@
 import { useLanguage } from "@/src/components/context/LanguageContext";
+import Button from "@/src/components/ui/Button";
 import OptimizedInput from "@/src/components/ui/Input/OptimizedInput";
 import OTPInput from "@/src/components/ui/Input/OTPInput";
 import {
@@ -82,11 +83,6 @@ export default function ForgotPasswordScreen() {
       // router.replace("/auth/Login"); d
       ToastService.success("Password Reset Successfully");
       router.back();
-
-      setTimeout(
-        () => ToastService.success("Password reset successfully"),
-        3000,
-      );
     } else {
       ToastService.error("Failed to Reset Password");
     }
@@ -154,17 +150,12 @@ export default function ForgotPasswordScreen() {
                 error={identifierErrors.identifier}
               />
 
-              <Pressable
+              <Button
+                label={isIdentifierSubmitting ? "Sending..." : "Send Code"}
+                loading={isIdentifierSubmitting}
                 onPress={handleIdentifierSubmit(onIdentifierSubmit)}
-                disabled={isIdentifierSubmitting}
-                className={`bg-lime-400 rounded-2xl py-4 shadow-lg ${
-                  isIdentifierSubmitting ? "opacity-50" : ""
-                }`}
-              >
-                <Text className="text-white text-lg font-bold text-center">
-                  {isIdentifierSubmitting ? "Sending..." : "Send Code"}
-                </Text>
-              </Pressable>
+                className="shadow-lg"
+              />
             </>
           )}
 
@@ -182,14 +173,11 @@ export default function ForgotPasswordScreen() {
                     maxLength={6}
                   /> */}
 
-              <Pressable
+              <Button
+                label="Verify Code"
                 onPress={onOtpSubmit}
-                className="bg-lime-700 rounded-2xl py-4 shadow-lg mb-6"
-              >
-                <Text className="text-white text-lg font-bold text-center">
-                  Verify Code
-                </Text>
-              </Pressable>
+                className="shadow-lg mb-6"
+              />
 
               <Pressable onPress={resendCode}>
                 <Text
@@ -224,17 +212,12 @@ export default function ForgotPasswordScreen() {
                 error={resetErrors.confirmPassword}
               />
 
-              <Pressable
+              <Button
+                label={isResetSubmitting ? "Resetting..." : "Reset Password"}
+                loading={isResetSubmitting}
                 onPress={handleResetSubmit(onResetSubmit)}
-                disabled={isResetSubmitting}
-                className={`bg-lime-700 rounded-2xl py-4 shadow-lg ${
-                  isResetSubmitting ? "opacity-50" : ""
-                }`}
-              >
-                <Text className="text-white text-lg font-bold text-center">
-                  {isResetSubmitting ? "Resetting..." : "Reset Password"}
-                </Text>
-              </Pressable>
+                className="shadow-lg"
+              />
             </>
           )}
           {/* </View> */}

@@ -5,7 +5,7 @@ import { AppState, AppStateStatus } from "react-native";
 import { useAuth } from "./AuthSessionProvider";
 
 const LOCK_TIMEOUT_KEY = "lockTimeout";
-const DEFAULT_LOCK_TIMEOUT = 60 * 5 * 1000; // 1 Minute
+const DEFAULT_LOCK_TIMEOUT = 60 * 5 * 1000; // 5 minutes
 
 export const UserInactivityProvider = ({ children }: { children: any }) => {
   const { user } = useAuth();
@@ -23,7 +23,7 @@ export const UserInactivityProvider = ({ children }: { children: any }) => {
   const navigateToLock = React.useCallback(() => {
     if (__DEV__) console.log("FSZ");
     try {
-      router.replace("/auth/LockScreen");
+      router.replace("/lock-screen");
     } catch (e) {
       if (__DEV__) console.log("Navigation not ready:", e);
     }
@@ -60,7 +60,7 @@ export const UserInactivityProvider = ({ children }: { children: any }) => {
 
   const handleInactive = React.useCallback(() => {
     try {
-      router.push("/(modal)/overlay");
+      router.push("/overlay");
     } catch (e) {
       if (__DEV__) console.log("Navigation not ready:", e);
     }
@@ -114,13 +114,13 @@ export const UserInactivityProvider = ({ children }: { children: any }) => {
       };
     },
     [
-      // user,
-      // resetInactivityTimer,
-      // navigateToLock,
-      // handleBackground,
-      // handleActive,
-      // handleInactive,
-      // handleInactiveToActive,
+      user,
+      resetInactivityTimer,
+      navigateToLock,
+      handleBackground,
+      handleActive,
+      handleInactive,
+      handleInactiveToActive,
     ],
   );
 

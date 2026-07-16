@@ -1,13 +1,13 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import {
-  Modal,
-  Pressable,
-  ScrollView,
-  Text,
-  TextInput,
-  View,
-  useColorScheme,
+    Modal,
+    Pressable,
+    ScrollView,
+    Text,
+    TextInput,
+    View,
+    useColorScheme,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import PaymentMethodModal from "./Transaction/PaymentMethodModal";
@@ -122,7 +122,7 @@ const TicketsModal: React.FC<TicketsModalProps> = ({ visible, onClose }) => {
           showsVerticalScrollIndicator={false}
         >
           <Text
-            className={`text-sm font-semibold mb-3 ${isDark ? "text-gray-300" : "text-gray-700"}`}
+            className={`text-base font-semibold mb-3 ${isDark ? "text-gray-300" : "text-gray-700"}`}
           >
             Select Event
           </Text>
@@ -155,7 +155,7 @@ const TicketsModal: React.FC<TicketsModalProps> = ({ visible, onClose }) => {
                         color={isDark ? "#9CA3AF" : "#6B7280"}
                       />
                       <Text
-                        className={`text-sm ml-1 ${isDark ? "text-gray-400" : "text-gray-600"}`}
+                        className={`text-base ml-1 ${isDark ? "text-gray-400" : "text-gray-600"}`}
                       >
                         {event.date}
                       </Text>
@@ -167,7 +167,7 @@ const TicketsModal: React.FC<TicketsModalProps> = ({ visible, onClose }) => {
                         color={isDark ? "#9CA3AF" : "#6B7280"}
                       />
                       <Text
-                        className={`text-sm ml-1 ${isDark ? "text-gray-400" : "text-gray-600"}`}
+                        className={`text-base ml-1 ${isDark ? "text-gray-400" : "text-gray-600"}`}
                       >
                         {event.venue}
                       </Text>
@@ -197,7 +197,7 @@ const TicketsModal: React.FC<TicketsModalProps> = ({ visible, onClose }) => {
           {selectedEvent && (
             <>
               <Text
-                className={`text-sm font-semibold mb-3 ${isDark ? "text-gray-300" : "text-gray-700"}`}
+                className={`text-base font-semibold mb-3 ${isDark ? "text-gray-300" : "text-gray-700"}`}
               >
                 Number of Tickets
               </Text>
@@ -237,7 +237,7 @@ const TicketsModal: React.FC<TicketsModalProps> = ({ visible, onClose }) => {
               </View>
 
               <Text
-                className={`text-sm font-semibold mb-3 ${isDark ? "text-gray-300" : "text-gray-700"}`}
+                className={`text-base font-semibold mb-3 ${isDark ? "text-gray-300" : "text-gray-700"}`}
               >
                 Email Address
               </Text>

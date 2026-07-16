@@ -1,16 +1,16 @@
-import { axiosInstance } from "@/src/lib/api";
-import { useStripe } from "@stripe/stripe-react-native";
-import { Reader, useStripeTerminal } from "@stripe/stripe-terminal-react-native";
+import Button from "@/src/components/ui/Button";
+import Card from "@/src/components/ui/Card";
+import InfoChip from "@/src/components/ui/InfoChip";
+// import { useStripe } from "@stripe/stripe-react-native";
+// import { Reader, useStripeTerminal } from "@stripe/stripe-terminal-react-native";
 import { router } from "expo-router";
 import { CreditCard, Smartphone } from "lucide-react-native";
 import { useState } from "react";
 import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  Text,
-  View,
-  useColorScheme,
+    ScrollView,
+    Text,
+    View,
+    useColorScheme
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import ScreenHeader from "../../ui/ScreenHeader";
@@ -18,7 +18,7 @@ import ScreenHeader from "../../ui/ScreenHeader";
 // ─── Wallet / Apple Pay / Google Pay ────────────────────────────────────────
 
 const WalletPaySection = () => {
-  const { initPaymentSheet, presentPaymentSheet } = useStripe();
+  // const { initPaymentSheet, presentPaymentSheet } = useStripe();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
 
@@ -31,22 +31,22 @@ const WalletPaySection = () => {
     setError(null);
     setSuccess(false);
     try {
-      const { clientSecret } = await axiosInstance.post<{
-        clientSecret: string;
-      }>("/payment/create-intent");
+      // const { clientSecret } = await axiosInstance.post<{
+      //   clientSecret: string;
+      // }>("/payment/create-intent");
 
-      const { error: initError } = await initPaymentSheet({
-        paymentIntentClientSecret: clientSecret,
-        merchantDisplayName: "RuralPay",
-        applePay: { merchantCountryCode: "NG" },
-        googlePay: { merchantCountryCode: "NG", testEnv: __DEV__ },
-        allowsDelayedPaymentMethods: false,
-      });
+      // const { error: initError } = await initPaymentSheet({
+      //   paymentIntentClientSecret: clientSecret,
+      //   merchantDisplayName: "RuralPay",
+      //   applePay: { merchantCountryCode: "NG" },
+      //   googlePay: { merchantCountryCode: "NG", testEnv: __DEV__ },
+      //   allowsDelayedPaymentMethods: false,
+      // });
 
-      if (initError) throw new Error(initError.message);
+      // if (initError) throw new Error(initError.message);
 
-      const { error: presentError } = await presentPaymentSheet();
-      if (presentError) throw new Error(presentError.message);
+      // const { error: presentError } = await presentPaymentSheet();
+      // if (presentError) throw new Error(presentError.message);
 
       setSuccess(true);
     } catch (e) {
@@ -57,9 +57,7 @@ const WalletPaySection = () => {
   };
 
   return (
-    <View
-      className={`rounded-3xl p-5 mb-4 ${isDark ? "bg-white/10 border border-white/20" : "bg-white border border-slate-200 shadow-sm"}`}
-    >
+    <Card className="rounded-3xl p-5 mb-4">
       <View className="flex-row items-center gap-3 mb-4">
         <View
           className={`w-11 h-11 rounded-2xl items-center justify-center ${isDark ? "bg-lime-500/20" : "bg-lime-50"}`}
@@ -82,32 +80,22 @@ const WalletPaySection = () => {
 
       {error && (
         <View className="mb-3 px-4 py-3 rounded-2xl bg-red-500/10 border border-red-500/20">
-          <Text className="text-red-500 text-sm">{error}</Text>
+          <Text className="text-red-500 text-base">{error}</Text>
         </View>
       )}
 
       {success && (
         <View className="mb-3 px-4 py-3 rounded-2xl bg-lime-500/10 border border-lime-500/20">
           <Text
-            className={`text-sm font-semibold ${isDark ? "text-lime-400" : "text-lime-700"}`}
+            className={`text-base font-semibold ${isDark ? "text-lime-400" : "text-lime-700"}`}
           >
             ✓ Payment confirmed
           </Text>
         </View>
       )}
 
-      <Pressable
-        onPress={handlePay}
-        disabled={loading}
-        className={`py-4 rounded-2xl items-center justify-center ${loading ? "opacity-50" : ""} ${isDark ? "bg-lime-500" : "bg-lime-600"}`}
-      >
-        {loading ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <Text className="text-white font-bold text-base">Pay Now</Text>
-        )}
-      </Pressable>
-    </View>
+      <Button label="Pay Now" loading={loading} onPress={handlePay} />
+    </Card>
   );
 };
 
@@ -117,10 +105,10 @@ const TapToPaySection = () => {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
 
-  const [discoveredReaders, setDiscoveredReaders] = useState<Reader.Type[]>([]);
-  const { discoverReaders, connectReader } = useStripeTerminal({
-    onUpdateDiscoveredReaders: (readers) => setDiscoveredReaders(readers),
-  });
+  // const [discoveredReaders, setDiscoveredReaders] = useState<Reader.Type[]>([]);
+  // const { discoverReaders, connectReader } = useStripeTerminal({
+  //   onUpdateDiscoveredReaders: (readers) => setDiscoveredReaders(readers),
+  // });
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -130,21 +118,21 @@ const TapToPaySection = () => {
     setLoading(true);
     setError(null);
     try {
-      const { error: discoverError } = await discoverReaders({
-        discoveryMethod: "tapToPay",
-      });
+      // const { error: discoverError } = await discoverReaders({
+      //   discoveryMethod: "tapToPay",
+      // });
 
-      if (discoverError) throw new Error(discoverError.message);
-      if (!discoveredReaders.length)
-        throw new Error("No Tap to Pay reader found on this device");
+      // if (discoverError) throw new Error(discoverError.message);
+      // if (!discoveredReaders.length)
+      //   throw new Error("No Tap to Pay reader found on this device");
 
-      const { error: connectError } = await connectReader({
-        discoveryMethod: "tapToPay",
-        reader: discoveredReaders[0],
-        locationId: process.env.EXPO_PUBLIC_STRIPE_LOCATION_ID!,
-      });
+      // const { error: connectError } = await connectReader({
+      //   discoveryMethod: "tapToPay",
+      //   reader: discoveredReaders[0],
+      //   locationId: process.env.EXPO_PUBLIC_STRIPE_LOCATION_ID!,
+      // });
 
-      if (connectError) throw new Error(connectError.message);
+      // if (connectError) throw new Error(connectError.message);
       setReady(true);
     } catch (e) {
       setError((e as Error).message);
@@ -154,9 +142,7 @@ const TapToPaySection = () => {
   };
 
   return (
-    <View
-      className={`rounded-3xl p-5 mb-4 ${isDark ? "bg-white/10 border border-white/20" : "bg-white border border-slate-200 shadow-sm"}`}
-    >
+    <Card className="rounded-3xl p-5 mb-4">
       <View className="flex-row items-center gap-3 mb-4">
         <View
           className={`w-11 h-11 rounded-2xl items-center justify-center ${isDark ? "bg-lime-500/20" : "bg-lime-50"}`}
@@ -189,24 +175,17 @@ const TapToPaySection = () => {
 
       {error && (
         <View className="mb-3 px-4 py-3 rounded-2xl bg-red-500/10 border border-red-500/20">
-          <Text className="text-red-500 text-sm">{error}</Text>
+          <Text className="text-red-500 text-base">{error}</Text>
         </View>
       )}
 
-      <Pressable
+      <Button
+        label={ready ? "Reader Connected" : "Start Tap to Pay"}
+        loading={loading}
+        disabled={ready}
         onPress={handleStart}
-        disabled={loading || ready}
-        className={`py-4 rounded-2xl items-center justify-center ${loading || ready ? "opacity-50" : ""} ${isDark ? "bg-lime-500" : "bg-lime-600"}`}
-      >
-        {loading ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <Text className="text-white font-bold text-base">
-            {ready ? "Reader Connected" : "Start Tap to Pay"}
-          </Text>
-        )}
-      </Pressable>
-    </View>
+      />
+    </Card>
   );
 };
 
@@ -220,18 +199,19 @@ const TapPaymentsScreen = () => {
     <SafeAreaView
       className={`flex-1 ${isDark ? "bg-slate-950" : "bg-slate-50"}`}
     >
-      <ScreenHeader title="Tap Payments" goBack onBack={() => router.back()} />
+      <ScreenHeader title="Tap to Pay" goBack onBack={() => router.back()} />
 
       <ScrollView
         className="flex-1 px-5"
         showsVerticalScrollIndicator={false}
         contentContainerClassName="pb-10"
       >
-        <Text
-          className={`text-sm mb-5 ${isDark ? "text-slate-400" : "text-slate-500"}`}
-        >
-          Choose a contactless payment method below.
-        </Text>
+        <View className="mb-4">
+          <InfoChip
+            label="What is Tap to Pay?"
+            explanation="Hold the back of your phone against a payment terminal or another phone. Your phone uses NFC (a short-range radio signal) to send the payment — no internet needed, no QR code to scan."
+          />
+        </View>
 
         <WalletPaySection />
         <TapToPaySection />

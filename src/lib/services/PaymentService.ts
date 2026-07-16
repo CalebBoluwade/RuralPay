@@ -2,7 +2,11 @@ import { axiosInstance } from "@/src/lib/api";
 import * as Crypto from "expo-crypto";
 import { integrityService } from "./IntegrityService";
 
-const INTEGRITY_ERROR = "Payment blocked: device security compromised";
+const INTEGRITY_ERROR = "Payment Blocked: Device Security Compromise Detected";
+
+const BANKS_TTL_MS = 10 * 60 * 1000; // 10 minutes
+let banksCache: { data: Bank[]; ts: number } | null = null;
+let banksFlight: Promise<Bank[]> | null = null;
 
 class PaymentService {
   generateTransactionId(mode?: PaymentMode): string {
@@ -19,23 +23,40 @@ class PaymentService {
   async MakeAirtimePurchase(
     payload: AirtimeDataPayload,
   ): Promise<APIResponse<TransactionHistoryItem>> {
-    const response = await axiosInstance.post<
-      APIResponse<TransactionHistoryItem>
-    >("/payment", payload);
-    if (__DEV__)
-      console.log(
-        payload,
-        "Initiating airtime purchase with payload:",
-        response,
-      );
-    return response;
+    if (await integrityService.isDeviceCompromised())
+      throw new Error(INTEGRITY_ERROR);
+
+    try {
+      const response = await axiosInstance.post<
+        APIResponse<TransactionHistoryItem>
+      >("/payment", payload);
+      if (__DEV__)
+        console.log(
+          payload,
+          "Initiating Airtime purchase with payload:",
+          response,
+        );
+      return response;
+    } catch (error) {
+      if (__DEV__) console.error("Airtime Purchase Failed:", error);
+      throw error;
+    }
   }
 
   async GetBanks(abortSignal?: AbortSignal): Promise<Bank[]> {
-    const response = await axiosInstance.get<APIResponse<Bank[]>>("/banks", {
-      signal: abortSignal,
-    });
-    return response.details ?? [];
+    if (banksCache && Date.now() - banksCache.ts < BANKS_TTL_MS)
+      return banksCache.data;
+    if (banksFlight) return banksFlight;
+    banksFlight = axiosInstance
+      .get<APIResponse<Bank[]>>("/banks", { signal: abortSignal })
+      .then((r) => {
+        banksCache = { data: r.details ?? [], ts: Date.now() };
+        return banksCache.data;
+      })
+      .finally(() => {
+        banksFlight = null;
+      });
+    return banksFlight;
   }
 
   async GetCardBIN(bin: string): Promise<BINData> {
@@ -52,12 +73,24 @@ class PaymentService {
   ): Promise<APIResponse<TransactionHistoryItem>> {
     if (await integrityService.isDeviceCompromised())
       throw new Error(INTEGRITY_ERROR);
-    const response = await axiosInstance.post<
-      APIResponse<TransactionHistoryItem>
-    >("/payment", payload, { signal: abortSignal });
 
-    if (__DEV__) console.log(response);
-    return response;
+    try {
+      const response = await axiosInstance.post<
+        APIResponse<TransactionHistoryItem>
+      >("/payment", payload, { signal: abortSignal });
+
+      if (__DEV__)
+        console.log(
+          payload,
+          "Initiating B2B Tranasaction With Payload:",
+          response,
+        );
+
+      return response;
+    } catch (error) {
+      if (__DEV__) console.error("B2B Transaction Payment Failed:", error);
+      throw error;
+    }
   }
 
   async MakeNFCCardPayment(
@@ -72,13 +105,16 @@ class PaymentService {
         APIResponse<TransactionHistoryItem>
       >("/payment", payload, { signal: abortSignal });
 
-      console.log(response);
+      if (__DEV__)
+        console.log(
+          payload,
+          "Initiating NFC Card Payment with payload:",
+          response,
+        );
       return response;
     } catch (error) {
-      if (__DEV__) console.error("Payment failed:", error);
-
-      return error as APIResponse<TransactionHistoryItem>;
-      // throw error;
+      if (__DEV__) console.error("NFC Card Payment Failed:", error);
+      throw error;
     }
   }
 
@@ -147,7 +183,44 @@ class PaymentService {
         v.voucherAllowedServices.includes(vasType as VASType),
       );
     } catch (error) {
-      console.error("Error fetching vouchers:", error);
+      if (__DEV__) console.error("Error fetching Vouchers:", error);
+      return [];
+    }
+  }
+
+  async FetchDataPlans(network: string): Promise<DataPlan[]> {
+    try {
+      const response = await axiosInstance.get<APIResponse<DataPlan[]>>(
+        `/data-plans?network=${network}`,
+      );
+      return response.details;
+    } catch (error) {
+      if (__DEV__) console.error("Error Fetching Data Plans:", error);
+      return [];
+    }
+  }
+
+  async FetchElectricityProviders(): Promise<ElectricityProvider[]> {
+    try {
+      const response = await axiosInstance.get<
+        APIResponse<ElectricityProvider[]>
+      >("/vas/electricity/providers");
+      return response.details;
+    } catch (error) {
+      if (__DEV__)
+        console.error("Error Fetching Electricity Providers:", error);
+      return [];
+    }
+  }
+
+  async FetchCableProviders(): Promise<CableProvider[]> {
+    try {
+      const response = await axiosInstance.get<APIResponse<CableProvider[]>>(
+        "/vas/cable/providers",
+      );
+      return response.details;
+    } catch (error) {
+      if (__DEV__) console.error("Error Fetching Cable Providers:", error);
       return [];
     }
   }

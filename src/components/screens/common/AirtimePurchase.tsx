@@ -1,5 +1,6 @@
 import { useAuth } from "@/src/components/context/AuthSessionProvider";
-import { useClearLoadingOnLock } from "@/src/hooks/useClearLoadingOnLock";
+import Button from "@/src/components/ui/Button";
+import Card from "@/src/components/ui/Card";
 import AmountInput from "@/src/components/ui/Input/AmountInput";
 import ContactsModal from "@/src/components/ui/Modals/ContactsModal";
 import PaymentMethodModal from "@/src/components/ui/Modals/Transaction/PaymentMethodModal";
@@ -11,6 +12,7 @@ import {
   NineMobileLogo,
 } from "@/src/components/ui/NetworkLogos";
 import ScreenHeader from "@/src/components/ui/ScreenHeader";
+import { useClearLoadingOnLock } from "@/src/hooks/useClearLoadingOnLock";
 import AppLogger, { LogLevel } from "@/src/lib/services/AppLogger";
 import { LocationService } from "@/src/lib/services/LocationService";
 import PaymentService from "@/src/lib/services/PaymentService";
@@ -31,13 +33,6 @@ import {
   useColorScheme,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-
-interface PhoneNumber {
-  label: string;
-  number: string;
-  name: string;
-  imageUri?: string;
-}
 
 const networks = [
   { id: "mtn", name: "MTN", color: "#FFCC00", Logo: MTNLogo },
@@ -97,10 +92,6 @@ const AirtimePurchase = () => {
   const amountAnim = useFadeSlide(160);
   const btnAnim = useFadeSlide(240);
 
-  const cardClass = isDark
-    ? "bg-white/10 border border-white/20"
-    : "bg-white border border-slate-200 shadow-sm";
-
   const handlePaymentMethodSelected = (data: {
     method: PaymentMethod;
     accountNumber?: string;
@@ -121,8 +112,8 @@ const AirtimePurchase = () => {
       const location = await LocationService.getCurrentLocation();
 
       const payload: AirtimeDataPayload = {
-        transactionID: PaymentService.generateTransactionId("AIRTIME_DATA"),
-        paymentMode: "AIRTIME_DATA",
+        transactionID: PaymentService.generateTransactionId("AIRTIME"),
+        paymentMode: "AIRTIME",
         service: "AIRTIME",
         amount: Number(amount),
         beneficiaryPhoneNumber: phoneNumber,
@@ -228,7 +219,7 @@ const AirtimePurchase = () => {
                 >
                   <network.Logo size={36} />
                   <Text
-                    className={`font-brand font-semibold text-sm ${isDark ? "text-white" : "text-slate-900"}`}
+                    className={`font-brand font-semibold text-base ${isDark ? "text-white" : "text-slate-900"}`}
                   >
                     {network.name}
                   </Text>
@@ -244,7 +235,7 @@ const AirtimePurchase = () => {
             >
               Phone Number
             </Text>
-            <View className={`rounded-2xl overflow-hidden ${cardClass}`}>
+            <Card className="overflow-hidden">
               {/* Use my number */}
               <Pressable
                 className={`flex-row items-center px-4 py-4 gap-4 ${isDark ? "border-b border-white/10" : "border-b border-slate-100"}`}
@@ -281,7 +272,7 @@ const AirtimePurchase = () => {
                   placeholder="08012345678"
                   placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
                   keyboardType="phone-pad"
-                  className={`flex-1 text-sm font-brand py-2 ${isDark ? "text-white" : "text-slate-900"}`}
+                  className={`flex-1 text-base font-brand py-2 ${isDark ? "text-white" : "text-slate-900"}`}
                 />
                 <Pressable
                   className={`w-10 h-10 rounded-xl items-center justify-center ${isDark ? "bg-lime-500/20" : "bg-lime-50"}`}
@@ -298,7 +289,7 @@ const AirtimePurchase = () => {
                   )}
                 </Pressable>
               </View>
-            </View>
+            </Card>
           </Animated.View>
 
           {/* Amount */}
@@ -313,17 +304,11 @@ const AirtimePurchase = () => {
 
           {/* CTA */}
           <Animated.View style={btnAnim} className="mb-8">
-            <Pressable
+            <Button
+              label="Purchase Airtime"
               onPress={() => setShowPaymentModal(true)}
               disabled={!canPurchase}
-              className={`rounded-2xl py-4 items-center ${canPurchase ? "bg-lime-400" : isDark ? "bg-white/10" : "bg-slate-200"}`}
-            >
-              <Text
-                className={`font-brand font-bold text-base ${canPurchase ? "text-black" : isDark ? "text-slate-500" : "text-slate-400"}`}
-              >
-                Purchase Airtime
-              </Text>
-            </Pressable>
+            />
           </Animated.View>
         </ScrollView>
 
