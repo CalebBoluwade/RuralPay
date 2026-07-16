@@ -389,3 +389,17 @@ FEEDBACK
 ---
 
 _Scores and status updated after Sprint 2. Re-evaluate after Phase 1 completion._
+
+case "9F4E":
+dataPacket += Array.from("RuralPay".padEnd(field.length, " "))
+.map((c) => c.charCodeAt(0).toString(16).padStart(2, "0"))
+.join("")
+.toUpperCase()
+.slice(0, field.length \* 2);
+break;
+
+iOS simulator — xcrun simctl openurl booted "ruralpay://app.ruralpay.com/pay/checkout?token=abc123"
+
+Android emulator — adb shell am start -a android.intent.action.VIEW -d "ruralpay://app.ruralpay.com/pay/checkout?token=abc123"
+
+Physical device — paste the URL into Notes or any app that renders tappable links, then tap it

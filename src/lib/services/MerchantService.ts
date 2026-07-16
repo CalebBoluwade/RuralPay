@@ -6,7 +6,7 @@ class MerchantService {
   ): Promise<{ success: boolean; message: string }> {
     try {
       // API call to register merchant
-      const response = await axiosInstance.post("/merchant/onboard", data);
+      const response = await axiosInstance.post("/merchant", data);
 
       return response.data;
     } catch {
@@ -16,7 +16,8 @@ class MerchantService {
 
   static async GetMerchantAnalytics(): Promise<MerchantDetails | null> {
     try {
-      const response = await axiosInstance.get<MerchantAnaltics>(`/merchant`);
+      const response =
+        await axiosInstance.get<MerchantAnaltics>(`/merchant/data`);
       return response.details ?? null;
     } catch (error) {
       if (__DEV__) console.log(error);

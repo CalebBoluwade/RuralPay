@@ -68,13 +68,13 @@ jobs:
             exit 1
           fi
 
-      - name: Fetch merchant assets
+      - name: Fetch Merchant Assets
         run: |
           curl --fail --silent --show-error \
             -H "Authorization: Bearer ${{ secrets.INTERNAL_API_TOKEN }}" \
-            "https://api.ruralpay.com/internal/assets/$MERCHANT_SLUG" \
+            "${{ secrets.RURALPAY_BACKEND_API }}/static/assets/$MERCHANT_SLUG" \
             -o assets.zip
-          unzip -o assets.zip -d "./assets/brands/$MERCHANT_SLUG"
+          unzip -o assets.zip -d "./assets/$MERCHANT_SLUG"
 
       - name: Build & Submit
         run: eas build --platform all --profile production --non-interactive --auto-submit

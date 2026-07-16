@@ -52,6 +52,7 @@ const CardTapNFCPayments: React.FC<CardTapNFCPaymentsProps> = ({
   const [cardPin, setCardPin] = useState("");
   const [cardTransaction, setCardTransaction] = useState<CardDetailsResult>();
   const [rawCardInfo, setRawCardInfo] = useState<CardInfo | null>(null);
+  const [cardReady, setCardReady] = useState(false);
 
   const networkInfo = useNetInfo();
 
@@ -61,13 +62,13 @@ const CardTapNFCPayments: React.FC<CardTapNFCPaymentsProps> = ({
         const nfcInit = await NFCService.initialize();
         if (nfcInit) {
           setNFCReady(true);
-          if (__DEV__) console.log("NFC initialized successfully");
+          if (__DEV__) console.log("NFC Initialized Successfully");
         } else {
           setNFCReady(false);
-          if (__DEV__) console.log("NFC initialization failed");
+          if (__DEV__) console.log("NFC Initialization Failed");
         }
       } catch (err) {
-        if (__DEV__) console.error("NFC init error:", err);
+        if (__DEV__) console.error("NFC Initialization Error:", err);
         setNFCReady(false);
       }
     };
@@ -126,7 +127,12 @@ const CardTapNFCPayments: React.FC<CardTapNFCPaymentsProps> = ({
       // Store raw card info for later use with PIN
       setRawCardInfo(cardResult.cardInfo);
       setCardTransaction(cardResult);
+      setCardReady(true);
+
+      // Brief pause so user sees the "remove card" message before PIN screen
+      await new Promise((resolve) => setTimeout(resolve, 1250));
       setStep("PIN_CONFIRMATION");
+      setCardReady(false);
     } catch (error) {
       setError(
         error instanceof Error
@@ -348,6 +354,7 @@ const CardTapNFCPayments: React.FC<CardTapNFCPaymentsProps> = ({
     setCardPin("");
     setCardTransaction(undefined);
     setRawCardInfo(null);
+    setCardReady(false);
   };
 
   const handlePinCancel = () => {
@@ -535,7 +542,7 @@ const CardTapNFCPayments: React.FC<CardTapNFCPaymentsProps> = ({
           )}
 
           {/* Loading state */}
-          {loading && (
+          {loading && !cardReady && (
             <View className={`rounded-2xl p-6 items-center mb-6 ${cardClass}`}>
               <ActivityIndicator
                 size="large"
@@ -550,6 +557,33 @@ const CardTapNFCPayments: React.FC<CardTapNFCPaymentsProps> = ({
                 className={`text-base mt-1 ${isDark ? "text-slate-400" : "text-slate-500"}`}
               >
                 Please Keep Your Card Close To The Device
+              </Text>
+            </View>
+          )}
+
+          {/* Card read success — safe to remove */}
+          {cardReady && (
+            <View
+              className={`rounded-2xl p-6 items-center mb-6 ${
+                isDark
+                  ? "bg-lime-500/20 border border-lime-500/40"
+                  : "bg-lime-50 border border-lime-200"
+              }`}
+            >
+              <Check size={32} color={isDark ? "#a3e635" : "#65a30d"} />
+              <Text
+                className={`text-base font-brand font-bold mt-3 ${
+                  isDark ? "text-lime-400" : "text-lime-700"
+                }`}
+              >
+                Card Read Successfully
+              </Text>
+              <Text
+                className={`text-sm mt-1 text-center ${
+                  isDark ? "text-slate-400" : "text-slate-500"
+                }`}
+              >
+                You May Remove Your Card
               </Text>
             </View>
           )}
