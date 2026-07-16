@@ -33,6 +33,11 @@ jobs:
           set +e
           output=$(bun test 2>&1)
           exit_code=$?
+          if echo "$output" | grep -q "No tests found"; then
+            echo "result=skipped" >> $GITHUB_OUTPUT
+            echo "$output"
+            exit 0
+          fi
           echo "result=$([ $exit_code -eq 0 ] && echo passed || echo failed)" >> $GITHUB_OUTPUT
           echo "$output"
           exit $exit_code
