@@ -45,7 +45,7 @@ jobs:
           exit $exit_code
 
   build:
-    name: Build & Submit (${{ github.event.client_payload.merchant_slug }})
+    name: Build & Submit (APP -> ${{ github.event.client_payload.tenantSlug }})
     needs: test
     runs-on: ubuntu-latest
     steps:
@@ -67,7 +67,7 @@ jobs:
       - uses: expo/expo-github-action@v8
         with:
           eas-version: latest
-          token: ${{ secrets.EXPO_TOKEN }}
+          token: ${{ secrets.EXPO_ACCESS_TOKEN }}
 
       - name: Validate Tenant Slug
         run: |
