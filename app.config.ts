@@ -35,7 +35,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     icon: ICON,
     adaptiveIcon: ADAPTIVE_ICON,
     scheme: SCHEME,
-    googleServicesFile: "./google-services.json",
+    googleServicesFile: process.env.GOOGLE_SERVICES_JSON ?? "./google-services.json",
   };
 
   return {
@@ -53,7 +53,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       bundleIdentifier: bundleIdentifier,
       appleTeamId: "G3YNG3LDQ3",
       associatedDomains: [APP_DOMAIN],
-      googleServicesFile: "./GoogleService-Info.plist",
+      googleServicesFile: process.env.GOOGLE_SERVICE_INFO_PLIST ?? "./GoogleService-Info.plist",
       config: {
         googleMobileAdsAutoInit: false,
       },
