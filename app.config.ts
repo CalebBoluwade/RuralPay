@@ -6,54 +6,49 @@ const EAS_PROJECT_ID = "e4c8aac2-05e4-4310-9ed9-a70edcdadbe6";
 const PROJECT_SLUG = "nfc-card-payments";
 const OWNER = "calebjnr";
 
-// App production config
-const APP_NAME = "RuralPay";
-const BUNDLE_IDENTIFIER = "com.zegiftedtechnologies.ruralpay";
-const APP_DOMAIN = "applinks:ruralpay.zegiftedtechnologies.com";
-const ANDROID_HOST = "ruralpay.zegiftedtechnologies.com";
-const PACKAGE_NAME = "com.zegiftedtechnologies.ruralpay";
-const ICON = "./assets/images/RuralPay.png";
-const ADAPTIVE_ICON = "./assets/images/RuralPay.png";
-const SCHEME = "ruralpay";
+// Whitelabel overrides (injected by CI via env vars, fallback to RuralPay defaults)
+const TENANT_SLUG = process.env.TENANT_SLUG ?? PROJECT_SLUG;
+const APP_NAME = process.env.TENANT_APP_NAME ?? "RuralPay";
+const BUNDLE_IDENTIFIER =
+  process.env.TENANT_BUNDLE_ID ?? "com.zegiftedtechnologies.ruralpay";
+const PACKAGE_NAME =
+  process.env.TENANT_PACKAGE_NAME ?? "com.zegiftedtechnologies.ruralpay";
+const SCHEME = process.env.TENANT_SCHEME ?? "ruralpay";
+const TENANT_DOMAIN =
+  process.env.TENANT_DOMAIN ?? "ruralpay.zegiftedtechnologies.com";
+const APP_DOMAIN = `applinks:${TENANT_DOMAIN}`;
+const ANDROID_HOST = TENANT_DOMAIN;
+
+// Asset paths — CI unzips to ./assets/{tenantSlug}/, local dev falls back to default
+const ASSET_BASE = `./assets/${TENANT_SLUG}`;
+const ICON = `${ASSET_BASE}/app_icon.png`;
+const ADAPTIVE_ICON = `${ASSET_BASE}/app_icon.png`;
+const SPLASH = `${ASSET_BASE}/splash_screen.png`;
 
 export default ({ config }: ConfigContext): ExpoConfig => {
   const appEnv =
     process.env.APP_ENV || process.env.EXPO_PUBLIC_ENVIRONMENT || "development";
 
-  const {
-    name,
-    bundleIdentifier,
-    icon,
-    adaptiveIcon,
-    packageName,
-    scheme,
-    googleServicesFile,
-  } = {
-    name: APP_NAME,
-    bundleIdentifier: BUNDLE_IDENTIFIER,
-    packageName: PACKAGE_NAME,
-    icon: ICON,
-    adaptiveIcon: ADAPTIVE_ICON,
-    scheme: SCHEME,
-    googleServicesFile: process.env.GOOGLE_SERVICES_JSON ?? "./google-services.json",
-  };
+  const googleServicesFile =
+    process.env.GOOGLE_SERVICES_JSON ?? "./google-services.json";
 
   return {
     ...config,
-    name: name,
-    version, // Automatically bump your project version with `npm version patch`, `npm version minor` or `npm version major`.
-    slug: PROJECT_SLUG, // Must be consistent across all environments.
+    name: APP_NAME,
+    version,
+    slug: PROJECT_SLUG,
     orientation: "default",
     userInterfaceStyle: "automatic",
     assetBundlePatterns: ["assets/**/*"],
-    icon: icon,
-    scheme: scheme,
+    icon: ICON,
+    scheme: SCHEME,
     ios: {
       supportsTablet: true,
-      bundleIdentifier: bundleIdentifier,
+      bundleIdentifier: BUNDLE_IDENTIFIER,
       appleTeamId: "G3YNG3LDQ3",
       associatedDomains: [APP_DOMAIN],
-      googleServicesFile: process.env.GOOGLE_SERVICE_INFO_PLIST ?? "./GoogleService-Info.plist",
+      googleServicesFile:
+        process.env.GOOGLE_SERVICE_INFO_PLIST ?? "./GoogleService-Info.plist",
       config: {
         googleMobileAdsAutoInit: false,
       },
@@ -91,7 +86,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         CFBundleLocalizations: ["fr"],
         CFBundleURLTypes: [
           {
-            CFBundleURLSchemes: ["ruralpay"],
+            CFBundleURLSchemes: [SCHEME],
           },
         ],
         LSApplicationCategoryType: "public.app-category.finance",
@@ -101,12 +96,12 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     },
     android: {
       adaptiveIcon: {
-        foregroundImage: adaptiveIcon,
+        foregroundImage: ADAPTIVE_ICON,
         monochromeImage: "./assets/images/RuralPay-Monochrome.png",
         backgroundColor: "#ffffff",
       },
       predictiveBackGestureEnabled: false,
-      package: packageName,
+      package: PACKAGE_NAME,
       intentFilters: [
         {
           action: "VIEW",
@@ -129,7 +124,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
           action: "VIEW",
           data: [
             {
-              scheme: "ruralpay",
+              scheme: SCHEME,
             },
           ],
           category: ["BROWSABLE", "DEFAULT"],
@@ -188,7 +183,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         {
           backgroundColor: "#e6ede7",
           android: {
-            image: ICON,
+            image: SPLASH,
             imageWidth: 250,
             imageHeight: 250,
           },

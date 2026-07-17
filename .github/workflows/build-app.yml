@@ -1,11 +1,9 @@
 # .github/workflows/build-app.yml
-name: Build Merchant App
+name: Build RuralPay Merchant App
 
 on:
   repository_dispatch:
-    types: [build-whitelabel]
-
-
+    types: [build-ruralpay-whitelabel]
 
 jobs:
   test:
@@ -86,4 +84,11 @@ jobs:
           unzip -o assets.zip -d "./assets/${{ github.event.client_payload.tenantSlug }}"
 
       - name: Build & Submit
+        env:
+          TENANT_SLUG: ${{ github.event.client_payload.tenantSlug }}
+          TENANT_APP_NAME: ${{ github.event.client_payload.appName }}
+          TENANT_BUNDLE_ID: ${{ github.event.client_payload.bundleId }}
+          TENANT_PACKAGE_NAME: ${{ github.event.client_payload.packageName }}
+          TENANT_SCHEME: ${{ github.event.client_payload.scheme }}
+          TENANT_DOMAIN: ${{ github.event.client_payload.domain }}
         run: eas build --platform all --profile production --non-interactive --auto-submit
