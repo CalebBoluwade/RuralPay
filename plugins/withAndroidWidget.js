@@ -5,6 +5,18 @@ const path = require("path");
 const PACKAGE_PATH = "com/zegiftedtechnologies/ruralpay";
 const WIDGET_UPDATE_ACTION = "com.zegiftedtechnologies.ruralpay.WIDGET_UPDATE";
 
+function resolveWidgetLogo(root) {
+  const tenantSlug = process.env.TENANT_SLUG ?? "nfc-card-payments";
+  const candidates = [
+    path.join(root, "assets", tenantSlug, "app_logo.png"),
+    path.join(root, "assets", tenantSlug, "app_icon.png"),
+    path.join(root, "plugins", "android-widget", "res", "drawable", "ruralpay_logo.png"),
+  ];
+  const found = candidates.find(fs.existsSync);
+  if (!found) throw new Error(`[withAndroidWidget] No widget logo found. Tried:\n${candidates.join("\n")}`);
+  return found;
+}
+
 // Kotlin source files to copy from plugins/android-widget/ into the native project
 const KOTLIN_FILES = [
   "WidgetStorage.kt",
@@ -46,21 +58,26 @@ function withAndroidWidget(config) {
       for (const file of KOTLIN_FILES) {
         const src = path.join(srcRoot, "kotlin", file);
         const dest = path.join(javaDir, file);
-        if (fs.existsSync(src)) {
-          fs.mkdirSync(path.dirname(dest), { recursive: true });
-          fs.copyFileSync(src, dest);
+        if (!fs.existsSync(src)) {
+          throw new Error(`[withAndroidWidget] Missing Kotlin source: ${src}`);
         }
+        fs.mkdirSync(path.dirname(dest), { recursive: true });
+        fs.copyFileSync(src, dest);
       }
 
       // Copy res files
       for (const [srcRel, destSubdir] of RES_FILES) {
-        const src = path.join(srcRoot, "res", srcRel);
+        const isLogo = path.basename(srcRel) === "ruralpay_logo.png";
+        const src = isLogo
+          ? resolveWidgetLogo(root)
+          : path.join(srcRoot, "res", srcRel);
         const destDir = path.join(resDir, destSubdir);
         const dest = path.join(destDir, path.basename(srcRel));
-        if (fs.existsSync(src)) {
-          fs.mkdirSync(destDir, { recursive: true });
-          fs.copyFileSync(src, dest);
+        if (!fs.existsSync(src)) {
+          throw new Error(`[withAndroidWidget] Missing required asset: ${src}`);
         }
+        fs.mkdirSync(destDir, { recursive: true });
+        fs.copyFileSync(src, dest);
       }
 
       return config;

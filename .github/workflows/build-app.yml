@@ -87,6 +87,10 @@ jobs:
             "${{ secrets.RURALPAY_BACKEND_API }}/admin/tenant/${{ github.event.client_payload.tenantSlug }}/assets" \
             -o assets.zip
           unzip -o assets.zip -d "./assets/${{ github.event.client_payload.tenantSlug }}"
+          # Ensure widget logo exists — fall back to app_icon if app_logo not provided
+          if [ ! -f "./assets/${{ github.event.client_payload.tenantSlug }}/app_logo.png" ]; then
+            cp "./assets/${{ github.event.client_payload.tenantSlug }}/app_icon.png" "./assets/${{ github.event.client_payload.tenantSlug }}/app_logo.png"
+          fi
 
       - name: Build & Submit
         env:
