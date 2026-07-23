@@ -458,6 +458,9 @@ global {
     businessAddress: string;
     businessType: string;
     userId: string;
+    taxId?: string;
+    merchantBusinessAccountNumber?: string;
+    merchantAccountBankCode?: string;
   }
 
   interface ScannedQRData {

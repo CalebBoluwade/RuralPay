@@ -2,7 +2,7 @@ import PaymentService from "@/src/lib/services/PaymentService";
 import { ReceiptService } from "@/src/lib/services/ReceiptService";
 import * as Haptics from "expo-haptics";
 import { ArrowBigLeftDashIcon, CreditCard, Lock, X } from "lucide-react-native";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -58,22 +58,24 @@ const CardPIN: React.FC<CardPinProps> = ({
   const [BINData, setBINData] = useState<BINData | null>(null);
   const { width } = useWindowDimensions();
 
-  const [currentStep, setCurrentStep] = React.useState<AuthStep>("PIN");
+  const [currentStep, setCurrentStep] = React.useState<AuthStep>(() =>
+    skipPin ? "Confirm" : "PIN"
+  );
 
-  const PIN_DISABLED = process.env.EXPO_PUBLIC_PIN_ENTRY_DISABLED === "true";
+  // PIN bypass is only permitted in non-production environments.
+  // Even if EXPO_PUBLIC_PIN_ENTRY_DISABLED=true is accidentally set in .env.production,
+  // this guard ensures it is ignored at runtime.
+  const isProduction = process.env.EXPO_PUBLIC_ENVIRONMENT === "production";
+  const PIN_DISABLED =
+    !isProduction && process.env.EXPO_PUBLIC_PIN_ENTRY_DISABLED === "true";
   const PIN_MIN_AMOUNT = process.env.EXPO_PUBLIC_PIN_MIN_AMOUNT
     ? Number.parseInt(process.env.EXPO_PUBLIC_PIN_MIN_AMOUNT, 10)
     : 0;
-  const skipPin = PIN_DISABLED || amount < PIN_MIN_AMOUNT;
+  const skipPin = PIN_DISABLED || (!isProduction && amount < PIN_MIN_AMOUNT);
 
   const codeLength = new Array(4).fill(0);
 
-  const OnNumberPressDown = (num: number) => {
-    if (code.length < 4) {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      setCode((prev) => [...prev, num]);
-    }
-  };
+
 
   const fetchBin = async () => {
     const cardBIN = cardTransaction?.BIN || "";
@@ -104,27 +106,22 @@ const CardPIN: React.FC<CardPinProps> = ({
   };
 
   useEffect(() => {
-    if (!BINData && cardTransaction?.BIN) {
-      fetchBin();
-    }
-  }, [cardTransaction?.BIN]);
+    if (BINData || !cardTransaction?.BIN) return;
+    const bin = cardTransaction.BIN.slice(0, 6);
+    setIsLoading(true);
+    PaymentService.GetCardBIN(bin)
+      .then(setBINData)
+      .catch((err) => { if (__DEV__) console.log("Failed to Fetch BIN", err); })
+      .finally(() => setIsLoading(false));
+  }, [cardTransaction?.BIN]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  useEffect(() => {
-    if (skipPin && currentStep === "PIN") {
-      setCurrentStep("Confirm");
+  const resolvedStep = useMemo<AuthStep>(() => {
+    if (currentStep === "Confirm") {
+      if (transactionResult?.transactionId) return "Success";
+      if (error) return "Failure";
     }
-  }, [skipPin]);
-
-  useEffect(() => {
-    // If transaction result is available, show success
-    if (transactionResult?.transactionId && currentStep === "Confirm") {
-      setCurrentStep("Success");
-    }
-    // If there's an error, show failure
-    if (error && currentStep === "Confirm") {
-      setCurrentStep("Failure");
-    }
-  }, [transactionResult, error, currentStep]);
+    return currentStep;
+  }, [currentStep, transactionResult, error]);
 
   const handleDownloadReceipt = async () => {
     if (transactionResult) {
@@ -488,19 +485,21 @@ const CardPIN: React.FC<CardPinProps> = ({
     />
   );
 
-  useEffect(() => {
-    if (code.length === 4) {
-      const pin = code.join("");
-      onPinEntered(pin);
+  const OnNumberPressDown = (num: number) => {
+    if (code.length < 3) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      setCode((prev) => [...prev, num]);
+    } else if (code.length === 3) {
+      const pin = [...code, num].join("");
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      onPinEntered(pin);
       setCode([]);
-
       setCurrentStep("Confirm");
     }
-  }, [code, onPinEntered]);
+  };
 
   const getCurrentStepContent = () => {
-    switch (currentStep) {
+    switch (resolvedStep) {
       case "PIN":
         return RenderPinView();
       case "Confirm":

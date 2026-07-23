@@ -1,20 +1,20 @@
 import AccountService from "@/src/lib/services/AccountService";
 import { ImageManipulator, SaveFormat } from "expo-image-manipulator";
 import { useCallback, useRef, useState } from "react";
+import { Image } from "react-native";
 import {
-  Camera,
+  CameraRef,
   useCameraDevice,
   useCameraPermission,
-  useFrameProcessor,
+  usePhotoOutput,
 } from "react-native-vision-camera";
 import {
-  Face,
-  FrameFaceDetectionOptions,
-  useFaceDetector,
+  FaceDetectorOptions,
+  useFaceDetectorOutput,
+  type Face,
 } from "react-native-vision-camera-face-detector";
-import { useRunOnJS } from "react-native-worklets-core";
 
-export type LivenessChallenge = "look_left" | "look_right" | "blink" | "done";
+export type LivenessChallenge = "look_left" | "look_right" | "blink_or_smile" | "done";
 export type LivenessStatus =
   | "idle"
   | "ready"
@@ -30,29 +30,33 @@ export interface VerificationResult {
   bvnMatch: boolean;
 }
 
-const CHALLENGES: LivenessChallenge[] = ["look_left", "look_right", "blink"];
-const CHALLENGE_TIMEOUT_MS = process.env.FACE_DETECTION_CHALLENGE_TIMEOUT
-  ? Number.parseInt(process.env.FACE_DETECTION_CHALLENGE_TIMEOUT, 10)
+const CHALLENGES: LivenessChallenge[] = ["look_left", "look_right", "blink_or_smile"];
+const CHALLENGE_TIMEOUT_MS = process.env
+  .EXPO_PUBLIC_FACE_DETECTION_CHALLENGE_TIMEOUT
+  ? Number.parseInt(
+      process.env.EXPO_PUBLIC_FACE_DETECTION_CHALLENGE_TIMEOUT,
+      10,
+    )
   : 30000;
 
 export const CHALLENGE_LABELS: Record<LivenessChallenge | "done", string> = {
   look_left: "Turn Your Head Left",
   look_right: "Turn Your Head Right",
-  blink: "Blink Your Eyes",
+  blink_or_smile: "Blink or Smile",
   done: "All Done!",
 };
 
-const FACE_DETECTOR_OPTIONS: FrameFaceDetectionOptions = {
-  performanceMode: "fast",
-  landmarkMode: "all",
-  classificationMode: "all",
+const FACE_DETECTOR_OPTIONS: FaceDetectorOptions = {
+  performanceMode: "accurate",
   trackingEnabled: true,
+  cameraFacing: "front",
+  runClassifications: true,
 };
 
 export function useLiveness(bvn?: string) {
   const { hasPermission, requestPermission } = useCameraPermission();
   const device = useCameraDevice("front");
-  const cameraRef = useRef<Camera>(null);
+  const cameraRef = useRef<CameraRef>(null);
 
   const [status, setStatus] = useState<LivenessStatus>("idle");
   const [challenge, setChallenge] = useState<LivenessChallenge>("look_left");
@@ -61,43 +65,44 @@ export function useLiveness(bvn?: string) {
   const [identityToken, setIdentityToken] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
   const [tooDark, setTooDark] = useState(false);
+  const noFaceFramesRef = useRef(0);
 
+  const [livenessJobId, setLivenessJobId] = useState<string>("");
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const challengeIndexRef = useRef(0);
   const isDetectingRef = useRef(false);
-  const prevYawRef = useRef<number | null>(null);
-  const prevEyeOpenRef = useRef<number | null>(null);
-
-  const { detectFaces } = useFaceDetector(FACE_DETECTOR_OPTIONS);
+  const blinkPhaseRef = useRef<"waiting_close" | "closed">("waiting_close");
 
   const clearTimeout_ = () => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
   };
 
-  // Passport ratio: 3 wide : 4 tall
   const PASSPORT_W = 300;
   const PASSPORT_H = 400;
+
+  const photoOutput = usePhotoOutput();
 
   const captureSelfie = async (): Promise<{
     uri: string;
     base64: string;
   } | null> => {
-    if (!cameraRef.current) return null;
-    const photo = await cameraRef.current.takePhoto({
-      flash: "off",
-      enableShutterSound: false,
-    });
-    if (!photo?.path) return null;
-    const uri = `file://${photo.path}`;
+    const photo = await photoOutput.capturePhotoToFile(
+      { flashMode: "off", enableShutterSound: false },
+      {},
+    );
+    if (!photo?.filePath) return null;
+    const uri = `file://${photo.filePath}`;
 
-    // photo dimensions (front camera may be landscape on Android)
-    const pw = photo.width;
-    const ph = photo.height;
+    const { width: pw, height: ph } = await new Promise<{
+      width: number;
+      height: number;
+    }>((resolve, reject) =>
+      Image.getSize(uri, (w, h) => resolve({ width: w, height: h }), reject),
+    );
     const longSide = Math.max(pw, ph);
     const shortSide = Math.min(pw, ph);
 
-    // crop a 3:4 region centred on the frame
-    const cropH = Math.round(longSide * 0.72); // ~72 % of long side
+    const cropH = Math.round(longSide * 0.72);
     const cropW = Math.round(cropH * (3 / 4));
     const originX = Math.round((shortSide - cropW) / 2);
     const originY = Math.round((longSide - cropH) / 2);
@@ -121,9 +126,9 @@ export function useLiveness(bvn?: string) {
       clearTimeout_();
 
       if (idx >= CHALLENGES.length) {
-        isDetectingRef.current = false;
         setStatus("verifying");
         const selfie = await captureSelfie();
+        isDetectingRef.current = false;
         if (!selfie || !bvn) {
           setError("Failed to Capture Selfie.");
           setStatus("failed");
@@ -143,6 +148,7 @@ export function useLiveness(bvn?: string) {
 
         setSelfieUri(selfie.uri);
         setIdentityToken(response.details.identityToken ?? "");
+        setLivenessJobId(`liveness_${Date.now()}`);
         isDetectingRef.current = false;
         setStatus("passed");
         return;
@@ -151,8 +157,7 @@ export function useLiveness(bvn?: string) {
       challengeIndexRef.current = idx;
       setChallengeIndex(idx);
       setChallenge(CHALLENGES[idx]);
-      prevYawRef.current = null;
-      prevEyeOpenRef.current = null;
+      blinkPhaseRef.current = "waiting_close";
 
       timeoutRef.current = setTimeout(() => {
         isDetectingRef.current = false;
@@ -163,36 +168,39 @@ export function useLiveness(bvn?: string) {
     [bvn],
   );
 
-  const onLightingUpdate = useRunOnJS((dark: boolean) => {
-    setTooDark(dark);
-  }, []);
-
-  const onFaceDetected = useRunOnJS(
-    (faces: Face[]) => {
-      if (!isDetectingRef.current || !faces.length) return;
+  const faceDetectorOutput = useFaceDetectorOutput({
+    ...FACE_DETECTOR_OPTIONS,
+    onFacesDetected: (faces: Face[]) => {
+      if (!isDetectingRef.current) return;
+      if (!faces.length) {
+        noFaceFramesRef.current += 1;
+        if (noFaceFramesRef.current > 30) setTooDark(true);
+        return;
+      }
+      noFaceFramesRef.current = 0;
+      setTooDark(false);
 
       const face = faces[0];
       const current = CHALLENGES[challengeIndexRef.current];
-
-      // face.yawAngle: negative = looking left, positive = looking right
-      // face.leftEyeOpenProbability / rightEyeOpenProbability: 0 = closed, 1 = open
       let passed = false;
 
       if (current === "look_left") {
-        passed = (face.yawAngle ?? 0) < -20;
-      } else if (current === "look_right") {
         passed = (face.yawAngle ?? 0) > 20;
-      } else if (current === "blink") {
-        const eyeOpen =
-          ((face.leftEyeOpenProbability ?? 1) +
-            (face.rightEyeOpenProbability ?? 1)) /
-          2;
-        if (prevEyeOpenRef.current === null) {
-          prevEyeOpenRef.current = eyeOpen;
+      } else if (current === "look_right") {
+        passed = (face.yawAngle ?? 0) < -20;
+      } else if (current === "blink_or_smile") {
+        const smile = face.smilingProbability ?? 0;
+        if (smile > 0.75) {
+          passed = true;
         } else {
-          // detect transition from open → closed
-          passed = prevEyeOpenRef.current > 0.7 && eyeOpen < 0.3;
-          prevEyeOpenRef.current = eyeOpen;
+          const leftEye = face.leftEyeOpenProbability ?? 1;
+          const rightEye = face.rightEyeOpenProbability ?? 1;
+          const eyeOpen = (leftEye + rightEye) / 2;
+          if (blinkPhaseRef.current === "waiting_close" && eyeOpen < 0.3) {
+            blinkPhaseRef.current = "closed";
+          } else if (blinkPhaseRef.current === "closed" && eyeOpen > 0.7) {
+            passed = true;
+          }
         }
       }
 
@@ -201,32 +209,13 @@ export function useLiveness(bvn?: string) {
         advanceChallenge(challengeIndexRef.current + 1);
       }
     },
-    [advanceChallenge],
-  );
-
-  const frameProcessor = useFrameProcessor(
-    (frame) => {
-      "worklet";
-      // Sample Y-plane luminance (YUV: first width*height bytes = luma)
-      const buffer = frame.toArrayBuffer();
-      const bytes = new Uint8Array(buffer);
-      const total = frame.width * frame.height;
-      const step = Math.max(1, Math.floor(total / 1000)); // sample ~1000 pixels
-      let sum = 0;
-      let count = 0;
-      for (let i = 0; i < total; i += step) {
-        sum += bytes[i];
-        count++;
-      }
-      const avgLuma = sum / count; // 0–255
-      onLightingUpdate(avgLuma < 40);
-
-      if (!isDetectingRef.current) return;
-      const faces = detectFaces(frame);
-      onFaceDetected(faces);
+    onError: (err: Error) => {
+      setError(err.message);
+      setStatus("failed");
     },
-    [onFaceDetected, onLightingUpdate],
-  );
+  });
+
+  const outputs = [faceDetectorOutput, photoOutput];
 
   const start = useCallback(async () => {
     if (!hasPermission) {
@@ -254,9 +243,10 @@ export function useLiveness(bvn?: string) {
     setSelfieUri("");
     setError(null);
     setTooDark(false);
+    noFaceFramesRef.current = 0;
     setIdentityToken("");
-    prevYawRef.current = null;
-    prevEyeOpenRef.current = null;
+    setLivenessJobId("");
+    blinkPhaseRef.current = "waiting_close";
     challengeIndexRef.current = 0;
   }, []);
 
@@ -264,7 +254,7 @@ export function useLiveness(bvn?: string) {
     status === "passed"
       ? {
           selfieImageUrl: selfieUri,
-          livenessJobId: `liveness_${Date.now()}`,
+          livenessJobId,
           identityToken,
           bvnMatch: !!bvn,
         }
@@ -273,7 +263,7 @@ export function useLiveness(bvn?: string) {
   return {
     cameraRef,
     device,
-    frameProcessor,
+    outputs,
     status,
     challenge,
     challengeIndex,

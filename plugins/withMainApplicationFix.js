@@ -2,7 +2,26 @@ const { withDangerousMod } = require("@expo/config-plugins");
 const fs = require("fs");
 const path = require("path");
 
+function withCustomUpdatesInit(config) {
+  return withDangerousMod(config, [
+    "android",
+    (cfg) => {
+      const gradlePropsPath = path.join(
+        cfg.modRequest.platformProjectRoot,
+        "gradle.properties"
+      );
+      let contents = fs.readFileSync(gradlePropsPath, "utf8");
+      if (!contents.includes("EX_UPDATES_CUSTOM_INIT")) {
+        contents += "\nEX_UPDATES_CUSTOM_INIT=true\n";
+        fs.writeFileSync(gradlePropsPath, contents, "utf8");
+      }
+      return cfg;
+    },
+  ]);
+}
+
 module.exports = function withMainApplicationFix(config) {
+  config = withCustomUpdatesInit(config);
   return withDangerousMod(config, [
     "android",
     (config) => {
@@ -29,6 +48,7 @@ import com.facebook.react.soloader.OpenSourceMergedSoMapping
 import com.facebook.soloader.SoLoader
 
 import expo.modules.ApplicationLifecycleDispatcher
+import expo.modules.updates.UpdatesController
 import com.zegiftedtechnologies.ruralpay.WidgetStoragePackage
 import com.zegiftedtechnologies.ruralpay.PaymentActivityPackage
 
@@ -59,6 +79,9 @@ class MainApplication : Application(), ReactApplication {
     SoLoader.init(this, OpenSourceMergedSoMapping)
     if (BuildConfig.IS_NEW_ARCHITECTURE_ENABLED) {
       load()
+    }
+    if (!BuildConfig.DEBUG) {
+      UpdatesController.initialize(this)
     }
     ApplicationLifecycleDispatcher.onApplicationCreate(this)
   }

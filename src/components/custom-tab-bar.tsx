@@ -1,4 +1,4 @@
-import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
+import { BottomTabBarProps } from "expo-router/js-tabs";
 import { useRouter } from "expo-router";
 import { QrCode } from "lucide-react-native";
 import React from "react";

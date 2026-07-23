@@ -92,6 +92,28 @@ jobs:
             cp "./assets/${{ github.event.client_payload.tenantSlug }}/app_icon.png" "./assets/${{ github.event.client_payload.tenantSlug }}/app_logo.png"
           fi
 
+      - name: Write Store Config
+        run: |
+          TENANT_DOMAIN="${{ github.event.client_payload.domain }}"
+          cat > ./store.config.json << EOF
+          {
+            "configVersion": 0,
+            "apple": {
+              "info": {
+                "en-US": {
+                  "title": "${{ github.event.client_payload.appName }}",
+                  "subtitle": "${{ github.event.client_payload.appSubtitle || 'Payments Made Easy' }}",
+                  "description": "${{ github.event.client_payload.appDescription || 'Fast, Secure Payments.' }}",
+                  "keywords": ${{ github.event.client_payload.appKeywords || '["Payments","Banking","NFC"]' }},
+                  "marketingUrl": "https://${TENANT_DOMAIN}",
+                  "supportUrl": "https://${TENANT_DOMAIN}/support",
+                  "privacyPolicyUrl": "https://${TENANT_DOMAIN}/privacy"
+                }
+              }
+            }
+          }
+          EOF
+
       - name: Build & Submit
         env:
           TENANT_SLUG: ${{ github.event.client_payload.tenantSlug }}
@@ -100,4 +122,6 @@ jobs:
           TENANT_PACKAGE_NAME: ${{ github.event.client_payload.packageName }}
           TENANT_SCHEME: ${{ github.event.client_payload.scheme }}
           TENANT_DOMAIN: ${{ github.event.client_payload.domain }}
-        run: eas build --platform all --profile production --non-interactive --auto-submit
+        run: |
+          eas build --platform android --profile production --non-interactive --auto-submit
+          eas build --platform ios --profile production --non-interactive --auto-submit

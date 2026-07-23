@@ -9,11 +9,11 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { ThumbsDown, ThumbsUp } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
-    Pressable,
-    ScrollView,
-    Text,
-    View,
-    useColorScheme,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+  useColorScheme,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -95,7 +95,14 @@ export default function TransactionDetail() {
 
   if (loading) return <LoadingView isDark={isDark} />;
   if (!transaction)
-    return <NotFoundView isDark={isDark} onBack={() => router.back()} />;
+    return (
+      <NotFoundView
+        isDark={isDark}
+        onBack={() =>
+          router.canGoBack() ? router.back() : router.replace("/")
+        }
+      />
+    );
 
   const typeInfo = getTransactionTypeLabel(transaction.txType);
   const isCredit = (transaction.txType || "").includes("CREDIT");

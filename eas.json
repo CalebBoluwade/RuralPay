@@ -24,8 +24,9 @@
       "autoIncrement": true,
       "developmentClient": false,
       "channel": "production",
+      "credentialsSource": "remote",
       "android": {
-        "buildType": "apk"
+        "buildType": "app-bundle"
       }
     }
   },

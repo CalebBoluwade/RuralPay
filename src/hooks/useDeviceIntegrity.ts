@@ -7,21 +7,21 @@ export function useDeviceIntegrity() {
   const [isChecking, setIsChecking] = useState(true);
   const appState = useRef(AppState.currentState);
 
-  const runCheck = async () => {
-    integrityService.resetCache();
+  const runCheck = async (resetCache = false) => {
+    if (resetCache) integrityService.resetCache();
     const compromised = await integrityService.isDeviceCompromised();
     setIsCompromised(compromised);
     setIsChecking(false);
   };
 
   useEffect(() => {
-    runCheck();
+    runCheck(); // cold start — use cache if available
 
     const sub = AppState.addEventListener(
       "change",
       (next: AppStateStatus) => {
         if (appState.current.match(/inactive|background/) && next === "active") {
-          runCheck();
+          runCheck(true); // foreground resume — bust cache
         }
         appState.current = next;
       }

@@ -18,9 +18,23 @@ const readUInt32LE = (buf: Uint8Array, offset: number): number =>
   (buf[offset + 2] << 16) |
   (buf[offset + 3] << 24);
 
+// Bluetooth SIG company identifier for manufacturer-specific BLE advertisements.
+// 0xFFFF = unregistered/custom (correct for apps without a Bluetooth SIG membership).
+
+// Read from env — allows per-environment overrides without a code change.
+// EXPO_PUBLIC_BLE_COMPANY_ID is hex string e.g. "0xFFFF"
+const BLE_COMPANY_ID = process.env.EXPO_PUBLIC_BLE_COMPANY_ID
+  ? parseInt(process.env.EXPO_PUBLIC_BLE_COMPANY_ID, 16)
+  : 0xffff;
+
 // UUIDs for the Broadcast Handshake Protocol
-const MERCHANT_SERVICE_UUID = "12345678-1234-1234-1234-123456789abc";
-const CUSTOMER_SERVICE_UUID = "87654321-4321-4321-4321-cba987654321";
+// Generate unique values with `uuidgen` and set in your .env files
+const MERCHANT_SERVICE_UUID =
+  process.env.EXPO_PUBLIC_BLE_MERCHANT_UUID ??
+  "12345678-1234-1234-1234-123456789abc";
+const CUSTOMER_SERVICE_UUID =
+  process.env.EXPO_PUBLIC_BLE_CUSTOMER_UUID ??
+  "87654321-4321-4321-4321-cba987654321";
 
 class BLEService {
   private readonly manager: BleManager;
@@ -95,7 +109,7 @@ class BLEService {
         (txIdNum >> 8) & 0xff,
       ];
 
-      await BLEAdvertiser.setCompanyId(0x004c);
+      await BLEAdvertiser.setCompanyId(BLE_COMPANY_ID);
       await BLEAdvertiser.broadcast(MERCHANT_SERVICE_UUID, dataArray, {
         advertiseMode: 0,
         txPowerLevel: 2,
@@ -239,7 +253,7 @@ class BLEService {
         0x01, // Success
       ];
 
-      await BLEAdvertiser.setCompanyId(0x004c);
+      await BLEAdvertiser.setCompanyId(BLE_COMPANY_ID);
       await BLEAdvertiser.broadcast(CUSTOMER_SERVICE_UUID, dataArray, {
         advertiseMode: 0,
         txPowerLevel: 2,

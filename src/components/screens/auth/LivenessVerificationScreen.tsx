@@ -1,26 +1,24 @@
 import {
-    CHALLENGE_LABELS,
-    VerificationResult,
-    useLiveness,
+  CHALLENGE_LABELS,
+  VerificationResult,
+  useLiveness,
 } from "@/src/hooks/useLiveness";
-import { router } from "expo-router";
 import {
-    Fingerprint,
-    RotateCcw,
-    ScanFace,
-    ShieldCheck,
+  Fingerprint,
+  RotateCcw,
+  ScanFace,
+  ShieldCheck,
 } from "lucide-react-native";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
-    ActivityIndicator,
-    Pressable,
-    Text,
-    View,
-    useColorScheme,
+  ActivityIndicator,
+  Pressable,
+  Text,
+  View,
+  useColorScheme,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Camera } from "react-native-vision-camera";
-import ScreenHeader from "../../ui/ScreenHeader";
 
 interface LivenessVerificationProps {
   userId: string;
@@ -30,7 +28,6 @@ interface LivenessVerificationProps {
 }
 
 type ScreenStep = "idle" | "camera" | "success" | "failed";
-
 export default function LivenessVerificationScreen({
   userId,
   bvn,
@@ -39,12 +36,12 @@ export default function LivenessVerificationScreen({
 }: Readonly<LivenessVerificationProps>) {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
-  const [screenStep, setScreenStep] = useState<ScreenStep>("idle");
+  const [hasStarted, setHasStarted] = useState(false);
 
   const {
     cameraRef,
     device,
-    frameProcessor,
+    outputs,
     status,
     challenge,
     challengeIndex,
@@ -62,8 +59,16 @@ export default function LivenessVerificationScreen({
     ? "bg-white/10 border border-white/20"
     : "bg-white border border-slate-200 shadow-sm";
 
+  const screenStep: ScreenStep = useMemo(() => {
+    if (!hasStarted || status === "idle") return "idle";
+    if (status === "passed") return "success";
+    if (status === "failed") return "failed";
+    return "camera";
+  }, [hasStarted, status]);
+
+  const cameraIsActive = status === "detecting" || status === "verifying";
+
   const handleBegin = async () => {
-    // Request permission first, before changing screen step
     if (!hasPermission) {
       const granted = await requestPermission();
       if (!granted) {
@@ -71,26 +76,23 @@ export default function LivenessVerificationScreen({
         return;
       }
     }
-    setScreenStep("camera");
+    setHasStarted(true);
     await start();
   };
 
   const handleRetry = () => {
     reset();
-    setScreenStep("idle");
+    setHasStarted(false);
   };
 
   useEffect(() => {
-    if (status === "passed" && screenStep === "camera" && result) {
-      setScreenStep("success");
-      onSuccess(result);
-    }
+    if (status === "passed" && result) onSuccess(result);
   }, [status, result]);
 
   useEffect(() => {
-    if (status === "failed" && screenStep === "camera") {
-      setScreenStep("failed");
+    if (status === "failed") {
       if (error) onFailure(error);
+      reset();
     }
   }, [status, error]);
 
@@ -98,7 +100,7 @@ export default function LivenessVerificationScreen({
     <SafeAreaView
       className={isDark ? "flex-1 bg-slate-950" : "flex-1 bg-slate-50"}
     >
-      <ScreenHeader
+      {/* <ScreenHeader
         title={
           screenStep === "idle"
             ? "Identity Verification"
@@ -111,7 +113,7 @@ export default function LivenessVerificationScreen({
         subtitle="Verify Your Identity Using Your Face"
         goBack
         onBack={() => router.back()}
-      />
+      /> */}
       {/* ── IDLE ── */}
       {screenStep === "idle" && (
         <View className="flex-1 justify-end px-5 mt-6 gap-6">
@@ -174,10 +176,8 @@ export default function LivenessVerificationScreen({
             ref={cameraRef}
             style={{ flex: 1 }}
             device={device}
-            isActive={screenStep === "camera"}
-            photo
-            frameProcessor={frameProcessor}
-            pixelFormat="yuv"
+            isActive={cameraIsActive}
+            outputs={outputs}
           />
 
           {/* Overlay */}

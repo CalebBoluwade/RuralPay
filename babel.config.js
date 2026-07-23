@@ -6,8 +6,7 @@ module.exports = function (api) {
       "nativewind/babel",
     ],
     plugins: [
-      "react-native-worklets-core/plugin",
-       'react-native-worklets/plugin',
+      'react-native-worklets/plugin',
       // [
       //   "module:react-native-dotenv",
       //   {

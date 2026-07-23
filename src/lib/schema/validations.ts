@@ -27,8 +27,12 @@ export const registerSchema = z
     email: z.email("Invalid Email Address"),
     phoneNumber: z
       .string("Enter a Phone Number")
-      .min(10, "Phone Number Must Be At Least 10 Digits")
-      .max(11, "Phone Number Must Be At Most 11 Digits"),
+      .regex(
+        /^(0[789][01]\d{8}|\+234[789][01]\d{8})$/,
+        "Enter a valid Nigerian phone number",
+      ),
+    // .min(10, "Phone Number Must Be At Least 10 Digits")
+    // .max(11, "Phone Number Must Be At Most 11 Digits"),
     BVN: z
       .string("Enter Your BVN")
       .min(11, "BVN Must Be 11 Digits")
@@ -46,6 +50,9 @@ export const registerSchema = z
     businessName: z.string().optional(),
     businessAddress: z.string().optional(),
     businessType: z.string().optional(),
+    taxId: z.string().optional(),
+    merchantBusinessAccountNumber: z.string().optional(),
+    merchantAccountBankCode: z.string().optional(),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords Don't Match",

@@ -1,6 +1,10 @@
+import { useLanguage } from "@/src/components/context/LanguageContext";
 import { SessionExpiryModal } from "@/src/components/ui/Modals/SessionExpiryModal";
 import { authService } from "@/src/lib/services/AuthService";
-import { complianceService } from "@/src/lib/services/ComplianceService";
+import {
+  ComplianceService,
+  complianceService,
+} from "@/src/lib/services/ComplianceService";
 import QRCodeService from "@/src/lib/services/QRCodeService";
 import WidgetStorageService from "@/src/lib/services/WidgetStorageService";
 import { biometricService } from "@/src/lib/utils/SecureStorage";
@@ -8,7 +12,7 @@ import { router } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import { jwtDecode } from "jwt-decode";
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { DeviceEventEmitter } from "react-native";
+import { Alert, DeviceEventEmitter } from "react-native";
 
 interface AuthContextType {
   user: User | null;
@@ -27,6 +31,7 @@ interface AuthContextType {
   hasBiometricCredentials: boolean;
   hasRequiredConsents: boolean;
   consentOutdated: boolean;
+  onboardingShown: boolean;
   login: (identifier: string, password: string) => Promise<void>;
   biometricLogin: () => Promise<void>;
   register: (data: RegisterData) => Promise<string>;
@@ -58,82 +63,120 @@ export function AuthSessionProvider({
   const [showSessionExpiredModal, setShowSessionExpiredModal] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isFirstLogin, setIsFirstLogin] = useState(false);
+  const [onboardingShown, setOnboardingShown] = useState(false);
+
+  const { t } = useLanguage();
 
   const clearFirstLogin = () => setIsFirstLogin(false);
 
   const lock = () => setIsLocked(true);
   const unlock = () => setIsLocked(false);
 
-  useEffect(() => {
-    checkAuthState();
-  }, []);
+  const logout = async () => {
+    await authService.logout();
+    setUser(null);
+    setToken(null);
+  };
 
-  const checkAuthState = async () => {
-    try {
-      const [authData, hasBiometric, hasConsents, outdated] = await Promise.all(
-        [
+  useEffect(() => {
+    const checkAuthState = async () => {
+      try {
+        const [
+          authData,
+          hasBiometric,
+          privacyConsent,
+          complianceConsent,
+          onboardingShownVal,
+        ] = await Promise.all([
           authService.getStoredAuthData(),
           biometricService.hasBiometricCredentials(),
-          complianceService.hasRequiredConsents(),
-          complianceService.isConsentOutdated(),
-        ],
-      );
+          complianceService.getPrivacyConsent(),
+          complianceService.getComplianceConsent(),
+          SecureStore.getItemAsync("onboarding_shown"),
+        ]);
 
-      if (authData) {
-        setUser(authData.details.user);
-        setToken(authData.details.token);
-        setRefreshToken(authData.details.refreshToken);
+        const hasConsents = !!(
+          privacyConsent?.dataCollection &&
+          complianceConsent?.privacyPolicy &&
+          complianceConsent?.termsOfService
+        );
+        const outdated =
+          !!privacyConsent &&
+          !!complianceConsent &&
+          (privacyConsent.version !== ComplianceService.CURRENT_VERSION ||
+            complianceConsent.version !== ComplianceService.CURRENT_VERSION);
+
+        if (authData) {
+          setUser(authData.details.user);
+          setToken(authData.details.token);
+          setRefreshToken(authData.details.refreshToken);
+        }
+        setHasBiometricCredentials(hasBiometric);
+        if (hasBiometric) setNativeAuthLogin(true);
+        setHasRequiredConsents(hasConsents);
+        setConsentOutdated(outdated);
+        setOnboardingShown(onboardingShownVal === "true");
+      } catch (error) {
+        if (__DEV__) console.error("Auth check failed:", error);
+      } finally {
+        setIsLoading(false);
       }
-      setHasBiometricCredentials(hasBiometric);
-      if (hasBiometric) setNativeAuthLogin(true);
-      setHasRequiredConsents(hasConsents);
-      setConsentOutdated(outdated);
-    } catch (error) {
-      if (__DEV__) console.error("Auth check failed:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    };
+
+    void checkAuthState();
+  }, []);
 
   // JWT Expiry Watcher
   useEffect(() => {
     if (!token) return;
 
+    let decoded: any;
+    let expiry: number;
+    let timeUntilExpiry: number;
+
     try {
-      const decoded: any = jwtDecode(token);
-      const expiry = decoded.exp * 1000;
-      const currentTime = Date.now();
-      const timeUntilExpiry = expiry - currentTime;
-
-      if (__DEV__) {
-        console.log("Token expiry time:", new Date(expiry).toLocaleString());
-        console.log(
-          "Time until expiry:",
-          Math.floor(timeUntilExpiry / 1000),
-          "seconds",
-        );
-      }
-
-      // If token is already expired, logout immediately
-      if (timeUntilExpiry <= 0) {
-        if (__DEV__) console.log("Token already expired, logging out");
-        logout();
-        return;
-      }
-
-      const timeout = setTimeout(
-        () => {
-          logout();
-        },
-        Math.min(timeUntilExpiry, 2147483647),
-      );
-
-      return () => clearTimeout(timeout);
+      decoded = jwtDecode(token);
+      expiry = decoded.exp * 1000;
+      timeUntilExpiry = expiry - Date.now();
     } catch (error) {
       console.error("Error decoding token:", error);
-      // Optionally logout if token is invalid
-      logout();
+      setTimeout(() => {
+        setUser(null);
+        setToken(null);
+        void authService.logout();
+      }, 0);
+      return;
     }
+
+    if (__DEV__) {
+      console.log("Token expiry time:", new Date(expiry).toLocaleString());
+      console.log(
+        "Time until expiry:",
+        Math.floor(timeUntilExpiry / 1000),
+        "seconds",
+      );
+    }
+
+    if (timeUntilExpiry <= 0) {
+      if (__DEV__) console.log("Token already expired, logging out");
+      setTimeout(() => {
+        setUser(null);
+        setToken(null);
+        void authService.logout();
+      }, 0);
+      return;
+    }
+
+    const timeout = setTimeout(
+      () => {
+        setUser(null);
+        setToken(null);
+        authService.logout();
+      },
+      Math.min(timeUntilExpiry, 2147483647),
+    );
+
+    return () => clearTimeout(timeout);
   }, [token]);
 
   // SESSION_EXPIRED event listener — always active for the lifetime of the provider
@@ -290,17 +333,14 @@ export function AuthSessionProvider({
     const authResponse = await authService.register(data);
 
     if (!authResponse?.success) {
+      Alert.alert(t("auth.registrationFailed"), authResponse?.message, [
+        { text: t("common.confirm"), style: "default" },
+      ]);
       throw new Error("Registration failed. Please try again.");
     }
 
     router.replace("/auth/login");
     return authResponse.details.userId;
-  };
-
-  const logout = async () => {
-    await authService.logout();
-    setUser(null);
-    setToken(null);
   };
 
   const handleSessionExpiry = async () => {
@@ -370,6 +410,7 @@ export function AuthSessionProvider({
         isLocked,
         lock,
         unlock,
+        onboardingShown,
       }}
     >
       {children}

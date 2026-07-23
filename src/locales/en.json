@@ -61,7 +61,7 @@
     "phoneVerifiedSuccess": "Phone Number Verified Successfully",
     "otpResent": "Verification Code Resent",
     "registrationSuccess": "Registration Successful",
-    "merchantRegistrationSuccess": "Merchant Registration Successful",
+    "merchantRegistrationSuccess": "Merchant Registration Successful. Profile Would Be Validated In 3-5 Business Days",
     "businessNameRequired": "Business Name is required",
     "businessAddressRequired": "Business Address is required",
     "businessTypeRequired": "Business Type is required",

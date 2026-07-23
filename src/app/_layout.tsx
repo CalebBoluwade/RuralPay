@@ -1,25 +1,30 @@
 import "@/global.css";
 import { ErrorBoundary } from "@/src/components/ErrorBoundary";
-import {
-  DarkTheme,
-  DefaultTheme,
-  ThemeProvider,
-} from "@react-navigation/native";
 import { useFonts } from "expo-font";
 import { isLiquidGlassAvailable } from "expo-glass-effect";
 import * as Notifications from "expo-notifications";
 import { router, SplashScreen, Stack } from "expo-router";
+import {
+  DarkTheme,
+  DefaultTheme,
+  ThemeProvider,
+} from "expo-router/react-navigation";
 import * as SecureStore from "expo-secure-store";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
 import { DeviceEventEmitter, useColorScheme } from "react-native";
 import "react-native-reanimated";
-import { AuthSessionProvider, useAuth } from "../components/context/AuthSessionProvider";
+import {
+  AuthSessionProvider,
+  useAuth,
+} from "../components/context/AuthSessionProvider";
 import { LanguageProvider } from "../components/context/LanguageContext";
 import { NotificationProvider } from "../components/context/NotificationContext";
 import { ToastProvider } from "../components/context/ToastProvider";
 import LockScreen from "../components/screens/auth/LockScreen";
 import ComplianceGuard from "../components/ui/ComplianceGuard";
+import { useInactivity } from "../hooks/useInactivity";
+import { integrityService } from "../lib/services/IntegrityService";
 import { pinningService } from "../lib/services/PinningService";
 
 Notifications.setNotificationHandler({
@@ -42,19 +47,8 @@ export default function RootLayout() {
   const colorScheme = useColorScheme();
 
   useEffect(() => {
-    const initializeStartupServices = async () => {
-      try {
-        await Promise.all([
-          // EncryptionService.RetrieveUserKey(),
-          pinningService.initialize(),
-        ]);
-      } catch (error) {
-        if (__DEV__)
-          console.error("Failed To Initialize Startup Services:", error);
-      }
-    };
-
-    initializeStartupServices();
+    // Pre-warm integrity cache so ComplianceGuard hits it synchronously
+    integrityService.isDeviceCompromised().catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -68,7 +62,12 @@ export default function RootLayout() {
   }, []);
 
   useEffect(() => {
-    if (loaded || error) SplashScreen.hideAsync();
+    if (loaded || error) {
+      SplashScreen.hideAsync();
+      requestAnimationFrame(() => {
+        pinningService.initialize().catch(() => {});
+      });
+    }
   }, [loaded, error]);
 
   if (!loaded && !error) return null;
@@ -80,18 +79,16 @@ export default function RootLayout() {
           value={colorScheme === "dark" ? DarkTheme : DefaultTheme}
         >
           <ToastProvider>
-            <AuthSessionProvider>
-              <LanguageProvider>
-                {/* <UserInactivityProvider> */}
+            <LanguageProvider>
+              <AuthSessionProvider>
                 <ComplianceGuard>
-                  {/* <Slot /> */}
+                  <InactivityWatcher />
                   <RootNavigator />
                   <PendingCheckoutHandler />
                   <StatusBar style="auto" />
                 </ComplianceGuard>
-                {/* </UserInactivityProvider> */}
-              </LanguageProvider>
-            </AuthSessionProvider>
+              </AuthSessionProvider>
+            </LanguageProvider>
           </ToastProvider>
         </ThemeProvider>
       </NotificationProvider>
@@ -117,7 +114,10 @@ function PendingCheckoutHandler() {
   }, [isLoading]);
 
   useEffect(() => {
-    const subLogin = DeviceEventEmitter.addListener("USER_LOGGED_IN", resumePendingCheckout);
+    const subLogin = DeviceEventEmitter.addListener(
+      "USER_LOGGED_IN",
+      resumePendingCheckout,
+    );
     const subPin = DeviceEventEmitter.addListener("PIN_SUCCESS", () => {
       setShowLock(false);
       resumePendingCheckout();
@@ -134,13 +134,29 @@ function PendingCheckoutHandler() {
       setShowLock(true);
     } else {
       SecureStore.deleteItemAsync("pending_checkout_token").catch(() => {});
-      router.push({ pathname: "/(common)/checkout", params: { token: pendingToken } } as any);
+      router.push({
+        pathname: "/(common)/checkout",
+        params: { token: pendingToken },
+      } as any);
       setPendingToken(null);
     }
   }, [pendingToken, isAuthenticated]);
 
   if (showLock) return <LockScreen />;
 
+  return null;
+}
+
+// Mounts inactivity timer only when the user is authenticated.
+// Renders nothing — side-effect only.
+function InactivityWatcher() {
+  const { isAuthenticated } = useAuth();
+  if (!isAuthenticated) return null;
+  return <InactivityTimer />;
+}
+
+function InactivityTimer() {
+  useInactivity();
   return null;
 }
 

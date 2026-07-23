@@ -203,7 +203,7 @@ export default function LoginScreen({
             </View>
 
             <View className="items-center">
-              <CreditCard width={width - 70} height={(height - 350) * 0.8} />
+              <CreditCard width={width - 70} height={(height - 500) * 0.8} />
             </View>
 
             {/* Login Form */}

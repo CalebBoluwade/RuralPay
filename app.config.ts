@@ -1,5 +1,6 @@
 // import "dotenv/config";
 import { ConfigContext, ExpoConfig } from "expo/config";
+import { existsSync } from "fs";
 import { version } from "./package.json";
 
 const EAS_PROJECT_ID = "e4c8aac2-05e4-4310-9ed9-a70edcdadbe6";
@@ -16,14 +17,17 @@ const PACKAGE_NAME =
 const SCHEME = process.env.TENANT_SCHEME ?? "ruralpay";
 const TENANT_DOMAIN =
   process.env.TENANT_DOMAIN ?? "ruralpay.zegiftedtechnologies.com";
-const APP_DOMAIN = `applinks:${TENANT_DOMAIN}`;
 const ANDROID_HOST = TENANT_DOMAIN;
 
 // Asset paths — CI unzips to ./assets/{tenantSlug}/, local dev falls back to default
 const ASSET_BASE = `./assets/${TENANT_SLUG}`;
-const ICON = `${ASSET_BASE}/app_icon.png`;
-const ADAPTIVE_ICON = `${ASSET_BASE}/app_icon.png`;
-const SPLASH = `${ASSET_BASE}/splash_screen.png`;
+const ICON = existsSync(`${ASSET_BASE}/app_icon.png`)
+  ? `${ASSET_BASE}/app_icon.png`
+  : "./assets/images/RuralPay.png";
+const ADAPTIVE_ICON = ICON;
+const SPLASH = existsSync(`${ASSET_BASE}/splash_screen.png`)
+  ? `${ASSET_BASE}/splash_screen.png`
+  : "./assets/images/splash-icon.png";
 
 export default ({ config }: ConfigContext): ExpoConfig => {
   const appEnv =
@@ -39,19 +43,15 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     slug: PROJECT_SLUG,
     orientation: "default",
     userInterfaceStyle: "automatic",
-    assetBundlePatterns: ["assets/**/*"],
+    assetBundlePatterns: ["assets/fonts/*", "assets/images/*", "assets/gifs/*"],
     icon: ICON,
     scheme: SCHEME,
     ios: {
       supportsTablet: true,
       bundleIdentifier: BUNDLE_IDENTIFIER,
       appleTeamId: "G3YNG3LDQ3",
-      associatedDomains: [APP_DOMAIN],
       googleServicesFile:
         process.env.GOOGLE_SERVICE_INFO_PLIST ?? "./GoogleService-Info.plist",
-      config: {
-        googleMobileAdsAutoInit: false,
-      },
       entitlements: {
         "com.apple.security.application-groups": [
           "group.com.zegiftedtechnologies.ruralpay",
@@ -74,16 +74,25 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         ],
         UIBackgroundModes: ["fetch", "remote-notification"],
         ITSAppUsesNonExemptEncryption: false,
-        NSCameraUsageDescription:
-          "RuralPay Uses The Camera To Scan QR Codes And Verify User Identity",
-        NFCReaderUsageDescription: "RuralPay Uses NFC to Read Payment Cards",
-        NSLocationAlwaysAndWhenInUseUsageDescription:
-          "RuralPay Uses Device Location To Enhance Transaction Security and Aid Fraud Prevention",
-        NSLocationWhenInUseUsageDescription:
-          "RuralPay Uses Device Location To Enhance Transaction Security and Aid Fraud Prevention",
+        NSCameraUsageDescription: `${APP_NAME} uses your camera to scan QR codes for payments and to verify your identity during registration`,
+        NFCReaderUsageDescription: `${APP_NAME} uses NFC to read your payment card details for contactless transactions`,
+        NSLocationAlwaysAndWhenInUseUsageDescription: undefined,
+        NSLocationWhenInUseUsageDescription: `${APP_NAME} uses your location to verify transaction origin and detect fraudulent activity on your account`,
+        // Suppress stale Expo Dev Launcher injections — this app does not use
+        // CoreMotion hardware or local network discovery in production
+        NSMotionUsageDescription: undefined,
+        NSLocalNetworkUsageDescription: undefined,
+        // NSLocationAlwaysUsageDescription is a legacy key superseded by
+        // NSLocationAlwaysAndWhenInUseUsageDescription — suppress the stale default
+        NSLocationAlwaysUsageDescription: undefined,
+        // Microphone — set here to ensure it overrides any stale prebuild value
+        NSMicrophoneUsageDescription: `${APP_NAME} uses your microphone for voice-activated banking and transaction commands`,
+        // Contacts — used in airtime and data purchase to pick a recipient from contacts
+        NSContactsUsageDescription: `${APP_NAME} uses your contacts so you can quickly select a recipient's phone number when purchasing airtime or data`,
         FIREBASE_ANALYTICS_COLLECTION_ENABLED: true,
         CFBundleAllowMixedLocalizations: true,
-        CFBundleLocalizations: ["fr"],
+        // Actual supported locales — en + Nigerian languages. No French in the codebase.
+        CFBundleLocalizations: ["en", "yo", "ig", "ha"],
         CFBundleURLTypes: [
           {
             CFBundleURLSchemes: [SCHEME],
@@ -139,18 +148,15 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         "android.permission.ACCESS_FINE_LOCATION",
         "android.permission.ACCESS_COARSE_LOCATION",
       ],
-      config: {
-        googleMobileAdsAutoInit: false,
-      },
     },
-    updates: {
-      url: `https://u.expo.dev/${EAS_PROJECT_ID}`,
-      enabled: true,
-      fallbackToCacheTimeout: 0,
-    },
-    runtimeVersion: {
-      policy: "appVersion",
-    },
+    // updates: {
+    //   url: `https://u.expo.dev/${EAS_PROJECT_ID}`,
+    //   checkAutomatically: "ON_ERROR_RECOVERY",
+    //   fallbackToCacheTimeout: 0,
+    // },
+    // runtimeVersion: {
+    //   policy: "appVersion",
+    // },
     extra: {
       eas: {
         projectId: EAS_PROJECT_ID,
@@ -165,8 +171,12 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       favicon: "./assets/images/favicon.png",
     },
     plugins: [
-      "./plugins/withMainApplicationFix",
-      "expo-audio",
+      [
+        "expo-audio",
+        {
+          microphonePermission: `Allow ${APP_NAME} to access your microphone for voice-activated banking and transaction commands`,
+        },
+      ],
       [
         "expo-font",
         {
@@ -209,61 +219,54 @@ export default ({ config }: ConfigContext): ExpoConfig => {
           mode: appEnv === "production" ? "production" : "development",
         },
       ],
+      // "./plugins/withMainApplicationFix",
       "./plugins/withModularHeaders",
       "./plugins/withMavenCentral",
       "./plugins/withBLEPermissions",
       "./plugins/withAndroidWidget",
       "./plugins/withIOSWidget",
-      // ...(appEnv === "production" ? ["./plugins/withScreenSecurity"] : []),
+      "./plugins/withScreenSecurity",
       [
         "react-native-nfc-manager",
-        { nfcReaderUsageDescription: "Allow NFC to Scan Cards For Payment" },
+        {
+          nfcReaderUsageDescription: `${APP_NAME} uses NFC to read your payment card details for contactless transactions`,
+        },
       ],
       [
         "expo-location",
         {
-          locationAlwaysAndWhenInUsePermission: `Allow ${APP_NAME} To Use Your Location For Transaction Security`,
+          locationWhenInUsePermission: `${APP_NAME} uses your location to verify transaction origin and detect fraudulent activity on your account`,
+          isIosBackgroundLocationEnabled: false,
+          isAndroidBackgroundLocationEnabled: false,
         },
       ],
       [
         "expo-camera",
         {
-          cameraPermission: `Allow ${APP_NAME} To Access Your Camera`,
-          microphonePermission: `Allow ${APP_NAME} To Access Your Microphone`,
-          recordAudioAndroid: true,
+          cameraPermission: `${APP_NAME} uses your camera to scan QR codes for payments and to verify your identity during registration`,
         },
       ],
       [
         "react-native-vision-camera",
         {
-          cameraPermissionText: `Allow ${APP_NAME} to access your camera for identity verification`,
+          cameraPermissionText: `${APP_NAME} uses your camera to verify your identity during registration`,
           enableFrameProcessors: true,
         },
       ],
       // ["@stripe/stripe-react-native", {}],
-      // [
-      //   "expo-sqlite",
-      //   {
-      //     enableFTS: true,
-      //     useSQLCipher: true,
-      //     android: {
-      //       enableFTS: false,
-      //       useSQLCipher: false,
-      //     },
-      //     ios: {
-      //       customBuildFlags: [
-      //         "-DSQLITE_ENABLE_DBSTAT_VTAB=1 -DSQLITE_ENABLE_SNAPSHOT=1",
-      //       ],
-      //     },
-      //   },
-      // ],
       "expo-secure-store",
+      [
+        "expo-contacts",
+        {
+          contactsPermission: `${APP_NAME} uses your contacts so you can quickly select a recipient's phone number when purchasing airtime or data`,
+        },
+      ],
       [
         "expo-local-authentication",
         {
-          faceIDPermission: `Allow ${APP_NAME} to Use FACE ID.`,
-          fingerprintPermission: `Allow ${APP_NAME} to Use FINGERPRINT`,
-          touchIDPermission: `Allow ${APP_NAME} to Use TOUCH ID`,
+          faceIDPermission: `${APP_NAME} uses Face ID to authenticate your identity for secure login and transaction approval`,
+          fingerprintPermission: `${APP_NAME} uses your fingerprint to authenticate your identity for secure login and transaction approval`,
+          touchIDPermission: `${APP_NAME} uses Touch ID to authenticate your identity for secure login and transaction approval`,
         },
       ],
       [
@@ -276,7 +279,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
             minSdkVersion: 26,
           },
           ios: {
-            deploymentTarget: "15.5",
+            deploymentTarget: "16.4",
           },
         },
       ],
@@ -288,15 +291,3 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     owner: OWNER,
   };
 };
-
-// export const getApiUrl = (
-//   environment: "development" | "preview" | "production",
-// ): string => {
-//   const envApiUrl = process.env.EXPO_PUBLIC_API_URL;
-//   if (!envApiUrl) {
-//     throw new Error(
-//       `EXPO_PUBLIC_API_URL Environment Variable Required for ${environment} Environment`,
-//     );
-//   }
-//   return envApiUrl;
-// };

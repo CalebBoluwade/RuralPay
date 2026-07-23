@@ -128,12 +128,56 @@ class AuthService {
       } else if (error.message && !error.message.includes("Network")) {
         message = error.message;
       } else if (!error.response) {
-        message = "Network error. Please check your connection";
+        message = "Network Error. Please check your connection";
       }
 
       ToastService.warning(message);
 
-      return null;
+      return {
+        message,
+        success: false,
+        details: { userId: "0" },
+      };
+    }
+  }
+
+  async SendUserRegistrationOTP(
+    phoneNumber: string,
+    emailAddress: string,
+  ): Promise<APIResponse<undefined>> {
+    try {
+      const response = await axiosInstance.post<APIResponse<undefined>>(
+        "/auth/otp",
+        {
+          phoneNumber,
+          emailAddress,
+        },
+      );
+
+      return response;
+    } catch (error: any) {
+      const message = error.response?.data?.message || "Failed to Send OTP";
+      return { message, success: false, details: undefined };
+    }
+  }
+
+  async ValidateUserRegistrationOTP(
+    otp: string,
+    phoneNumber: string,
+  ): Promise<APIResponse<undefined>> {
+    try {
+      const response = await axiosInstance.post<APIResponse<undefined>>(
+        "/auth/verify-otp",
+        {
+          otp,
+          phoneNumber,
+        },
+      );
+
+      return response;
+    } catch (error: any) {
+      const message = error.response?.data?.message || "Failed to Validate OTP";
+      return { success: false, message, details: undefined };
     }
   }
 
@@ -227,9 +271,11 @@ class AuthService {
 
   async getStoredAuthData(): Promise<AuthResponse | null> {
     try {
-      const token = await SecureStore.getItemAsync(AUTH_TOKEN_KEY);
-      const refreshToken = await SecureStore.getItemAsync(REFRESH_TOKEN_KEY);
-      const userData = await SecureStore.getItemAsync(USER_DATA_KEY);
+      const [token, refreshToken, userData] = await Promise.all([
+        SecureStore.getItemAsync(AUTH_TOKEN_KEY),
+        SecureStore.getItemAsync(REFRESH_TOKEN_KEY),
+        SecureStore.getItemAsync(USER_DATA_KEY),
+      ]);
 
       if (token && userData) {
         return {

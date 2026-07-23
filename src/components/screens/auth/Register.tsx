@@ -6,9 +6,11 @@ import PinSetupModal from "@/src/components/ui/Modals/PinSetupModal";
 import ScreenHeader from "@/src/components/ui/ScreenHeader";
 import { VerificationResult } from "@/src/hooks/useLiveness";
 import { RegisterFormData, registerSchema } from "@/src/lib/schema/validations";
-import AccountService from "@/src/lib/services/AccountService";
+import { authService } from "@/src/lib/services/AuthService";
 import MerchantService from "@/src/lib/services/MerchantService";
+import PaymentService from "@/src/lib/services/PaymentService";
 import ToastService from "@/src/lib/services/ToastService";
+import BanksModal from "@/src/components/ui/Modals/BanksModal";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Link, router } from "expo-router";
 import {
@@ -21,6 +23,7 @@ import {
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import {
+  Alert,
   Modal,
   Pressable,
   Text,
@@ -63,8 +66,18 @@ export default function RegisterScreen() {
   }, []);
 
   useEffect(() => {
-    if (step === "phone-verify") startCooldown();
+    if (step !== "phone-verify") return;
+    authService
+      .SendUserRegistrationOTP(
+        registrationData?.phoneNumber ?? "",
+        registrationData?.email ?? "",
+      )
+      .catch(() => {
+        ToastService.error(t("auth.resendFailed"));
+      });
+    const timer = setTimeout(() => startCooldown(), 0);
     return () => {
+      clearTimeout(timer);
       if (cooldownRef.current) clearInterval(cooldownRef.current);
     };
   }, [step]);
@@ -76,6 +89,28 @@ export default function RegisterScreen() {
   const [businessType, setBusinessType] = useState("");
   const [showBusinessTypeDropdown, setShowBusinessTypeDropdown] =
     useState(false);
+  const [taxId, setTaxId] = useState("");
+  const [merchantAccountNumber, setMerchantAccountNumber] = useState("");
+  const [merchantBankCode, setMerchantBankCode] = useState("");
+  const [merchantBankName, setMerchantBankName] = useState("");
+  const [showBankModal, setShowBankModal] = useState(false);
+  const [banks, setBanks] = useState<Bank[]>([]);
+  const [banksLoading, setBanksLoading] = useState(false);
+  const [banksError, setBanksError] = useState(false);
+
+  const fetchBanks = async () => {
+    setBanksError(false);
+    setBanksLoading(true);
+    try {
+      const result = await PaymentService.GetBanks();
+      if (Array.isArray(result) && result.length > 0) setBanks(result);
+      else setBanksError(true);
+    } catch {
+      setBanksError(true);
+    } finally {
+      setBanksLoading(false);
+    }
+  };
 
   const businessTypes = [
     "Restaurant",
@@ -97,6 +132,7 @@ export default function RegisterScreen() {
   } = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
     reValidateMode: "onChange",
+    mode: "all",
   });
 
   const [showLivenessGate, setShowLivenessGate] = useState(false);
@@ -129,6 +165,9 @@ export default function RegisterScreen() {
       businessName: businessName,
       businessAddress: businessAddress,
       businessType: businessType,
+      taxId: taxId.trim() || undefined,
+      merchantBusinessAccountNumber: merchantAccountNumber.trim() || undefined,
+      merchantAccountBankCode: merchantBankCode || undefined,
     }));
     setShowLivenessGate(true);
   };
@@ -139,9 +178,9 @@ export default function RegisterScreen() {
       return;
     }
 
-    const OtpValidation = await AccountService.ValidateUserPhoneNumberOTP(
-      "Registration",
+    const OtpValidation = await authService.ValidateUserRegistrationOTP(
       phoneOTP,
+      registrationData?.phoneNumber ?? "",
     );
 
     if (!OtpValidation.success) {
@@ -188,12 +227,22 @@ export default function RegisterScreen() {
 
       // If merchant registration, register merchant profile
       if (registrationData.isMerchant && registrationData.businessName) {
-        await MerchantService.registerMerchant({
+        const merchantResult = await MerchantService.registerMerchant({
           businessName: registrationData.businessName,
           businessAddress: registrationData.businessAddress!,
           businessType: registrationData.businessType!,
           userId: userId,
+          taxId: registrationData.taxId,
+          merchantBusinessAccountNumber: registrationData.merchantBusinessAccountNumber,
+          merchantAccountBankCode: registrationData.merchantAccountBankCode,
         });
+
+        if (!merchantResult.success) {
+          Alert.alert(
+            "Merchant Registration Failed",
+            "An Error Occurred During Merchant Registration. Reach out via our Support Channels",
+          );
+        }
       }
 
       ToastService.success(
@@ -204,12 +253,9 @@ export default function RegisterScreen() {
 
       setShowPinModal(false);
       router.replace("/auth/login");
-    } catch (error) {
+    } catch {
       setShowPinModal(false);
       setStep("personal");
-      ToastService.error(
-        error instanceof Error ? error.message : t("auth.registrationFailed"),
-      );
     }
   };
 
@@ -235,54 +281,39 @@ export default function RegisterScreen() {
     const CurrentIndex = Steps.indexOf(step);
 
     return (
-      <View className="justify-center items-center my-3">
-        <View
-          className="flex-row items-center justify-center"
-          style={{ width: "100%" }}
-        >
-          {Steps.map((s, index) => (
-            <View key={s} className="flex-1 flex-col items-center">
-              <View className="flex-row items-center w-full">
-                <View
-                  className={`w-8 h-8 rounded-full items-center justify-center ${
+      <View
+        className="flex-row items-center px-4 py-3"
+        style={{ width: "100%" }}
+      >
+        {Steps.map((s, index) => (
+          <React.Fragment key={s}>
+            <View className="flex-row items-center gap-1.5">
+              <View
+                className={`w-7 h-7 rounded-full items-center justify-center ${
+                  index <= CurrentIndex
+                    ? isDark
+                      ? "bg-lime-600"
+                      : "bg-lime-700"
+                    : isDark
+                      ? "bg-white/10"
+                      : "bg-gray-200"
+                }`}
+              >
+                <Text
+                  className={`text-xs font-bold ${
                     index <= CurrentIndex
-                      ? isDark
-                        ? "bg-lime-600"
-                        : "bg-lime-700"
+                      ? "text-white"
                       : isDark
-                        ? "bg-white/10"
-                        : "bg-gray-200"
+                        ? "text-gray-500"
+                        : "text-gray-400"
                   }`}
                 >
-                  <Text
-                    className={`text-base font-bold ${
-                      index <= CurrentIndex
-                        ? "text-white"
-                        : isDark
-                          ? "text-gray-500"
-                          : "text-gray-400"
-                    }`}
-                  >
-                    {index + 1}
-                  </Text>
-                </View>
-                {index < Steps.length - 1 && (
-                  <View
-                    className={`flex-1 h-1 mx-1 ${
-                      index < CurrentIndex
-                        ? isDark
-                          ? "bg-lime-600"
-                          : "bg-lime-700"
-                        : isDark
-                          ? "bg-white/10"
-                          : "bg-gray-200"
-                    }`}
-                  />
-                )}
+                  {index + 1}
+                </Text>
               </View>
               <Text
-                style={{ fontSize: 9 }}
-                className={`mt-1 text-center ${
+                style={{ fontSize: 11 }}
+                className={`${
                   index === CurrentIndex
                     ? isDark
                       ? "text-lime-400 font-bold"
@@ -291,13 +322,25 @@ export default function RegisterScreen() {
                       ? "text-gray-500"
                       : "text-gray-400"
                 }`}
-                numberOfLines={1}
               >
                 {STEP_LABELS[s]}
               </Text>
             </View>
-          ))}
-        </View>
+            {index < Steps.length - 1 && (
+              <View
+                className={`flex-1 h-0.5 mx-1 ${
+                  index < CurrentIndex
+                    ? isDark
+                      ? "bg-lime-600"
+                      : "bg-lime-700"
+                    : isDark
+                      ? "bg-white/10"
+                      : "bg-gray-200"
+                }`}
+              />
+            )}
+          </React.Fragment>
+        ))}
       </View>
     );
   };
@@ -331,9 +374,7 @@ export default function RegisterScreen() {
         }}
       />
 
-      <View className="w-full flex-row items-center justify-center">
-        {RenderProgressBar()}
-      </View>
+      {RenderProgressBar()}
 
       <KeyboardAwareScrollView
         contentContainerStyle={{ flexGrow: 1 }}
@@ -345,80 +386,6 @@ export default function RegisterScreen() {
           {/* Personal Info Step */}
           {step === "personal" && (
             <View className="flex-1">
-              {/* Roadmap card — shown once before user fills anything */}
-              <View
-                className={`rounded-2xl p-4 mb-4 gap-3 ${
-                  isDark
-                    ? "bg-white/5 border border-white/10"
-                    : "bg-white border border-slate-100 shadow-sm"
-                }`}
-              >
-                <View>
-                  <Text
-                    className={`text-base font-bold ${
-                      isDark ? "text-white" : "text-slate-900"
-                    }`}
-                  >
-                    {t("auth.stepRoadmapTitle")}
-                  </Text>
-                  <Text
-                    className={`text-xs mt-0.5 ${
-                      isDark ? "text-slate-400" : "text-slate-500"
-                    }`}
-                  >
-                    {isMerchant
-                      ? t("auth.stepRoadmapSubtitleMerchant")
-                      : t("auth.stepRoadmapSubtitle")}
-                  </Text>
-                </View>
-                <View className="gap-2">
-                  {(isMerchant
-                    ? [
-                        { emoji: "👤", label: t("auth.roadmapStep1") },
-                        { emoji: "📱", label: t("auth.roadmapStep2") },
-                        { emoji: "🏪", label: t("auth.roadmapStep3") },
-                        { emoji: "🤳", label: t("auth.roadmapStep4") },
-                        { emoji: "🔐", label: t("auth.roadmapStep5") },
-                      ]
-                    : [
-                        { emoji: "👤", label: t("auth.roadmapStep1") },
-                        { emoji: "📱", label: t("auth.roadmapStep2") },
-                        { emoji: "🤳", label: t("auth.roadmapStep4") },
-                        { emoji: "🔐", label: t("auth.roadmapStep5") },
-                      ]
-                  ).map(({ emoji, label }, i) => (
-                    <View key={label} className="flex-row items-center gap-2">
-                      <View
-                        className={`w-6 h-6 rounded-full items-center justify-center ${
-                          i === 0
-                            ? isDark
-                              ? "bg-lime-600"
-                              : "bg-lime-700"
-                            : isDark
-                              ? "bg-white/10"
-                              : "bg-slate-100"
-                        }`}
-                      >
-                        <Text style={{ fontSize: 12 }}>{emoji}</Text>
-                      </View>
-                      <Text
-                        className={`text-base ${
-                          i === 0
-                            ? isDark
-                              ? "text-lime-400 font-semibold"
-                              : "text-lime-700 font-semibold"
-                            : isDark
-                              ? "text-slate-400"
-                              : "text-slate-500"
-                        }`}
-                      >
-                        {i === 0 ? `${label} ← You are here` : label}
-                      </Text>
-                    </View>
-                  ))}
-                </View>
-              </View>
-
               {/* Step context banner */}
               <View
                 className={`flex-row items-center gap-3 px-4 py-3 rounded-2xl mb-4 ${
@@ -429,7 +396,7 @@ export default function RegisterScreen() {
               >
                 <Text style={{ fontSize: 20 }}>👤</Text>
                 <Text
-                  className={`flex-1 text-base ${isDark ? "text-blue-300" : "text-blue-700"}`}
+                  className={`flex-1 text-lg ${isDark ? "text-blue-300" : "text-blue-700"}`}
                 >
                   {t("auth.stepPersonalHint")}
                 </Text>
@@ -737,6 +704,56 @@ export default function RegisterScreen() {
                 </View>
               </View>
 
+              {/* Tax ID, Account Number, Bank */}
+              <TextInput
+                className={`p-4 rounded-2xl text-base backdrop-blur-xl mb-4 ${
+                  isDark
+                    ? "bg-white/10 border border-white/20 text-white"
+                    : "bg-white/60 border border-gray-200/50 text-gray-900"
+                }`}
+                placeholder="Tax ID (optional)"
+                placeholderTextColor={isDark ? "#9CA3AF" : "#6B7280"}
+                value={taxId}
+                onChangeText={setTaxId}
+              />
+
+              <TextInput
+                className={`p-4 rounded-2xl text-base backdrop-blur-xl mb-4 ${
+                  isDark
+                    ? "bg-white/10 border border-white/20 text-white"
+                    : "bg-white/60 border border-gray-200/50 text-gray-900"
+                }`}
+                placeholder="Business Account Number (optional)"
+                placeholderTextColor={isDark ? "#9CA3AF" : "#6B7280"}
+                value={merchantAccountNumber}
+                onChangeText={setMerchantAccountNumber}
+                keyboardType="numeric"
+                maxLength={10}
+              />
+
+              <Pressable
+                onPress={() => {
+                  if (banks.length === 0) fetchBanks();
+                  setShowBankModal(true);
+                }}
+                className={`p-4 rounded-2xl flex-row justify-between items-center mb-4 ${
+                  isDark
+                    ? "bg-white/10 border border-white/20"
+                    : "bg-white/60 border border-gray-200/50"
+                }`}
+              >
+                <Text
+                  className={`text-base ${
+                    merchantBankName
+                      ? isDark ? "text-white" : "text-gray-900"
+                      : isDark ? "text-gray-400" : "text-gray-500"
+                  }`}
+                >
+                  {merchantBankName || "Select Business Bank (optional)"}
+                </Text>
+                <ChevronDown size={20} color={isDark ? "#9CA3AF" : "#6B7280"} />
+              </Pressable>
+
               <Pressable
                 onPress={HandleMerchantSubmit}
                 className={`py-4 rounded-2xl ${isDark ? "bg-lime-600" : "bg-lime-700"}`}
@@ -848,9 +865,9 @@ export default function RegisterScreen() {
                   disabled={otpCooldown > 0}
                   onPress={() => {
                     try {
-                      AccountService.SendUserOTP(
-                        "Registration",
-                        // registrationData?.phoneNumber ?? "",
+                      authService.SendUserRegistrationOTP(
+                        registrationData?.phoneNumber ?? "",
+                        registrationData?.email ?? "",
                       );
                       ToastService.info(t("auth.otpResent"));
                       startCooldown();
@@ -898,6 +915,21 @@ export default function RegisterScreen() {
         visible={showPinModal}
         onComplete={HandlePinComplete}
         onCancel={HandlePinCancel}
+      />
+
+      {/* Liveness pre-warning gate — shown as a modal before the camera opens */}
+      <BanksModal
+        banks={banks}
+        visible={showBankModal}
+        onClose={() => setShowBankModal(false)}
+        onBankSelected={(bank) => {
+          setMerchantBankCode(bank.bankCode);
+          setMerchantBankName(bank.name);
+          setShowBankModal(false);
+        }}
+        loading={banksLoading}
+        fetchError={banksError}
+        onRetry={fetchBanks}
       />
 
       {/* Liveness pre-warning gate — shown as a modal before the camera opens */}
@@ -960,7 +992,7 @@ export default function RegisterScreen() {
             >
               <Text style={{ fontSize: 14 }}>🔒</Text>
               <Text
-                className={`flex-1 text-xs ${
+                className={`flex-1 text-base font-brand ${
                   isDark ? "text-blue-300" : "text-blue-700"
                 }`}
               >

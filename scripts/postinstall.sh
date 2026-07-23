@@ -31,6 +31,45 @@ echo "Applying patch-package patches..."
 bunx patch-package
 echo "✅ patch-package patches applied"
 
+# Fix react-native-vision-camera@5.x missing app.plugin.js (ESM resolution bug)
+VISION_CAMERA_PLUGIN="node_modules/react-native-vision-camera/app.plugin.js"
+if [ ! -f "$VISION_CAMERA_PLUGIN" ]; then
+  cat > "$VISION_CAMERA_PLUGIN" << 'EOF'
+const { withInfoPlist, withAndroidManifest } = require('@expo/config-plugins');
+
+function withVisionCameraIos(config, options = {}) {
+  return withInfoPlist(config, (cfg) => {
+    cfg.modResults['NSCameraUsageDescription'] =
+      options.cameraPermissionText ?? 'Allow $(PRODUCT_NAME) to access your camera';
+    if (options.enableMicrophonePermission) {
+      cfg.modResults['NSMicrophoneUsageDescription'] =
+        options.microphonePermissionText ?? 'Allow $(PRODUCT_NAME) to access your microphone';
+    }
+    return cfg;
+  });
+}
+
+function withVisionCameraAndroid(config, options = {}) {
+  return withAndroidManifest(config, (cfg) => {
+    const mainApp = cfg.modResults.manifest.application?.[0];
+    if (mainApp && options.enableFrameProcessors !== false) {
+      if (!mainApp.$) mainApp.$ = {};
+    }
+    return cfg;
+  });
+}
+
+function withVisionCamera(config, options = {}) {
+  config = withVisionCameraIos(config, options);
+  config = withVisionCameraAndroid(config, options);
+  return config;
+}
+
+module.exports = withVisionCamera;
+EOF
+  echo "✅ react-native-vision-camera app.plugin.js created"
+fi
+
 # Apply react-native-ble-advertiser patch
 echo "Applying react-native-ble-advertiser patch..."
 

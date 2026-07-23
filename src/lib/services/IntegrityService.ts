@@ -52,6 +52,7 @@ class IntegrityService {
   }
 
   private async _checkIOS(): Promise<boolean> {
+    // Filesystem heuristics (fast, catches unsophisticated jailbreaks)
     for (const path of IOS_JAILBREAK_PATHS) {
       try {
         const isDir = path.endsWith(".app") || !path.includes(".");
@@ -60,7 +61,7 @@ class IntegrityService {
           : new File(path).exists;
         if (exists) return true;
       } catch {
-        // Access denied to path — itself a jailbreak signal on sensitive paths
+        // Access denied to a sensitive path is itself a jailbreak signal
         if (path === "/bin/bash" || path === "/usr/sbin/sshd") return true;
       }
     }
@@ -68,6 +69,7 @@ class IntegrityService {
   }
 
   private async _checkAndroid(): Promise<boolean> {
+    // Filesystem heuristics (catches rooted devices without Play Services)
     for (const path of ANDROID_ROOT_PATHS) {
       try {
         if (new File(path).exists) return true;

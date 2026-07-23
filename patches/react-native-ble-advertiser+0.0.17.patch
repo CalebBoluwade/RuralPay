@@ -1,21 +1,17 @@
 diff --git a/node_modules/react-native-ble-advertiser/android/build.gradle b/node_modules/react-native-ble-advertiser/android/build.gradle
-index 1234567..abcdefg 100644
 --- a/node_modules/react-native-ble-advertiser/android/build.gradle
 +++ b/node_modules/react-native-ble-advertiser/android/build.gradle
-@@ -1,8 +1,8 @@
- apply plugin: 'com.android.library'
- 
+@@ -3,4 +3,4 @@
  android {
 -    compileSdkVersion 28
 -    buildToolsVersion "28.0.3"
 +    compileSdkVersion rootProject.ext.compileSdkVersion ?: 35
 +    buildToolsVersion rootProject.ext.buildToolsVersion ?: "35.0.0"
  
+@@ -7,4 +7,4 @@
      defaultConfig {
 -        minSdkVersion 21
 -        targetSdkVersion 28
 +        minSdkVersion rootProject.ext.minSdkVersion ?: 21
 +        targetSdkVersion rootProject.ext.targetSdkVersion ?: 35
          versionCode 1
-         versionName "1.0"
-     }

@@ -22,14 +22,18 @@ export default function InfoChip({ label, explanation }: InfoChipProps) {
         }`}
       >
         <Text
-          style={{ fontSize: 11 }}
+          style={{ fontSize: 12.5 }}
           className={isDark ? "text-blue-300" : "text-blue-600"}
         >
           ⓘ
         </Text>
         <Text
-          style={{ fontSize: 11 }}
-          className={isDark ? "text-blue-300" : "text-blue-600"}
+          style={{ fontSize: 12.5 }}
+          className={
+            isDark
+              ? "text-blue-300 font-brand font-semibold"
+              : "text-blue-600 font-brand font-semibold"
+          }
         >
           {label}
         </Text>
@@ -53,12 +57,12 @@ export default function InfoChip({ label, explanation }: InfoChipProps) {
             }`}
           >
             <Text
-              className={`text-base font-bold ${isDark ? "text-white" : "text-slate-900"}`}
+              className={`text-lg font-brand font-bold ${isDark ? "text-white" : "text-slate-900"}`}
             >
               {label}
             </Text>
             <Text
-              className={`text-base leading-relaxed ${isDark ? "text-slate-300" : "text-slate-600"}`}
+              className={`text-lg leading-relaxed ${isDark ? "text-slate-300" : "text-slate-600"}`}
             >
               {explanation}
             </Text>
